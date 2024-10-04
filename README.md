@@ -83,12 +83,12 @@ MTVS Final Project
 - 상수나 Define 은 대문자로 작성 : const String URL = "127.0.0.1";
 - c++ 클래스 생성 시 {자기이니셜}_ : CSR_PlayerActor
 - RPC 함수 관련
-Client에서 Server로 요청하는 경우 SRPC_{함수 이름}
-Server에서 해당 Client로 요청하는 경우 CRPC_{함수 이름}
-Server에서 모든 Client로 요청하는 경우 MRPC_{함수 이름}
+Client에서 Server로 요청하는 경우 SRPC_{함수 이름}<br/> 
+Server에서 해당 Client로 요청하는 경우 CRPC_{함수 이름}<br/> 
+Server에서 모든 Client로 요청하는 경우 MRPC_{함수 이름}<br/> 
 - API요청 시
-Request는 REQ_{함수 이름}
-Response는 RES_{함수 이름}
+Request는 REQ_{함수 이름}<br/> 
+Response는 RES_{함수 이름}<br/> 
 - 블루프린트 생성 접두어 BP_
 - 애니메이션 블루프린트 생성 시 접두어 ABP_
 - 위젯 블루프린트 생성 시 접두어 WBP_
