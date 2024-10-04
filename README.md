@@ -82,11 +82,11 @@ MTVS Final Project
 - 함수, 클래스 - 파스칼 케이스((Pascal Case) : void MoveSpeedHigh();
 - 상수나 Define 은 대문자로 작성 : const String URL = "127.0.0.1";
 - c++ 클래스 생성 시 {자기이니셜}_ : CSR_PlayerActor
-- RPC 함수 관련
+- RPC 함수 관련<br/> 
 Client에서 Server로 요청하는 경우 SRPC_{함수 이름}<br/> 
 Server에서 해당 Client로 요청하는 경우 CRPC_{함수 이름}<br/> 
 Server에서 모든 Client로 요청하는 경우 MRPC_{함수 이름}<br/> 
-- API요청 시
+- API요청 시<br/> 
 Request는 REQ_{함수 이름}<br/> 
 Response는 RES_{함수 이름}<br/> 
 - 블루프린트 생성 접두어 BP_
