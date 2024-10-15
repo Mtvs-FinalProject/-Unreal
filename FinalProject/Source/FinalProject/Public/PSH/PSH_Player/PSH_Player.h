@@ -58,13 +58,16 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	class UPhysicsHandleComponent * handleComp; // 물리 컴포핸들 컴포넌트.
 
+	UPROPERTY(EditDefaultsOnly)
+	class USceneComponent * rotationHelper; // 회전 도우미
+
 	//Widgets 
 	UPROPERTY(EditDefaultsOnly, Category = "Widget")
 	TSubclassOf<class UUserWidget> mouseWidgetFac;
 	class UPSH_MouseWidget* mouseWidget;
 
 	//PC
-	class APlayerController* pc;
+	class APSH_PlayerController* pc;
 
 	// 이동
 	FVector Dir;
@@ -78,17 +81,39 @@ public:
 	void Grab();
 
 	// 마우스 위치에 Ray
-	FLocationPoint PreTraceChek();
+	void PreTraceCheck(FVector & StartLoc, FVector & EndLoc);
 
 	TArray<class AActor*> actorsToIgnore;
 
 	// 블럭 이동 최대거리
 	UPROPERTY(EditAnywhere)
-	float playerReach = 500.f;
+	float playerReach = 1000.f;
 
 	// Ray 발사
 	FHitResult CastRay();
 
 	// 레이 거리
 	double rayPower = 5000.f;
+
+	// 블럭 Rotation
+	FRotator rotationOffset;
+
+	int32 snapPointIndexLength;
+
+	void ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom,
+		FVector& closestPt, float& dist, int32 closetPointIndex);
+
+	float snapDistance = 10;
+
+	int32 snapPointIndex = 0;
+
+	//World Helper - 고정된 액터의 면 스냅 방향에 대한 회전 오프셋 계산
+	FRotator WorldHelperRotationOffset(); 
+
+	void PlaceBlock(FHitResult hitInfo, bool hit);
+
+	void DropBlcok();
+
+	void HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
+
 };

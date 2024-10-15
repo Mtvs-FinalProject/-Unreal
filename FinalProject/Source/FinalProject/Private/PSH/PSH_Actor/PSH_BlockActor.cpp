@@ -3,6 +3,8 @@
 
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetArrayLibrary.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -19,6 +21,7 @@ void APSH_BlockActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);
 }
 
 // Called every frame
@@ -26,27 +29,310 @@ void APSH_BlockActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bGrab) // true 일떄
-	{
-		FVector worldLoc; // 마우스의 월드 포지션
-		FVector worldDir; // 카메라 포지션과 마우스 클릭 장소간의 방향
-
-		APlayerController* pc = Cast<APlayerController>(GetOwner());
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *GetOwner()->GetName());
-
-		if (pc == nullptr) return;
-		pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
-
-		/*UE_LOG(LogTemp, Warning, TEXT("X : %f Y : %f Z : %f"), worldLoc.X, worldLoc.Y, worldLoc.Z);*/
-		FVector TargetLocation = worldLoc + (worldDir * 200.0f); // 약간 앞쪽으로 이동
-
-		playerHandle->SetTargetLocation(TargetLocation);
-	}
+// 	if (bGrab) // true 일떄
+// 	{
+// 		FVector worldLoc; // 마우스의 월드 포지션
+// 		FVector worldDir; // 카메라 포지션과 마우스 클릭 장소간의 방향
+// 
+// 		APlayerController* pc = Cast<APlayerController>(GetOwner());
+// 		UE_LOG(LogTemp, Warning, TEXT("%s"), *GetOwner()->GetName());
+// 
+// 		if (pc == nullptr) return;
+// 		pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
+// 
+// 		/*UE_LOG(LogTemp, Warning, TEXT("X : %f Y : %f Z : %f"), worldLoc.X, worldLoc.Y, worldLoc.Z);*/
+// 		FVector TargetLocation = worldLoc + (worldDir * 200.0f); // 약간 앞쪽으로 이동
+// 
+// 		playerHandle->SetTargetLocation(TargetLocation);
+// 	}
 }
 void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 {
 	if (handle == nullptr) return;
+	
+	// 부모와의 연결 제거
+	Remove();
 
-	playerHandle = handle;
-	playerHandle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
+	// 블록 잡기
+	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
+
+	pickedUp = true;
+
+	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
+	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
+
+	for (auto* actor : childsActors)
+	{
+		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryOnly);
+	}
+}
+
+void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
+{
+	if (physicshandle != nullptr)
+	{
+		physicshandle->ReleaseComponent();
+	}
+	
+	pickedUp = false;
+
+	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	for (auto* actor : childsActors)
+	{
+		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
+	}
+}
+
+void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
+{
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Pickup Dev")));
+
+	attachActor->AddChild(this);
+	FAttachmentTransformRules rule = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, true);
+	this->AttachToActor(attachActor, rule);
+
+	meshComp->SetSimulatePhysics(false);
+	parent = attachActor;
+
+	SetActorRelativeLocation(worldTransform.GetLocation());
+	SetActorRotation(worldTransform.GetRotation());
+	attachActor->TransferChildren(childsActors);
+
+	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	for (auto* actor : childsActors)
+	{
+		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
+	}
+}
+
+void APSH_BlockActor::Remove()
+{
+
+	if(parent == nullptr) return;
+	
+	// 부모에서 분리
+	FDetachmentTransformRules rule = FDetachmentTransformRules::KeepWorldTransform;
+	DetachFromActor(rule);
+
+	// 시물레이션 활성화
+	meshComp->SetSimulatePhysics(true);
+
+	// 부모에서 자식 제거
+	parent->RemoveChild(this);
+	parent->RemoveChildren(childsActors);
+	
+	parent = nullptr;
+}
+
+void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // 자식 콜리전 업데이트
+{
+	meshComp->SetCollisionEnabled(NewType);
+
+	ECollisionResponse newResponse = ECR_Ignore;
+
+	switch (NewType)
+	{
+	case ECollisionEnabled::NoCollision:
+		newResponse = ECR_Overlap;
+		pickedUp = true;
+		break;
+	case ECollisionEnabled::QueryOnly:
+		newResponse = ECR_Overlap;
+		pickedUp = true;
+		break;
+	case ECollisionEnabled::PhysicsOnly:
+		newResponse = ECR_Ignore;
+		pickedUp = false;
+		break;
+	case ECollisionEnabled::QueryAndPhysics:
+		newResponse = ECR_Block;
+		pickedUp = false;
+		break;
+	case ECollisionEnabled::ProbeOnly:
+		newResponse = ECR_Ignore;
+		pickedUp = false;
+		break;
+	case ECollisionEnabled::QueryAndProbe:
+		newResponse = ECR_Ignore;
+		pickedUp = false;
+		break;
+	}
+
+	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, newResponse);
+	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, newResponse);
+
+
+	for (auto* actor : childsActors)
+	{
+		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(NewType);
+	}
+}
+
+TArray<FVector> APSH_BlockActor::GetSnapPoints()
+{
+	return snapPoints;
+}
+TArray<FRotator> APSH_BlockActor::GetSnapDirections()
+{
+	return snapDirections;
+}
+TArray<int32> APSH_BlockActor::GetsnapPritority()
+{
+	return snapPritority;
+}
+void APSH_BlockActor::AddSnapPoint(FVector location, FRotator rotation, int32 priority)
+{
+	snapPoints.Add(location);
+	snapDirections.Add(rotation);
+	snapPritority.Add(priority);
+
+	SnapApplyPriority();
+}
+
+void APSH_BlockActor::SnapApplyPriority()
+{
+	// Loop Through All Snap Points
+
+	// 최소 2개의 우선순위가 있는지 확인
+	if (snapPritority.Num() < 2) return;
+
+	// 임시 배열 크기를 미리 설정
+	TArray<FVector> tempSnapPoints;
+	tempSnapPoints.SetNum(snapPoints.Num());
+
+	TArray<FRotator> tempSnapDirections;
+	tempSnapDirections.SetNum(snapDirections.Num());
+
+	TArray<int32> tempSnapPritority;
+	tempSnapPritority.SetNum(snapPritority.Num());
+
+	for (int i = 0; i < snapPritority.Num(); i++)
+	{
+		int32 minIndex = 0;
+		int32 pilYoeObSeum = 0;
+
+		// 최소 우선순위 찾기
+		UKismetMathLibrary::MinOfIntArray(snapPritority, minIndex, pilYoeObSeum);
+
+		// 배열 크기를 동적으로 조정 (Size to Fit 기능 구현)
+		if (tempSnapPoints.Num() <= i)
+		{
+			tempSnapPoints.SetNum(i + 1);  // 배열 크기 맞추기
+		}
+		if (tempSnapDirections.Num() <= i)
+		{
+			tempSnapDirections.SetNum(i + 1);  // 배열 크기 맞추기
+		}
+		if (tempSnapPritority.Num() <= i)
+		{
+			tempSnapPritority.SetNum(i + 1);  // 배열 크기 맞추기
+		}
+
+		// 최소값에 해당하는 스냅 포인트 및 방향을 임시 배열에 복사
+		if (snapPoints.IsValidIndex(minIndex))
+		{
+			tempSnapPoints[i] = snapPoints[minIndex];
+		}
+		if (snapDirections.IsValidIndex(minIndex))
+		{
+			tempSnapDirections[i] = snapDirections[minIndex];
+		}
+		if (snapPritority.IsValidIndex(minIndex))
+		{
+			tempSnapPritority[i] = snapPritority[minIndex];
+		}
+
+		// 최소값을 최대값으로 설정하여 이후 반복에서 제외
+		if (snapPritority.IsValidIndex(minIndex))
+		{
+			snapPritority[minIndex] = 2147483647;  // int32 최대값
+		}
+	}
+
+	// 배열 재할당
+	snapPoints = tempSnapPoints;
+	snapDirections = tempSnapDirections;
+	snapPritority = tempSnapPritority;
+}
+
+bool APSH_BlockActor::OvelapChek()
+{
+	// 겹치는 액터들을 저장할 배열 선언
+	TArray<AActor*> OutOverlappingActors;
+
+	// 필터링할 클래스의 타입을 정의 (여기서는 아무것도 설정되지 않음)
+	TSubclassOf<AActor> ClassFilter = APSH_BlockActor::StaticClass();
+
+	// 현재 메쉬 컴포넌트와 겹치는 모든 액터를 찾음
+	meshComp->GetOverlappingActors(OutOverlappingActors, ClassFilter);
+
+	// 겹치는 액터가 없으면 유효한 배치로 간주
+	bool validPlacement = OutOverlappingActors.Num() == 0;
+
+	// 자식 액터들에 대해 재귀적으로 겹침 검사
+	for (auto* actor : childsActors)
+	{
+		
+	}
+
+
+	return true; // 최종 결과 반환
+}
+
+
+void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
+{
+	//자신에게 자식을 추가
+	childsActors.Add(childActor);
+
+	// 자식에게 부모를 할당
+	childActor->parent = this;
+}
+
+
+void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
+{
+	for (auto* actor : childActor)
+	{
+		if (Cast<APSH_BlockActor>(actor))
+		{
+			this->AddChild(Cast<APSH_BlockActor>(actor));
+		}
+	}
+}
+
+void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
+{
+	
+	//자식 목록에서 제거
+	childsActors.Remove(actor);
+	
+	// 부모 정보 제거
+	actor->parent = nullptr;
+}
+
+void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
+{
+	for (auto* actor : childActor)
+	{
+		if (Cast<APSH_BlockActor>(actor))
+		{
+			this->RemoveChild(Cast<APSH_BlockActor>(actor));
+		}
+// 		childActor.Remove(Cast<APSH_BlockActor>(actor));
+// 		Cast<APSH_BlockActor>(actor)->parent = nullptr;
+	}
+}
+void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
+{
+		// 물리 컴포넌트를 깨우기 (Wake Rigid Body)
+		SleepingComponent->WakeRigidBody(BoneName);
+
 }
