@@ -246,34 +246,42 @@ FHitResult APSH_Player::CastRay() // 잡기위한 레이
 }
 
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
-								FVector & closestPt, float& dist , int32 closetPointIndex)
+								FVector & closestPt, float& dist , int32& closetPointIndex)
 {
+
+	if (pointArray.Num() == 0) return;
+
 	FVector testLoc = UKismetMathLibrary::InverseTransformLocation(hitActorTransfrom,testLocation);
 
-	closestPt = pointArray[0]; //
 
-	dist = UKismetMathLibrary::Vector_Distance(closestPt,testLoc); //
+	
+		closestPt = pointArray[0]; //
 
-	closetPointIndex = 0; //
+		dist = FVector::Dist(closestPt, testLoc); //
 
+		closetPointIndex = 0; //
+		
 	// 까지 한번만 반복
-	int32 index = 0;
-	for (auto & it : pointArray)
+	
+	for (int32 i = 0 ; i < pointArray.Num(); i++)
 	{
-		index++;
-		if (UKismetMathLibrary::Vector_Distance(it, testLoc) > dist)
+		float currentDist = (FVector::Dist(pointArray[i], testLoc));
+		if  (currentDist < dist)
 		{
-			closestPt = it;
-			dist = UKismetMathLibrary::Vector_Distance(it, testLoc);
-			closetPointIndex = index;
+			closestPt = pointArray[i];
+			dist = currentDist;
+			closetPointIndex = i;
+			
 		}
-	}
+	} 
+	
 }
 FRotator APSH_Player::WorldHelperRotationOffset()
 {
 	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
 
 	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]),FRotator(180,180,0));
+
 }
 void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 {
@@ -298,23 +306,23 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 
 			TArray<FVector> heldBlockPoints = heldBlock->GetSnapPoints();
 
-			bool chek1 = distance <= snapDistance ? true : false;
-			bool chek2 = snapPoints.IsValidIndex(0);
+			bool distBool = distance <= snapDistance;
+			bool bValidPoint = snapPoints.IsValidIndex(0);
+			bool andChek = distBool && bValidPoint;
 
-			bool andchek = !(chek1 && chek2);
+			
 
 			FVector snapLocation;
-			if (andchek == false)
-			{
-				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
-				(heldBlock->GetActorLocation() - 
-				UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
-				
-			}
-			else if (andchek == true)
+			if (!andChek)
 			{
 				snapLocation = location + (heldBlock->GetActorLocation() -
 					UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+			}
+			else
+			{				
+				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
+					(heldBlock->GetActorLocation() -
+						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
 			}
 
 			FTransform worldTransfrom;
@@ -323,7 +331,7 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
 			actor->GetActorTransform(), snapLocation),
 			rotationHelper->GetComponentRotation());
-
+			
 			if (actor->connectionsize >= heldBlock->connectionsize)
 			{
 				if (heldBlock->OvelapChek())
@@ -372,10 +380,12 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 		}
 	}
 }
+
 void APSH_Player::DropBlcok()
 {
 	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
 }
+
 void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocation)
 {
 	if(handleComp->GetGrabbedComponent() == nullptr) return;
@@ -410,30 +420,28 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 			Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();
 		}
 		
-		bool chek1 = snapDistance >= distance ? true : false;
-		bool chek2 = snapPoints.IsValidIndex(0);
-		bool andBool = !(chek1 && chek2 && hit);
+		bool bDist = snapDistance >= distance; // 비정상
+		bool bValidPoint = snapPoints.IsValidIndex(0); // 정상
+		bool andBool = bDist && bValidPoint && hit;
 
 		if (heldActor == nullptr) return;
 
 		snapPoints = heldActor->GetSnapPoints();
 
-		if (andBool)
+		if (!andBool)
 		{
-
 			newLoc = localLocation + (heldActor->GetActorLocation() -
 				UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
 		}
-		else
+		else // 이게 실행이 안됨.
 		{
 			newLoc = UKismetMathLibrary::TransformLocation(hitActorTransfrom, closestPoint) +
 				(heldActor->GetActorLocation() - UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
-
 		}
 
 		rotationHelper->SetWorldLocation(newLoc);
 
-		if (andBool)
+		if (!andBool)
 		{
 			newRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
 		}

@@ -131,6 +131,34 @@ void APSH_BlockActor::Remove()
 	parent = nullptr;
 }
 
+void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
+{
+	if (actor == nullptr) return;
+	//자식 목록에서 제거
+	if (childsActors.Contains(actor))  // 자식이 존재할 때만 제거
+	{
+		childsActors.Remove(actor);
+	//	actor->parent = nullptr;  // 자식의 부모 제거
+	}
+}
+
+void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
+{
+	if (childActor.IsEmpty()) return; // 배열이 비어있으면 검사x
+
+	for (auto* actor : childActor)
+	{
+		if (Cast<APSH_BlockActor>(actor))
+		{
+			RemoveChild(Cast<APSH_BlockActor>(actor));
+		}
+		// 		childActor.Remove(Cast<APSH_BlockActor>(actor));
+		// 		Cast<APSH_BlockActor>(actor)->parent = nullptr;
+	}
+
+
+}
+
 void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // 자식 콜리전 업데이트
 {
 	meshComp->SetCollisionEnabled(NewType);
@@ -267,33 +295,47 @@ bool APSH_BlockActor::OvelapChek()
 	// 겹치는 액터들을 저장할 배열 선언
 	TArray<AActor*> OutOverlappingActors;
 
-	// 필터링할 클래스의 타입을 정의 (여기서는 아무것도 설정되지 않음)
-	TSubclassOf<AActor> ClassFilter = APSH_BlockActor::StaticClass();
+	// 필터링할 클래스의 타입을 정의 모든 엑터 검사
+	TSubclassOf<AActor> ClassFilter = AActor::StaticClass();
 
 	// 현재 메쉬 컴포넌트와 겹치는 모든 액터를 찾음
 	meshComp->GetOverlappingActors(OutOverlappingActors, ClassFilter);
 
 	// 겹치는 액터가 없으면 유효한 배치로 간주
-	bool validPlacement = OutOverlappingActors.Num() == 0;
+	 validPlacement = OutOverlappingActors.Num() == 0;
 
 	// 자식 액터들에 대해 재귀적으로 겹침 검사
 	for (auto* actor : childsActors)
 	{
-		
+		if (actor == nullptr)
+		{
+			continue;  // Null 포인터가 있을 경우 건너뜀
+		}
+
+		APSH_BlockActor* target = Cast<APSH_BlockActor>(actor);
+
+		if (target)
+		{
+			if (target->OvelapChek()) // true가 나오면 true로 씌워질 가능성이 있음으로 false로 바로 변수 할당.
+			{
+				validPlacement = false;
+			}
+		}
 	}
 
-
-	return true; // 최종 결과 반환
+	//return validPlacement; // 최종 결과 반환
+	return true; // 매쉬 크기의 문제로 현제는 무조건 true 반환, 후에 변경.
 }
 
 
 void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
 {
 	//자신에게 자식을 추가
-	childsActors.Add(childActor);
-
-	// 자식에게 부모를 할당
-	childActor->parent = this;
+	if (!childsActors.Contains(childActor)) // 중복 추가 방지
+	{
+		childsActors.Add(childActor);
+		childActor->parent = this;  // 자식의 부모 설정
+	}
 }
 
 
@@ -303,33 +345,11 @@ void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
 	{
 		if (Cast<APSH_BlockActor>(actor))
 		{
-			this->AddChild(Cast<APSH_BlockActor>(actor));
+			AddChild(Cast<APSH_BlockActor>(actor));
 		}
 	}
 }
 
-void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
-{
-	
-	//자식 목록에서 제거
-	childsActors.Remove(actor);
-	
-	// 부모 정보 제거
-	actor->parent = nullptr;
-}
-
-void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
-{
-	for (auto* actor : childActor)
-	{
-		if (Cast<APSH_BlockActor>(actor))
-		{
-			this->RemoveChild(Cast<APSH_BlockActor>(actor));
-		}
-// 		childActor.Remove(Cast<APSH_BlockActor>(actor));
-// 		Cast<APSH_BlockActor>(actor)->parent = nullptr;
-	}
-}
 void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
 {
 		// 물리 컴포넌트를 깨우기 (Wake Rigid Body)

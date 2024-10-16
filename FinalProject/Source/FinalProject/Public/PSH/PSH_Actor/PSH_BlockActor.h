@@ -42,6 +42,8 @@ public:
 
 	int32 connectionsize =0;
 
+	bool validPlacement;
+
 	bool pickedUp;
 
 	void PickUp(class UPhysicsHandleComponent* handle);

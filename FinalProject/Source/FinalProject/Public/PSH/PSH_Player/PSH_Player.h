@@ -89,6 +89,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	float playerReach = 1000.f;
 
+	bool doonce;
 	// Ray น฿ป็
 	FHitResult CastRay();
 
@@ -101,7 +102,7 @@ public:
 	int32 snapPointIndexLength;
 
 	void ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom,
-		FVector& closestPt, float& dist, int32 closetPointIndex);
+		FVector& closestPt, float& dist, int32& closetPointIndex);
 
 	float snapDistance = 10;
 
