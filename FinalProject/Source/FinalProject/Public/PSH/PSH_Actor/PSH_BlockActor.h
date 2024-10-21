@@ -88,9 +88,9 @@ public:
 
 	FPSH_ObjectData SaveBlockHierachy();
 
-	FPSH_Childdats SaveBlock(/*FPSH_ObjectData& blockdata*/);
+	FPSH_Childdats  SaveBlock(/*FPSH_ObjectData& blockdata*/);
 
-	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);
-	void LoadBlockHierarchy(const FPSH_ObjectData& Data );
+/*	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);*/
+	void LoadBlockHierarchy(const FPSH_ObjectData& Data);
 
 };

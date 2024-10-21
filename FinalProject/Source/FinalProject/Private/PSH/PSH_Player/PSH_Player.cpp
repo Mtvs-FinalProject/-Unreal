@@ -468,7 +468,7 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 }
 void APSH_Player::SpawnBlock()
 {
-	for (int i = 1; i <= rowNam; i++)
+	for (int i = 1; i <= 3; i++)
 	{
 		FName Rowname = FName(*FString::FormatAsNumber(i));
 		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
@@ -492,25 +492,14 @@ void APSH_Player::SaveTest()
 
 		APSH_BlockActor* actor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 블럭
 		FName rowName = FName(*FString::FormatAsNumber(4));
-		if (actor)
+		if (actor && dataTable)
 		{
-			actor->SaveBlock();
+			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
+			dataTable->AddRow(rowName, BlockData);
 		}
-
-		static bool SaveToDataTable(UDataTable * DataTable, const FString & RowName, APSH_BlockActor * RootBlock)
-		{
-			if (!dataTable || !RootBlock) return false;
-
-			// 블록을 데이터로 변환
-			FPSH_ObjectData BlockData = RootBlock->ConvertToData();
-
-			// 데이터 테이블에 추가
-			dataTable->AddRow(rowName, data);
-
-
-			return true;
-		}
-
+		
+			
+	
 // 		for (auto* testActor : actor->childsActors)
 // 		{
 // 			APSH_BlockActor* TestchildsActors = Cast<APSH_BlockActor>(testActor);
@@ -541,14 +530,34 @@ void APSH_Player::SaveTest()
 void APSH_Player::LoadTest()
 {
 	
-	FName Rowname = FName(*FString::FormatAsNumber(rowNam));
+	FName Rowname = FName(*FString::FormatAsNumber(4));
 	FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
 	float sum = 200.0f;
 	APSH_BlockActor * sapwnPartent = nullptr;
 
-	if (sapwnPartent && data)
+// 	if (sapwnPartent && data)
+// 	{
+// 		TSet<APSH_BlockActor*> ProcessedBlocks;
+// 		sapwnPartent->LoadBlockHierarchy(*data);
+// 	}
+// 
+// 	FName Rowname = FName(*FString::FormatAsNumber(rowNam));
+// 	FPSH_ObjectData* Data = DataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
+
+	if (data && data->actor != nullptr)
 	{
-		TSet<APSH_BlockActor*> ProcessedBlocks;
-		sapwnPartent->LoadBlockHierarchy(*data);
+		// 루트 블럭 소환
+		TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
+		if (SpawnActor)
+		{
+			FActorSpawnParameters Params;
+			APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, GetActorForwardVector() * sum, GetActorRotation(), Params);
+
+			// 블럭 계층 구조 불러오기
+			if (SpawnedBlock)
+			{
+				SpawnedBlock->LoadBlockHierarchy(*data);
+			}
+		}
 	}
 }
