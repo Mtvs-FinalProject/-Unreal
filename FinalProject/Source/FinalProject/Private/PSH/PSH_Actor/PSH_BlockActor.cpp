@@ -366,73 +366,25 @@ void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, F
 
 FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 {
-// 	FPSH_ObjectData BlockData;
-// 
-// 	BlockData.actorTransfrom = GetActorTransform(); // 부모의 위치값
-// 	BlockData.actor = GetClass(); // 부모의 클래스
-// 
-// 	// 자식 블록들을 저장
-// 	SaveBlock(BlockData);
-// 	
-// 	for (auto* actor : childsActors)
-// 	{
-// 		if (Cast<APSH_BlockActor>(actor))
-// 		{
-// 			RemoveChild(Cast<APSH_BlockActor>(actor));
-// 		}
-// 	}
-// 
-// 	return BlockData;
 
 	FPSH_ObjectData Data;
 
-	// 현재 블록의 정보 저장
+	// 부모 블럭의 클래스 및 위치 정보를 저장
 	Data.actor = GetClass();
 	Data.actorTransfrom = GetActorTransform();
 
-	// 자식 블록들의 정보 저장
+	// 자식 블럭들이 있는지 확인
 	if (childsActors.Num() > 0)
 	{
-		FPSH_Childdats ChildrenData;
-		ChildrenData = SaveBlock();
-		Data.childsData.Add(ChildrenData);
+		FPSH_Childdats ChildrenData = SaveBlock();  // 자식 블럭 정보를 저장하는 함수 호출
+		Data.childsData.Add(ChildrenData);  // 저장한 자식 블럭 정보를 Data에 추가
 	}
 
 	return Data;
 }
 
-// ex 최상단 , 자식 1, 자식 2 , 자식1-1,1-2, 자식2-1,2-2
-FPSH_Childdats APSH_BlockActor::SaveBlock(/*FPSH_ObjectData& blockdata*/)
+FPSH_Childdats  APSH_BlockActor::SaveBlock()
 { 
-// 	if (childsActors.IsEmpty()) return; // 자식이 없음
-// 
-// 	for (auto* ChildBlock : childsActors) // 자식 의 수만큼 실행. 
-// 	{
-// 		APSH_BlockActor* block = Cast<APSH_BlockActor>(ChildBlock);
-// 
-// 		FPSH_ChildData childData;
-// 		childData.actor = block->GetClass();
-// 		childData.actorTransfrom = block->MyLocation;
-// 
-// 		FPSH_Childdats childDatas;
-// 
-// 		childDatas.childData.Add(childData);
-// 		blockdata.childsData.Add(childDatas);
-// 		if (block->childsActors.IsEmpty()) // 자식이 없다면
-// 		{
-// 			return;
-// 		}
-// 		else // 자식이 있다면.
-// 		{
-// 		
-// 			block->SaveBlock(blockdata);
-// 		}
-// 
-// // 		if (block)
-// // 		{
-// // 			blockdata.childData.Add(childData);  // 자식 블록 재귀 저장
-// // 		}
-// 	}
 
 	FPSH_Childdats ChildrenData;
 
@@ -441,74 +393,31 @@ FPSH_Childdats APSH_BlockActor::SaveBlock(/*FPSH_ObjectData& blockdata*/)
 		APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(Child);
 		if (ChildBlock)
 		{
+			// 각 자식 블럭의 정보를 저장
 			FPSH_ChildData SingleChildData;
 			SingleChildData.actor = ChildBlock->GetClass();
 			SingleChildData.actorTransfrom = ChildBlock->GetActorTransform();
-			ChildrenData.childData.Add(SingleChildData);
+			ChildrenData.childData.Add(SingleChildData);  // 자식 정보 추가
 
-			// 재귀적으로 자식의 자식들도 처리
+			// 자식의 자식 블럭들도 재귀적으로 저장
 			if (ChildBlock->childsActors.Num() > 0)
 			{
-				FPSH_Childdats SubChildrenData = ChildBlock->SaveBlock();
-				FPSH_ObjectData ChildObjectData;
-				ChildObjectData.childsData.Add(SubChildrenData);
+				FPSH_Childdats SubChildrenData = ChildBlock->SaveBlock();  // 자식 블럭의 자식들도 저장
+				ChildrenData.childData.Append(SubChildrenData.childData);  // 자식의 자식 데이터를 추가
 			}
 		}
 	}
 
 	return ChildrenData;
-}
-
-
-void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data, TSet<APSH_BlockActor*>& ProcessedBlocks)
-{
-	// 이미 처리한 블럭은 다시 처리하지 않습니다.
-	if (ProcessedBlocks.Contains(this))
-	{
-		return;
-	}
-
-	// 현재 블럭을 처리 목록에 추가
-	ProcessedBlocks.Add(this);
-
-	// 블럭의 위치와 회전을 설정합니다.
-	SetActorTransform(Data.actorTransfrom);
-	
-
-	// 자식 블럭들을 스폰하고 부모-자식 관계를 설정합니다.
-// 	for (const FPSH_ChildData& ChildData : Data.childData)
-// 	{
-// 		if (ChildData.actor)
-// 		{
-// 			// 자식 블럭을 스폰합니다.
-// 			FActorSpawnParameters SpawnParams;
-// 			APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-// 				ChildData.actor, ChildData.actorTransfrom, SpawnParams);
-// 
-// 			if (ChildBlock)
-// 			{
-// 				// AttachToActor 대신 Place 함수 사용
-// 				ChildBlock->Place(this, ChildData.actorTransfrom);
-// // 				// 자식 블럭을 로드할 때, 이미 부모와 연결되었는지 확인하고, 부모 블럭으로 다시 돌아가는 루프를 방지합니다.
-// // 				ChildBlock->LoadBlockHierarchy(Data, ProcessedBlocks);
-//  			}
-// 		}
-// 	}
 
 }
+
 void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 {
-	if (!Data.actor) return;
+	
+	SetActorTransform(Data.actorTransfrom);
 
-	// 메인 블록 생성
-	APSH_BlockActor* MainBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-		Data.actor,
-		Data.actorTransfrom
-	);
-
-	if (!MainBlock) return;
-
-	// 자식 블록들 생성
+	// 자식 블럭들 생성 및 불러오기
 	for (const FPSH_Childdats& ChildrenData : Data.childsData)
 	{
 		for (const FPSH_ChildData& ChildData : ChildrenData.childData)
@@ -522,11 +431,13 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 
 				if (ChildBlock)
 				{
-					// 부모-자식 관계 설정
-					MainBlock->AddChild(ChildBlock);
-
-					// 물리 시뮬레이션 비활성화 (부모에 붙어있으므로)
+					// 부모 블럭에 자식 블럭을 붙임
 					ChildBlock->meshComp->SetSimulatePhysics(false);
+					ChildBlock->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+					AddChild(ChildBlock);
+
+					// 자식의 자식 블럭도 재귀적으로 불러옴
+					ChildBlock->LoadBlockHierarchy(ChildBlock->SaveBlockHierachy());
 				}
 			}
 		}
