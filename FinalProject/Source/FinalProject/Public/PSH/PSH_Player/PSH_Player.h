@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../../../../Plugins/EnhancedInput/Source/EnhancedInput/Public/InputActionValue.h"
+#include "../PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH_Player.generated.h"
 
 USTRUCT(Atomic, BlueprintType)
@@ -94,7 +95,7 @@ public:
 	FHitResult CastRay();
 
 	// 레이 거리
-	double rayPower = 5000.f;
+	double rayPower = 1000.f;
 
 	// 블럭 Rotation
 	FRotator rotationOffset;
@@ -116,5 +117,17 @@ public:
 	void DropBlcok();
 
 	void HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
+	
+	UPROPERTY(EditAnywhere)
+	class UDataTable * dataTable;
 
+	void SpawnBlock();
+
+	void SaveTest();
+
+	int32 rowNam = 4;
+
+	bool test = false;
+
+	void LoadTest();
 };

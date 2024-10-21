@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "../PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH_BlockActor.generated.h"
 
 UCLASS()
@@ -82,5 +83,14 @@ public:
 
 	UFUNCTION()
 	void OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
+
+	FTransform MyLocation;
+
+	FPSH_ObjectData SaveBlockHierachy();
+
+	FPSH_Childdats SaveBlock(/*FPSH_ObjectData& blockdata*/);
+
+	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);
+	void LoadBlockHierarchy(const FPSH_ObjectData& Data );
 
 };

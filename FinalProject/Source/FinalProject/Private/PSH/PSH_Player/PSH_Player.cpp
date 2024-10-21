@@ -14,6 +14,8 @@
 #include "Components/SceneComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetArrayLibrary.h"
+#include "PSH/PSH_DataTable/PSH_MechDataTable.h"
+#include "Engine/DataTable.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -89,16 +91,6 @@ void APSH_Player::Tick(float DeltaTime)
 		4
 	);
 
-	DrawDebugSphere(
-		GetWorld(),
-		outHit.ImpactPoint,
-		50,
-		50,
-		FColor::Red,
-		false,
-		-1
-	);
-
 	HandleBlock(outHit,hit, point.endLocation);
 }
 
@@ -127,6 +119,15 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[1], ETriggerEvent::Triggered, this, &APSH_Player::Look);
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
 		EnhancedInputComponent->BindAction(inputActions[3], ETriggerEvent::Started, this, &APSH_Player::PlayerJump);
+
+		// 스폰 블럭
+		EnhancedInputComponent->BindAction(inputActions[4], ETriggerEvent::Started, this, &APSH_Player::SpawnBlock);
+
+		// 블럭 저장
+		EnhancedInputComponent->BindAction(inputActions[5], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
+
+		// 데이터 테이블 스폰 블럭
+		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
 	}
 
 }
@@ -237,10 +238,10 @@ FHitResult APSH_Player::CastRay() // 잡기위한 레이
 	FCollisionQueryParams prams;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, StartLoc, EndLoc, ECC_Visibility, prams);
 
-	if (bHit)
-	{
-		DrawDebugSphere(GetWorld(), hitInfo.ImpactPoint, 10, 10, FColor::Red, false, 5);
-	}
+// 	if (bHit)
+// 	{
+// 		DrawDebugSphere(GetWorld(), hitInfo.ImpactPoint, 10, 10, FColor::Red, false, 5);
+// 	}
 
 	return hitInfo;
 }
@@ -248,7 +249,6 @@ FHitResult APSH_Player::CastRay() // 잡기위한 레이
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
 								FVector & closestPt, float& dist , int32& closetPointIndex)
 {
-
 	if (pointArray.Num() == 0) return;
 
 	FVector testLoc = UKismetMathLibrary::InverseTransformLocation(hitActorTransfrom,testLocation);
@@ -263,7 +263,7 @@ void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation,
 		
 	// 까지 한번만 반복
 	
-	for (int32 i = 0 ; i < pointArray.Num(); i++)
+	for (int32 i = 0 ; i < pointArray.Num(); i++) // 가장 가까운 포인트 찾기
 	{
 		float currentDist = (FVector::Dist(pointArray[i], testLoc));
 		if  (currentDist < dist)
@@ -464,5 +464,91 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 	else
 	{
 		handleComp->SetTargetLocationAndRotation(rayEndLocation,rotationOffset);
+	}
+}
+void APSH_Player::SpawnBlock()
+{
+	for (int i = 1; i <= rowNam; i++)
+	{
+		FName Rowname = FName(*FString::FormatAsNumber(i));
+		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
+		float sum = 200.0f;
+		if (data && data->actor != nullptr)
+		{
+			TSubclassOf<APSH_BlockActor> spawnActor = data->actor;
+			if (spawnActor != nullptr)
+			{
+				FActorSpawnParameters parm;
+				GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * sum), GetActorRotation(), parm);
+				sum += 100.f;
+			}
+		}
+	}
+}
+void APSH_Player::SaveTest()
+{
+
+		if (handleComp->GetGrabbedComponent()->GetOwner() == nullptr) return; 
+
+		APSH_BlockActor* actor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 블럭
+		FName rowName = FName(*FString::FormatAsNumber(4));
+		if (actor)
+		{
+			actor->SaveBlock();
+		}
+
+		static bool SaveToDataTable(UDataTable * DataTable, const FString & RowName, APSH_BlockActor * RootBlock)
+		{
+			if (!dataTable || !RootBlock) return false;
+
+			// 블록을 데이터로 변환
+			FPSH_ObjectData BlockData = RootBlock->ConvertToData();
+
+			// 데이터 테이블에 추가
+			dataTable->AddRow(rowName, data);
+
+
+			return true;
+		}
+
+// 		for (auto* testActor : actor->childsActors)
+// 		{
+// 			APSH_BlockActor* TestchildsActors = Cast<APSH_BlockActor>(testActor);
+// 			if (TestchildsActors->childsActors.IsEmpty())
+// 			{
+// 				UE_LOG(LogTemp, Warning, TEXT("ChildsActor : %s"), *TestchildsActors->GetName());
+// 			}
+// 			else
+// 			{
+// 				UE_LOG(LogTemp, Warning, TEXT("ChildsActor : %s"), *TestchildsActors->GetName());
+// 				for (int i=0; i <TestchildsActors->childsActors.Num(); i++)
+// 				{
+// 					UE_LOG(LogTemp, Warning, TEXT("TestchildsActors : %s"), *TestchildsActors->childsActors[i]->GetName());
+// 				}
+// 			}
+// 			
+// 		}
+
+// 		if (actor == nullptr) return;
+// 
+// 		FPSH_ObjectData data = actor->SaveBlockHierachy(); // 잡은 블럭 자식, 본인 전체 다 save
+// 
+// 		FName rowName = FName(*FString::FormatAsNumber(4));
+// 
+// 		dataTable->AddRow(rowName, data);
+	
+}
+void APSH_Player::LoadTest()
+{
+	
+	FName Rowname = FName(*FString::FormatAsNumber(rowNam));
+	FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
+	float sum = 200.0f;
+	APSH_BlockActor * sapwnPartent = nullptr;
+
+	if (sapwnPartent && data)
+	{
+		TSet<APSH_BlockActor*> ProcessedBlocks;
+		sapwnPartent->LoadBlockHierarchy(*data);
 	}
 }
