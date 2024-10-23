@@ -33,10 +33,6 @@ struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 {
 	GENERATED_USTRUCT_BODY()
 
-// 	UPROPERTY(EditAnywhere)
-// 	class UTexture2D* icon; // 툴에 사용될 아이콘
-
-
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
 

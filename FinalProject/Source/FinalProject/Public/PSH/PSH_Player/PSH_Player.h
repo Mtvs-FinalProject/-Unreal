@@ -120,8 +120,9 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
-
 	void SpawnBlock();
+
+	void RPCSpawnBlock(TSubclassOf<class APSH_BlockActor> & spawnActor);
 
 	void SaveTest();
 
@@ -130,4 +131,12 @@ public:
 	bool test = false;
 
 	void LoadTest();
+
+	// 설정창? 창 열기 
+	void ShowInterface();
+
+	void RightRotChange();
+	void LeftRotChange();
+	void SanpChange();
+	void SanpRemove();
 };

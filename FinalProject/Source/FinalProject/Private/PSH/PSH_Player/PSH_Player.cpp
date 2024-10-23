@@ -128,6 +128,21 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		// 데이터 테이블 스폰 블럭
 		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
+
+		// 인터페이스 관련
+		EnhancedInputComponent->BindAction(inputActions[7], ETriggerEvent::Started, this, &APSH_Player::ShowInterface);
+
+		// 좌로 45도 돌리기
+		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::LeftRotChange);
+		
+		// 우로 45도 돌리기
+		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::RightRotChange);
+
+		// 잡은 스냅 위치 변경시키기
+		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::SanpChange);
+		
+		// 잡은 스냅 위치 되돌리기
+		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::SanpRemove);
 	}
 
 }
@@ -466,25 +481,34 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 		handleComp->SetTargetLocationAndRotation(rayEndLocation,rotationOffset);
 	}
 }
+
 void APSH_Player::SpawnBlock()
 {
-	for (int i = 1; i <= 3; i++)
-	{
-		FName Rowname = FName(*FString::FormatAsNumber(i));
-		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
-		float sum = 200.0f;
-		if (data && data->actor != nullptr)
-		{
-			TSubclassOf<APSH_BlockActor> spawnActor = data->actor;
-			if (spawnActor != nullptr)
-			{
-				FActorSpawnParameters parm;
-				GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * sum), GetActorRotation(), parm);
-				sum += 100.f;
-			}
-		}
-	}
+	
+// 	for (int i = 1; i <= 3; i++)
+// 	{
+// 		FName Rowname = FName(*FString::FormatAsNumber(i));
+// 		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
+// 		float sum = 200.0f;
+// 		if (data && data->actor != nullptr)
+// 		{
+// 			TSubclassOf<APSH_BlockActor> spawnActor = data->actor;
+// 			if (spawnActor != nullptr)
+// 			{
+// 				FActorSpawnParameters parm;
+// 				GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * sum), GetActorRotation(), parm);
+// 				sum += 100.f;
+// 			}
+// 		}
+// 	}
 }
+
+void APSH_Player::RPCSpawnBlock(TSubclassOf<class APSH_BlockActor>& spawnActor)
+{
+	FActorSpawnParameters parm;
+	GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * 100), GetActorRotation(), parm);
+}
+
 void APSH_Player::SaveTest()
 {
 
@@ -560,4 +584,26 @@ void APSH_Player::LoadTest()
 			}
 		}
 	}
+}
+void APSH_Player::ShowInterface()
+{
+	// 창 열기 I키에 할당되어 있음.
+}
+void APSH_Player::RightRotChange() // E
+{
+	rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + 45.f);
+}
+void APSH_Player::LeftRotChange() // Q
+{
+	rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + -45.f);
+}
+void APSH_Player::SanpChange() // F
+{
+	rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + 45.f);
+	//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
+}
+void APSH_Player::SanpRemove() // G
+{
+	rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + -45.f);
+	//snapPointIndex = ((snapPointIndex - 1) % snapPointIndexLength + snapPointIndexLength) & snapPointIndexLength;
 }
