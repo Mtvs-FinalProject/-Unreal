@@ -23,6 +23,18 @@ void UFirstSelect::NativeConstruct()
 		Btn_end->OnClicked.AddDynamic(this, &UFirstSelect::OnEndClicked);
 	}
 
+    // Craft 버튼 눌렀을 때
+    if (Btn_Craft)
+    {
+        Btn_Craft->OnClicked.AddDynamic(this, &UFirstSelect::OnCraftClicked);
+    }
+
+    // Destroy 버튼 눌렀을 때
+    if (Btn_Destroy)
+    {
+        Btn_Destroy->OnClicked.AddDynamic(this, &UFirstSelect::OnDestroyClicked);
+    }
+
 }
 
 void UFirstSelect::OnActionClicked()
@@ -50,17 +62,17 @@ void UFirstSelect::OnActionClicked()
             }
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("Failed to create NewWidget"));
+                UE_LOG(LogTemp, Log, TEXT("Failed to create NewWidget"));
             }
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("PlayerController is null"));
+            UE_LOG(LogTemp, Log, TEXT("PlayerController is null"));
         }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("ActionChoice is null"));
+        UE_LOG(LogTemp, Log, TEXT("ActionChoice is null"));
     }
 }
 
@@ -68,5 +80,15 @@ void UFirstSelect::OnEndClicked()
 {
 	// 현재 위젯 제거
 	RemoveFromParent();
+}
+
+void UFirstSelect::OnCraftClicked()
+{
+
+}
+
+void UFirstSelect::OnDestroyClicked()
+{
+    
 }
 

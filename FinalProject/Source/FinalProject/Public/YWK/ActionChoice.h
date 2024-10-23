@@ -32,6 +32,9 @@ class UButton* Btn_Fly;
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UButton* End_Button;
 
+UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+class UButton* Btn_StartAction;
+
 UFUNCTION()
 void OnMoveClicked();
 
@@ -43,6 +46,13 @@ void OnEndClicked();
 
 UFUNCTION()
 void OnFlyClicked();
+
+UFUNCTION()
+void OnStartActionClicked();
+
+// 액터를 설정할 수 있는 함수
+UFUNCTION()
+void SetControlledActor(AActor* NewActor);
 
 // 처음화면으로 돌아가기
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -59,5 +69,11 @@ TSubclassOf<UUserWidget> WBP_Move;
 // 날기로 들어가기
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> WBP_Fly;
+
+// 헤더 파일에 액터를 저장할 변수를 선언
+UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionChoice")
+AActor* ControlledActor = nullptr;
+
+
 
 };

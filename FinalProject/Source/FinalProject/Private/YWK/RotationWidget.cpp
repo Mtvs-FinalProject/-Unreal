@@ -62,7 +62,7 @@ void URotationWidget::OnXClicked()
 	AActor* Owner = GetOwnerFromComponent();  // Owner 액터를 가져옴
 	if (!Owner)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnXClicked()"));
+		UE_LOG(LogTemp, Log, TEXT("Owner is null in OnXClicked()"));
 		return;  // Owner가 null이면 더 이상 진행하지 않음
 	}
 
@@ -81,11 +81,11 @@ void URotationWidget::OnXClicked()
 		}
 	}
 
-	// RotateComponent가 있으면 회전 시작
+	// RotatorComponent가 있다면 회전 방향만 바꿈
 	if (RotateComponent)
 	{
-		RotateComponent->RotateDirection = FRotator(1.0f, 0.0f, 0.0f);  // X축 기준으로 회전
-		RotateComponent->StartRolling();  // 회전 시작
+		RotateComponent->RotateDirection = FRotator(1.0f, 0.0f, 0.0f);
+		UE_LOG(LogTemp, Log, TEXT("X-axis rotation direction set."));
 	}
 }
 
@@ -93,42 +93,78 @@ void URotationWidget::OnXClicked()
 // Y축 회전
 void URotationWidget::OnYClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	AActor* Owner = GetOwnerFromComponent();
+	if (!Owner)
 	{
-		UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
-		if (RotateComponent)
-		{
-			// Y축으로 회전 방향 설정
-			RotateComponent->RotateDirection = FRotator(0.0f, 1.0f, 0.0f); // Y축 기준으로 회전
-			RotateComponent->StartRolling(); // 회전 시작
-		}
+		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnYClicked"));
+		return;  // Owner가 null이면 더 이상 진행하지 않음
 	}
-}
-// Z축 회전
-void URotationWidget::OnZClicked()
-{
-	// GetOwnerFromComponent()로 가져온 Owner가 null인지 확인
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Owner found: %s"), *Owner->GetName());
 
-		UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+	if (!RotateComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("RotateComponent not found in OnYClicked, creating new one"));
+		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
 		if (RotateComponent)
 		{
-			// Z축으로 회전 방향 설정
-			RotateComponent->RotateDirection = FRotator(0.0f, 0.0f, 1.0f); // Z축 기준으로 회전
-			RotateComponent->StartRolling(); // 회전 시작
+			Owner->AddInstanceComponent(RotateComponent); // 컴포넌트를 액터에 추가
+			RotateComponent->RegisterComponent(); // 컴포넌트 등록
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("RotateComponent not found!"));
+			UE_LOG(LogTemp, Error, TEXT("Failed to create RotateComponent in OnYClicked"));
+			return;  // 생성 실패 시 반환
 		}
+	}
+
+	if (RotateComponent)
+	{
+		RotateComponent->RotateDirection = FRotator(0.0f, 1.0f, 0.0f);
+		UE_LOG(LogTemp, Log, TEXT("Y-axis rotation direction set."));
+	}
+}
+
+
+
+// Z축 회전
+void URotationWidget::OnZClicked()
+{
+	AActor* Owner = GetOwnerFromComponent();
+	if (!Owner)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnZClicked"));
+		return;
+	}
+
+	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+	if (!RotateComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("RotateComponent not found in OnZClicked"));
+		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
+		if (RotateComponent)
+		{
+			Owner->AddInstanceComponent(RotateComponent); // 컴포넌트를 액터에 추가
+			RotateComponent->RegisterComponent(); // 컴포넌트 등록
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to create RotateComponent in OnZClicked"));
+			return; // 컴포넌트 생성에 실패한 경우, 더 진행하지 않음
+		}
+	}
+
+	// RotatorComponent가 있다면 회전 방향만 바꿈
+	if (RotateComponent)
+	{
+		RotateComponent->RotateDirection = FRotator(0.0f, 0.0f, 1.0f);
+		UE_LOG(LogTemp, Log, TEXT("Z-axis rotation direction set."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Owner not found in OnZClicked!"));
+		UE_LOG(LogTemp, Error, TEXT("RotateComponent is still null after creation attempt in OnZClicked"));
 	}
 }
+
 
 // ui 뒤로가기
 void URotationWidget::OnRotateBackClicked()
@@ -153,6 +189,11 @@ void URotationWidget::OnRotateStartClicked()
 		if (RotateComponent)
 		{
 			RotateComponent->StartRolling();
+			UE_LOG(LogTemp, Warning, TEXT("Rotation started."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("RotateComponent not found."));
 		}
 	}
 }
@@ -208,30 +249,46 @@ AActor* URotationWidget::GetOwnerFromComponent()
 {
 	if (ControlledActor)
 	{
+		UE_LOG(LogTemp, Log, TEXT("ControlledActor already set: %s"), *ControlledActor->GetName());
 		return ControlledActor;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("No ControlledActor, searching for BP_FunctionObject"));
 
 	// 블루프린트 액터 찾아오기
 	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_FunctionObject1.BP_FunctionObject1_C"));
-
-	// 블루프린트 클래스 로드
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
-	if (BP_FunctionObjectClass)
+	if (!BP_FunctionObjectClass)
 	{
-		TArray<AActor*> FoundActors;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
+		UE_LOG(LogTemp, Error, TEXT("Failed to load BP_FunctionObject class"));
+		return nullptr;
+	}
 
-		if (FoundActors.Num() > 0)
-		{
-			ControlledActor = FoundActors[0];
-			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
-			// 이미 존재하는 BP_FunctionObject 반환
-			return ControlledActor;
-		}
-		// 없으면 새로 스폰
-		ControlledActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
+
+	if (FoundActors.Num() > 0)
+	{
+		ControlledActor = FoundActors[0];
+		UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
 		return ControlledActor;
 	}
-	return nullptr;
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BP_FunctionObject not found, attempting to spawn"));
+
+		// 없으면 새로 스폰
+		ControlledActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+		if (ControlledActor)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Spawned new BP_FunctionObject: %s"), *ControlledActor->GetName());
+			return ControlledActor;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to spawn BP_FunctionObject"));
+			return nullptr;
+		}
+	}
 }
