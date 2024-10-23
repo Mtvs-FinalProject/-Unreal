@@ -71,6 +71,7 @@ void OnRotateStopClicked();
 UFUNCTION()
 void UpdateSpeedTextUI(const FText& Text, ETextCommit::Type CommitMethod);
 
+
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> ActionChoice;
 

@@ -64,12 +64,12 @@ void UFlyWidget::OnUpButtonClicked()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("FlyComponent not found!"));
+			UE_LOG(LogTemp, Log, TEXT("FlyComponent not found!"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Owner not found in OnUpButtonClicked!"));
+		UE_LOG(LogTemp, Log, TEXT("Owner not found in OnUpButtonClicked!"));
 	}
 }
 
@@ -261,7 +261,8 @@ AActor* UFlyWidget::GetOwnerFromComponent()
 	// 블루프린트 클래스 로드
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
-	if (BP_FunctionObjectClass)
+	if (BP_FunctionObjectClass) 
+
 	{
 		TArray<AActor*> FoundActors;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);

@@ -3,6 +3,9 @@
 
 #include "YWK/ActionChoice.h"
 #include "Components/Button.h"
+#include "YWK/MyRotateActorComponent.h"
+#include "YWK/MyFlyActorComponent.h"
+#include "YWK/MyMoveActorComponent.h"
 
 void UActionChoice::NativeConstruct()
 {
@@ -30,6 +33,12 @@ void UActionChoice::NativeConstruct()
 	if (End_Button)
 	{
 		End_Button->OnClicked.AddDynamic(this, &UActionChoice::OnEndClicked);
+	}
+
+	// Start 버튼 눌렀을 때
+	if (Btn_StartAction)
+	{
+		Btn_StartAction->OnClicked.AddDynamic(this, &UActionChoice::OnStartActionClicked);
 	}
 }
 
@@ -94,11 +103,30 @@ void UActionChoice::OnFlyClicked()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("FlyWidget creation failed"));
+			UE_LOG(LogTemp, Log, TEXT("FlyWidget creation failed"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("WBP_Fly is null"));
+		UE_LOG(LogTemp, Log, TEXT("WBP_Fly is null"));
 	}
+}
+
+void UActionChoice::SetControlledActor(AActor* NewActor)
+{
+	if (NewActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ControlledActor is set to: %s"), *NewActor->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("NewActor is null in SetControlledActor!"));
+	}
+
+	ControlledActor = NewActor;
+}
+
+void UActionChoice::OnStartActionClicked()
+{
+
 }
