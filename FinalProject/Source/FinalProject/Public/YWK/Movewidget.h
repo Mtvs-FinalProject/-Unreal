@@ -42,6 +42,7 @@ UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UButton* Btn_MoveStop;
 
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+
 class UButton* Btn_MoveOrigin;
 //------------------------------------------------------------------------------------------------------------------------------------------
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
@@ -50,7 +51,8 @@ class UEditableText* SpeedMoveText;
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UEditableText* DistMoveText;
 //------------------------------------------------------------------------------------------------------------------------------------------
-
+UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+class UCheckBox* MoveLoop;
 
 UFUNCTION()
 void OnFrontClicked();

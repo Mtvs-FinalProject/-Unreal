@@ -171,14 +171,14 @@ void URotationWidget::OnRotateBackClicked()
 {
 	RemoveFromParent();
 
-	//if (ActionChoice)
-	//{
-	//	UUserWidget* BackRotateWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
-	//	if (BackRotateWidget)
-	//	{
-	//		BackRotateWidget->AddToViewport();
-	//	}
-	//}
+	if (ActionChoice)
+	{
+		UUserWidget* BackRotateWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
+		if (BackRotateWidget)
+		{
+			BackRotateWidget->AddToViewport();
+		}
+	}
 }
 // 회전 시작
 void URotationWidget::OnRotateStartClicked()

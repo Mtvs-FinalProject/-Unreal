@@ -39,7 +39,7 @@ void UMyMoveActorComponent::BeginPlay()
 		StartLocation = Owner->GetActorLocation();
 		UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
 	}
-
+	
 }
 
 
@@ -57,10 +57,10 @@ void UMyMoveActorComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 {
-
+	
 	if (AActor* Owner = GetOwner())
 	{
-
+		
 		FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
 		Owner->SetActorLocation(NewLocation);
 
@@ -102,3 +102,4 @@ void UMyMoveActorComponent::OriginMove()
 		UE_LOG(LogTemp, Warning, TEXT("Moved back to start location: %s"), *StartLocation.ToString());
 	}
 }
+
