@@ -84,7 +84,7 @@ void UFirstSelect::OnEndClicked()
 
 void UFirstSelect::OnCraftClicked()
 {
-
+    
 }
 
 void UFirstSelect::OnDestroyClicked()

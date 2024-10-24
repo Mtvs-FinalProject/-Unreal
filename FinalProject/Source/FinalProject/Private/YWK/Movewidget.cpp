@@ -99,7 +99,7 @@ void UMovewidget::OnBackClicked()
 		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			StoredMoveDirection = Owner->GetActorForwardVector()* -1;
+			StoredMoveDirection = Owner->GetActorForwardVector() * -1;
 
 			// 로그 추가: 뒤로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving Backward. New direction: %s"), *MoveComponent->MoveDirection.ToString());
@@ -146,14 +146,14 @@ void UMovewidget::OnMoveBackClicked()
 {
 	RemoveFromParent();
 
-	if (ActionChoice)
+	/*if (ActionChoice)
 	{
 		UUserWidget* BackMoveWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
 		if (BackMoveWidget)
 		{
 			BackMoveWidget->AddToViewport();
 		}
-	}
+	}*/
 }
 
 // 이 버튼 눌러야 움직이는거 시작됨
@@ -182,7 +182,7 @@ void UMovewidget::OnStartButtonClicked()
 void UMovewidget::OnStopButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Stop button clicked"));
-	
+
 	// 컴포넌트 오너 가져오기
 	if (AActor* Owner = GetOwnerFromComponent())
 	{
@@ -220,6 +220,7 @@ void UMovewidget::OnOriginButtonClicked()
 	}
 }
 
+
 // 속도와 거리 값 set text
 void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue)
 {
@@ -232,7 +233,7 @@ void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue
 	// 거리 값을 UI의 EditableText에 설정
 	if (DistMoveText)
 	{
-		FText DistText = FText::AsNumber(DistanceValue); 
+		FText DistText = FText::AsNumber(DistanceValue);
 		DistMoveText->SetText(DistText);
 	}
 }
@@ -317,7 +318,7 @@ AActor* UMovewidget::GetOwnerFromComponent()
 	if (BP_FunctionObjectClass)
 	{
 		TArray<AActor*> FoundActors;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass,FoundActors);
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
 
 		if (FoundActors.Num() > 0)
 		{
