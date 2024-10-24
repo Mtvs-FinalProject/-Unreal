@@ -157,14 +157,14 @@ void UFlyWidget::OnBackButtonClicked()
 {
 	RemoveFromParent();
 
-	if (ActionChoice)
-	{
-		UUserWidget* BackMoveWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
-		if (BackMoveWidget)
-		{
-			BackMoveWidget->AddToViewport();
-		}
-	}
+	//if (ActionChoice)
+	//{
+	//	UUserWidget* BackMoveWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
+	//	if (BackMoveWidget)
+	//	{
+	//		BackMoveWidget->AddToViewport();
+	//	}
+	//}
 }
 
 // 속도와 높이 값 set

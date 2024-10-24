@@ -35,7 +35,11 @@ public:
 	float MoveDistance;
 
 	// 최대 이동거리 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MaxDistance;	
+
+	// 방향 반전 여부 플레그
+	bool bReverseDirection;
 
 protected:
 	// Called when the game starts
