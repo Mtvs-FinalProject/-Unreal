@@ -67,6 +67,10 @@ public:
 	TSubclassOf<class UUserWidget> mouseWidgetFac;
 	class UPSH_MouseWidget* mouseWidget;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Widget")
+	TSubclassOf<class UUserWidget> botWidgetFac;
+	class UPSH_GarbageBotWidget* botWidget;
+
 	//PC
 	class APSH_PlayerController* pc;
 
@@ -135,8 +139,17 @@ public:
 	// 설정창? 창 열기 
 	void ShowInterface();
 
-	void RightRotChange();
-	void LeftRotChange();
-	void SanpChange();
-	void SanpRemove();
+	void HorizontalRotChange(const FInputActionValue& value);
+
+	void VerticalRotChange(const FInputActionValue& value);
+
+
+	void OnArtKey(); // art 확인
+	
+	bool bArtKey = false;
+
+	// 로봇 관련
+	class APSH_GarbageBot * bot;
+
+	void BotMoveAndModeChange();
 };

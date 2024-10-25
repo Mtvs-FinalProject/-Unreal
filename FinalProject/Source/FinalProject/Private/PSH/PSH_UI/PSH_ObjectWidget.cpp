@@ -8,12 +8,19 @@
 #include "PSH/PSH_UI/PSH_BlockWidget.h"
 #include "Components/Button.h"
 #include "Components/ScrollBox.h"
+#include "PSH/PSH_Player/PSH_Player.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
+#include "PSH/PSH_Actor/PSH_GarbageBot.h"
+#include "Kismet/GameplayStatics.h"
 
 void UPSH_ObjectWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	Btr_Back->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedBack);
+	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
+	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
+	Btr_CallBot->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedCallBot);
 
 	AddchildBlock();
 }
@@ -36,10 +43,10 @@ void UPSH_ObjectWidget::AddchildBlock()
 		btrStyle.SetNormal(normal);
 
 		hover.SetResourceObject(dataAraay[i]->icon);
-		btrStyle.SetNormal(hover);
+		btrStyle.SetHovered(hover);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
-		btrStyle.SetNormal(pressed);
+		btrStyle.SetPressed(pressed);
 
 		blockWidget->Btn_Icon->SetStyle(btrStyle);
 		
@@ -58,4 +65,35 @@ void UPSH_ObjectWidget::AddchildBlock()
 void UPSH_ObjectWidget::OnClickedBack()
 {
 	SetVisibility(ESlateVisibility::Hidden);
+}
+void UPSH_ObjectWidget::OnClickedSave()
+{
+	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+
+	if (player == nullptr || player->pc == nullptr) return;
+
+	player->pc->ObjectSave();
+	
+}
+void UPSH_ObjectWidget::OnClickedLoad()
+{
+	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+
+	if (player == nullptr) return;
+
+	player->pc->ObjectLoad();
+
+}
+void UPSH_ObjectWidget::OnClickedCallBot()
+{
+	APSH_GarbageBot * bot = Cast<APSH_GarbageBot>(UGameplayStatics::GetActorOfClass(GetWorld(),APSH_GarbageBot::StaticClass()));
+	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+
+	if (bot && player)
+	{
+		FVector playerLoc = player->GetActorLocation();
+		// 곱하기 10 해놓고 갈게유!
+		bot->SetActorLocation(player->GetActorLocation() + (player->GetActorForwardVector() * 500) );
+		bot->InitializeMovePoint();
+	}
 }

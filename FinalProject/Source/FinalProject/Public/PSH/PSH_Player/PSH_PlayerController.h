@@ -25,6 +25,15 @@ public:
 
 	bool targetLockOn = false;
 
-	//Widgets 
+	int32 RowNum = 0;
 	
+	UPROPERTY(EditAnywhere)
+	class UDataTable * dataTable;
+
+	//Widgets 
+	void ObjectSave();
+	void ObjectLoad();
+
+	UPROPERTY()
+	class APSH_Player * curPlayer;
 };

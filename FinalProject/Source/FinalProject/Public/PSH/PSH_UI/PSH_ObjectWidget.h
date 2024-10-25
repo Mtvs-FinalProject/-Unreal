@@ -23,6 +23,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Back;
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_Save;
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_Load;
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_CallBot;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * ObjectData;
@@ -34,4 +40,14 @@ public:
 
 	UFUNCTION()
 	void OnClickedBack();
+
+	UFUNCTION()
+	void OnClickedSave();
+
+	UFUNCTION()
+	void OnClickedLoad();
+
+	UFUNCTION()
+	void OnClickedCallBot();
+
 };

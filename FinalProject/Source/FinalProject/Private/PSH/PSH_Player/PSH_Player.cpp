@@ -16,6 +16,9 @@
 #include "Kismet/KismetArrayLibrary.h"
 #include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "Engine/DataTable.h"
+#include "PSH/PSH_Actor/PSH_GarbageBot.h"
+#include "Components/WidgetComponent.h"
+#include "PSH/PSH_UI/PSH_GarbageBotWidget.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -45,6 +48,13 @@ void APSH_Player::BeginPlay()
 	
 	// 마우스 위젯 사용 
 	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
+	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
+
+	if (botWidget)
+	{
+		botWidget->AddToViewport();
+		botWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
 
 	if (mouseWidget)
 	{
@@ -132,17 +142,19 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// 인터페이스 관련
 		EnhancedInputComponent->BindAction(inputActions[7], ETriggerEvent::Started, this, &APSH_Player::ShowInterface);
 
-		// 좌로 45도 돌리기
-		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::LeftRotChange);
+		// 좌 우로 45도 돌리기
+		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::HorizontalRotChange);
 		
-		// 우로 45도 돌리기
-		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::RightRotChange);
+		// 위 아래로 45도 돌리기
+		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::VerticalRotChange);
+		
+		// Art확인
+		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::OnArtKey);
+		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Completed, this, &APSH_Player::OnArtKey);
 
-		// 잡은 스냅 위치 변경시키기
-		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::SanpChange);
+		// bot 모드와 이동 관리
+		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
 		
-		// 잡은 스냅 위치 되돌리기
-		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::SanpRemove);
 	}
 
 }
@@ -559,15 +571,6 @@ void APSH_Player::LoadTest()
 	float sum = 200.0f;
 	APSH_BlockActor * sapwnPartent = nullptr;
 
-// 	if (sapwnPartent && data)
-// 	{
-// 		TSet<APSH_BlockActor*> ProcessedBlocks;
-// 		sapwnPartent->LoadBlockHierarchy(*data);
-// 	}
-// 
-// 	FName Rowname = FName(*FString::FormatAsNumber(rowNam));
-// 	FPSH_ObjectData* Data = DataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
-
 	if (data && data->actor != nullptr)
 	{
 		// 루트 블럭 소환
@@ -589,21 +592,83 @@ void APSH_Player::ShowInterface()
 {
 	// 창 열기 I키에 할당되어 있음.
 }
-void APSH_Player::RightRotChange() // E
+
+void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
 {
-	rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + 45.f);
+	float input2D = value.Get<float>();
+
+	if (input2D > 0) // q
+	{
+		rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + -45.f);
+	}
+	else
+	{
+		rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + 45.f);
+	}
 }
-void APSH_Player::LeftRotChange() // Q
+void APSH_Player::VerticalRotChange(const FInputActionValue& value)
 {
-	rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + -45.f);
+	float input2D = value.Get<float>();
+
+	if (input2D > 0) // f
+	{
+		rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + -45.f);
+		//snapPointIndex = ((snapPointIndex - 1) % snapPointIndexLength + snapPointIndexLength) & snapPointIndexLength;
+	}
+	else // g
+	{
+		rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + 45.f);
+		//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
+	}
 }
-void APSH_Player::SanpChange() // F
+
+void APSH_Player::BotMoveAndModeChange()
 {
-	rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + 45.f);
-	//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
+
+	if (bArtKey) // art 눌림
+	{
+		FHitResult hitresult;
+		bool hit = pc->GetHitResultUnderCursor(ECC_Visibility, false, hitresult);
+
+		if (hit)
+		{
+			if (bot)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Move"));
+				bot->MoveToLocation(*this,hitresult.ImpactPoint);
+			}
+		}
+	}
+	else // art 안눌림
+	{
+		FHitResult hitresult;
+		bool hit = pc->GetHitResultUnderCursor(ECC_Visibility, false, hitresult);
+
+		if (hit)
+		{
+			bot = Cast<APSH_GarbageBot>(hitresult.GetActor());
+			if(bot)
+			{
+				if (!botWidget->IsVisible())
+				{
+					botWidget->SetVisibility(ESlateVisibility::Visible);
+					botWidget->SetOwner(bot);
+				}
+			}
+		}
+	}
 }
-void APSH_Player::SanpRemove() // G
+void APSH_Player::OnArtKey()
 {
-	rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + -45.f);
-	//snapPointIndex = ((snapPointIndex - 1) % snapPointIndexLength + snapPointIndexLength) & snapPointIndexLength;
+	if (bArtKey)
+	{
+		bArtKey = false;
+		UE_LOG(LogTemp,Warning,TEXT("Off"));
+	}
+	else
+	{
+		bArtKey = true;
+		UE_LOG(LogTemp, Warning, TEXT("On"));
+	}
+	
 }

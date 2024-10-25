@@ -93,4 +93,8 @@ public:
 /*	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);*/
 	void LoadBlockHierarchy(const FPSH_ObjectData& Data);
 
+	void AllDestroy();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 };

@@ -5,6 +5,8 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetArrayLibrary.h"
+#include "PSH/PSH_Player/PSH_Player.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -14,6 +16,10 @@ APSH_BlockActor::APSH_BlockActor()
 
 	meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	SetRootComponent(meshComp);
+
+	
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned
@@ -21,6 +27,9 @@ void APSH_BlockActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	APSH_Player * player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+	SetOwner(player);
+
 	meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);
 }
 
@@ -113,6 +122,8 @@ void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform world
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
+	Tags.Remove(FName("owner"));
+	
 	for (auto* actor : childsActors)
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
@@ -134,7 +145,9 @@ void APSH_BlockActor::Remove()
 	// 부모에서 자식 제거
 	parent->RemoveChild(this);
 	parent->RemoveChildren(childsActors);
-	
+
+	Tags.Add(FName("owner"));
+
 	parent = nullptr;
 }
 
@@ -145,7 +158,6 @@ void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 	if (childsActors.Contains(actor))  // 자식이 존재할 때만 제거
 	{
 		childsActors.Remove(actor);
-	//	actor->parent = nullptr;  // 자식의 부모 제거
 	}
 }
 
@@ -159,11 +171,7 @@ void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
 		{
 			RemoveChild(Cast<APSH_BlockActor>(actor));
 		}
-		// 		childActor.Remove(Cast<APSH_BlockActor>(actor));
-		// 		Cast<APSH_BlockActor>(actor)->parent = nullptr;
 	}
-
-
 }
 
 void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // 자식 콜리전 업데이트
@@ -371,7 +379,14 @@ FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 
 	// 부모 블럭의 클래스 및 위치 정보를 저장
 	Data.actor = GetClass();
-	Data.actorTransfrom = GetActorTransform();
+
+	FTransform actorTransfrom = GetActorTransform();
+	
+	actorTransfrom.SetLocation(
+	FVector(actorTransfrom.GetLocation().X, actorTransfrom.GetLocation().Y, FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f)
+	);
+
+	Data.actorTransfrom = actorTransfrom;
 
 	// 자식 블럭들이 있는지 확인
 	if (childsActors.Num() > 0)
@@ -444,3 +459,23 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 	}
 
 }
+void APSH_BlockActor::AllDestroy()
+{
+	for (auto* actor : childsActors)
+	{
+		APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(actor);
+
+		if (ChildBlock->childsActors.Num() >= 0)
+		{
+			ChildBlock->AllDestroy();
+		}
+	}
+	Destroy();
+}
+
+void APSH_BlockActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}
+
