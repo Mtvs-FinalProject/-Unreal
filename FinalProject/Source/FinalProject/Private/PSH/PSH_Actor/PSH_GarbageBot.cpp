@@ -21,6 +21,9 @@ APSH_GarbageBot::APSH_GarbageBot()
 	compMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	compMesh->SetupAttachment(RootComponent);
     compMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    bReplicates = true;
+    SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned

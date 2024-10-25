@@ -39,6 +39,9 @@ APSH_Player::APSH_Player()
 
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned
