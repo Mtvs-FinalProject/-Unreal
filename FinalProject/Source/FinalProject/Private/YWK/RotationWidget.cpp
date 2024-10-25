@@ -93,7 +93,7 @@ void URotationWidget::OnXClicked()
 // Y축 회전
 void URotationWidget::OnYClicked()
 {
-	AActor* Owner = GetOwnerFromComponent();
+	AActor* Owner = GetOwnerFromComponent();  // Owner 액터를 가져옴
 	if (!Owner)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnYClicked"));
@@ -103,24 +103,34 @@ void URotationWidget::OnYClicked()
 	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
 	if (!RotateComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("RotateComponent not found in OnYClicked, creating new one"));
+		UE_LOG(LogTemp, Warning, TEXT("RotateComponent not found in OnYClicked, creating new one"));
+
+		// NewObject로 컴포넌트 생성
 		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
 		if (RotateComponent)
 		{
-			Owner->AddInstanceComponent(RotateComponent); // 컴포넌트를 액터에 추가
-			RotateComponent->RegisterComponent(); // 컴포넌트 등록
+			// 액터에 추가 및 등록
+			Owner->AddInstanceComponent(RotateComponent);
+			RotateComponent->RegisterComponent();
+
+			UE_LOG(LogTemp, Log, TEXT("New RotateComponent created and registered successfully"));
 		}
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to create RotateComponent in OnYClicked"));
-			return;  // 생성 실패 시 반환
+			return;  // 컴포넌트 생성 실패 시 반환
 		}
 	}
 
+	// RotateComponent가 null이 아니면 회전 방향 설정
 	if (RotateComponent)
 	{
 		RotateComponent->RotateDirection = FRotator(0.0f, 1.0f, 0.0f);
 		UE_LOG(LogTemp, Log, TEXT("Y-axis rotation direction set."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("RotateComponent is still null after creation attempt in OnYClicked"));
 	}
 }
 
