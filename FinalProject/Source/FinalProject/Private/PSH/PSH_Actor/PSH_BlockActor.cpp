@@ -141,10 +141,15 @@ void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
 
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
+	SRPC_Place(attachActor,worldTransform);
+}
+
+void APSH_BlockActor::SRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
+{
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Pickup Dev")));
 
-	
+
 	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
 
 	FAttachmentTransformRules rule = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, true);
@@ -167,7 +172,7 @@ void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform world
 	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	Tags.Remove(FName("owner"));
-	
+
 	for (auto* actor : childsActors)
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
@@ -176,9 +181,13 @@ void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform world
 
 void APSH_BlockActor::Remove()
 {
+	SRPC_Remove();
+}
 
-	if(parent == nullptr) return;
-	
+void APSH_BlockActor::SRPC_Remove_Implementation()
+{
+	if (parent == nullptr) return;
+
 	// 부모에서 분리
 	FDetachmentTransformRules rule = FDetachmentTransformRules::KeepWorldTransform;
 	DetachFromActor(rule);
@@ -194,7 +203,6 @@ void APSH_BlockActor::Remove()
 
 	parent = nullptr;
 }
-
 void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 {
 	if (actor == nullptr) return;

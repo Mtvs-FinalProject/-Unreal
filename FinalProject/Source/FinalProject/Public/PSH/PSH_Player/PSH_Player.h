@@ -125,6 +125,9 @@ public:
 
 	void PlaceBlock(FHitResult hitInfo, bool hit);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_PlaceBlock(FHitResult hitInfo, bool hit);
+
 	void DropBlcok();
 	UFUNCTION(NetMulticast,Unreliable)
 	void MRPC_DropBlcok();

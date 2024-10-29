@@ -389,7 +389,12 @@ FRotator APSH_Player::WorldHelperRotationOffset()
 // 서버에서 불려야하지않나?
 void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 {
-	APSH_BlockActor * heldBlock =  Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
+	SRPC_PlaceBlock(hitInfo,hit);
+}	
+
+void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
+{
+	APSH_BlockActor* heldBlock = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
 	PRINTLOG(TEXT("PlaceBlock"));
 	if (hit)
 	{
@@ -401,12 +406,12 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 		{
 			TArray<FVector> snapPoints = actor->GetSnapPoints();
 			TArray<FRotator> snapDirections = actor->GetSnapDirections();
-			
+
 			FVector closestPoint = FVector::ZeroVector;
 			float distance = 0;
 			int32 arrayindex = 0;
 
-			ClosestPoint(snapPoints,location,actor->GetActorTransform(), closestPoint, distance,arrayindex);
+			ClosestPoint(snapPoints, location, actor->GetActorTransform(), closestPoint, distance, arrayindex);
 
 			TArray<FVector> heldBlockPoints = heldBlock->GetSnapPoints();
 
@@ -414,7 +419,7 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 			bool bValidPoint = snapPoints.IsValidIndex(0);
 			bool andChek = distBool && bValidPoint;
 
-			
+
 
 			FVector snapLocation;
 			if (!andChek)
@@ -423,7 +428,7 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 					UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
 			}
 			else
-			{				
+			{
 				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
 					(heldBlock->GetActorLocation() -
 						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
@@ -431,16 +436,16 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 
 			FTransform worldTransfrom;
 
-			
+
 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
-			actor->GetActorTransform(), snapLocation),
-			rotationHelper->GetComponentRotation());
-			
+				actor->GetActorTransform(), snapLocation),
+				rotationHelper->GetComponentRotation());
+
 			if (actor->connectionsize >= heldBlock->connectionsize)
 			{
 				if (heldBlock->OvelapChek())
 				{
-					heldBlock->Place(actor,worldTransfrom);
+					heldBlock->Place(actor, worldTransfrom);
 					DropBlcok();
 					snapPointIndex = 0;
 				}
@@ -458,7 +463,7 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 		}
 		else
 		{
-			if(heldBlock->OvelapChek())
+			if (heldBlock->OvelapChek())
 			{
 				DropBlcok();
 			}
@@ -484,10 +489,9 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 		}
 	}
 }
-
 void APSH_Player::DropBlcok()
 {
-	
+	SRPC_DropBlcok();
 }
 
 void APSH_Player::MRPC_DropBlcok_Implementation()

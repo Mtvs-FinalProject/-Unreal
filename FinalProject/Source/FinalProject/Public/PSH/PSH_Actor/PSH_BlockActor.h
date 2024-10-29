@@ -53,6 +53,9 @@ public:
 	void PickUp(class UPhysicsHandleComponent* handle);
 
 	void Remove();
+	
+	UFUNCTION(Server,Reliable)
+	void SRPC_Remove();
 
 	bool bGrab = false;
 
@@ -73,6 +76,9 @@ public:
 	void Drop(class UPhysicsHandleComponent * physicshandle);
 
 	void Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
+	
+	UFUNCTION(Server,Reliable)
+	void SRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 
 
 	void AddChild(class APSH_BlockActor* childActor);
