@@ -266,7 +266,7 @@ AActor* URotationWidget::GetOwnerFromComponent()
 	UE_LOG(LogTemp, Warning, TEXT("No ControlledActor, searching for BP_FunctionObject"));
 
 	// 블루프린트 액터 찾아오기
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate_C"));
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (!BP_FunctionObjectClass)
