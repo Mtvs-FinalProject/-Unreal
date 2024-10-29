@@ -22,6 +22,14 @@ public:
 	class UScrollBox * Scroll_NomarlBlcok;
 
 	UPROPERTY(meta = (BindWidget))
+	class UScrollBox * Scroll_FunctionBlcok;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_NormalLeft;
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_NormalRight;
+
+	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Back;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Save;
@@ -31,12 +39,18 @@ public:
 	class UButton * Btr_CallBot;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
-	class UDataTable * ObjectData;
+	class UDataTable * nomalObjectData;
+	UPROPERTY(EditDefaultsOnly , Category = "Data")
+	class UDataTable * functionObjectData;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	TSubclassOf<class UPSH_BlockWidget> blockWidgetFac;
 
 	void AddchildBlock();
+
+	void AddNomalBlock();
+
+	void AddFunctionBlock();
 
 	UFUNCTION()
 	void OnClickedBack();
@@ -49,5 +63,15 @@ public:
 
 	UFUNCTION()
 	void OnClickedCallBot();
+
+	int32 CurrentIndex = 0;
+
+	float ScrollBoxHeight;
+
+	UFUNCTION()
+	void OnNormalScrollRightClicked();
+
+	UFUNCTION()
+	void OnNormalScrollLeftClicked();
 
 };

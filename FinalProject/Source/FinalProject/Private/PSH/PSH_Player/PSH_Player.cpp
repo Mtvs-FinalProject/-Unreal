@@ -624,7 +624,7 @@ void APSH_Player::SpawnBlock()
 void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 	FActorSpawnParameters parm;
-	GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * 100), GetActorRotation(), parm);
+	GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * 200), GetActorRotation(), parm);
 }
 
 void APSH_Player::SaveTest()
@@ -763,7 +763,7 @@ void APSH_Player::BotMoveAndModeChange()
 	if (bArtKey) // art 눌림
 	{
 		FHitResult hitresult;
-		bool hit = pc->GetHitResultUnderCursor(ECC_Visibility, false, hitresult);
+		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
 
 		if (hit)
 		{
@@ -777,7 +777,7 @@ void APSH_Player::BotMoveAndModeChange()
 	else // art 안눌림
 	{
 		FHitResult hitresult;
-		bool hit = pc->GetHitResultUnderCursor(ECC_Visibility, false, hitresult);
+		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
 
 		if (hit)
 		{
