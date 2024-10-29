@@ -20,5 +20,5 @@ void UPSH_BlockWidget::SpawnBlock()
 	if(player == nullptr) return;
 	FActorSpawnParameters parm;
 
-	player->RPCSpawnBlock(spawnActor);
+	player->SRPC_SpawnBlock(spawnActor);
 }

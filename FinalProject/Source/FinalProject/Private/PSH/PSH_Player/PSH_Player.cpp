@@ -19,6 +19,8 @@
 #include "PSH/PSH_Actor/PSH_GarbageBot.h"
 #include "Components/WidgetComponent.h"
 #include "PSH/PSH_UI/PSH_GarbageBotWidget.h"
+#include "../FinalProject.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -53,6 +55,11 @@ void APSH_Player::BeginPlay()
 	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
 	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
 
+	if (IsLocallyControlled())
+	{
+		pc = Cast<APSH_PlayerController>(GetController());
+	}
+
 	if (botWidget)
 	{
 		botWidget->AddToViewport();
@@ -74,37 +81,45 @@ void APSH_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-
-	if(handleComp->GetGrabbedComponent() == nullptr) return;
-
-	if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
+	if (pc && pc->IsLocalController())
 	{
-		auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
-		if(snap)
-		snapPointIndexLength = snap->GetSnapPoints().Num();
+		//PRINTLOG(TEXT("DonGrabbedComponent("));
+		if(handleComp->GetGrabbedComponent() == nullptr) return;
+
+		PRINTLOG(TEXT("canGrabbedComponent("));
+		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
+		{
+			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
+			if(snap)
+			snapPointIndexLength = snap->GetSnapPoints().Num();
+		}
+
+		FLocationPoint point; 
+		PreTraceCheck(point.startLocation, point.endLocation); // 206 과 58 줄 널
+
+		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
+		FHitResult outHit;
+
+		bool hit = UKismetSystemLibrary::LineTraceSingle(
+			GetWorld(),
+			point.startLocation,
+			point.endLocation,
+			TraceChannel,
+			false,
+			actorsToIgnore,
+			EDrawDebugTrace::None,
+			outHit,
+			true,
+			FColor::Green,
+			FColor::Red,
+			4
+		);
+
+		HandleBlock(outHit, hit, point.endLocation);
 	}
-
-	FLocationPoint point; 
-	PreTraceCheck(point.startLocation, point.endLocation); // 206 과 58 줄 널
-	ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
-	FHitResult outHit;
-
-	bool hit = UKismetSystemLibrary::LineTraceSingle(
-		GetWorld(),
-		point.startLocation,
-		point.endLocation,
-		TraceChannel,
-		false,
-		actorsToIgnore,
-		EDrawDebugTrace::None,
-		outHit,
-		true,
-		FColor::Green,
-		FColor::Red,
-		4
-	);
-
-	HandleBlock(outHit,hit, point.endLocation);
+	
+// 	HandleBlock(outHit,hit, point.endLocation);
+// }
 }
 
 // Called to bind functionality to input
@@ -183,7 +198,7 @@ void APSH_Player::PlayerJump()
 {
 	Jump();
 }
-void APSH_Player::Grab()
+void APSH_Player::SRPC_Grab_Implementation()
 {
 	if (handleComp == nullptr)
 	{
@@ -193,7 +208,7 @@ void APSH_Player::Grab()
 
 	if (handleComp->GetGrabbedComponent() != nullptr) // 잡은 게 있다면
 	{
-		
+
 		FLocationPoint point;
 		PreTraceCheck(point.startLocation, point.endLocation);
 
@@ -214,26 +229,57 @@ void APSH_Player::Grab()
 			FColor::Red,
 			4
 		);
-
-		PlaceBlock(OutHit,hit);
+		PRINTLOG(TEXT("Grab"));
+		PlaceBlock(OutHit, hit);
 	}
 	else // 잡은게 없다면
 	{
-		
-		FHitResult outHit;
-
-		outHit = CastRay();
-
-		APSH_BlockActor * target = Cast<APSH_BlockActor>(outHit.GetActor());
-		if (target)
-		{
-			target->PickUp(handleComp);
-		}
-		
+		CastRay();
 	}
 }
-void APSH_Player::PreTraceCheck(FVector& StartLoc, FVector& EndLoc) // 카메라와 마우스의 위치를 이용해 트레이스 거리 계산
+void APSH_Player::Grab()
 {
+	if (handleComp == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NullHandle"))
+			return;
+	}
+
+	if (handleComp->GetGrabbedComponent() != nullptr) // 잡은 게 있다면
+	{
+
+		FLocationPoint point;
+		PreTraceCheck(point.startLocation, point.endLocation);
+
+		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
+		FHitResult OutHit;
+
+		bool hit = UKismetSystemLibrary::LineTraceSingle(
+			GetWorld(),
+			point.startLocation,
+			point.endLocation,
+			TraceChannel,
+			false,
+			actorsToIgnore,
+			EDrawDebugTrace::None,
+			OutHit,
+			true,
+			FColor::Green,
+			FColor::Red,
+			4
+		);
+		PRINTLOG(TEXT("Grab"));
+		PlaceBlock(OutHit, hit); // 멀티 , 서버화 안되어 있음.
+	}
+	else // 잡은게 없다면
+	{
+		CastRay();
+	}
+}
+
+void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 카메라와 마우스의 위치를 이용해 트레이스 거리 계산
+{
+	PRINTLOG(TEXT("WhotHere"));
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array에 저장
@@ -254,28 +300,50 @@ void APSH_Player::PreTraceCheck(FVector& StartLoc, FVector& EndLoc) // 카메라와 
 
 }
 
-FHitResult APSH_Player::CastRay() // 잡기위한 레이 
+
+void APSH_Player::CastRay() // 잡기위한 레이 
 {
+
 	FHitResult hitInfo;
 
 	FVector worldLoc;
 	FVector worldDir;
+
 	pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
 
-	FVector StartLoc = cameraComp->GetComponentLocation();
+	FVector StartLoc = cameraComp->GetComponentLocation(); // 터짐
 	FVector EndLoc = StartLoc + (rayPower * worldDir);
 
 	FCollisionQueryParams prams;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, StartLoc, EndLoc, ECC_Visibility, prams);
 
-// 	if (bHit)
-// 	{
-// 		DrawDebugSphere(GetWorld(), hitInfo.ImpactPoint, 10, 10, FColor::Red, false, 5);
-// 	}
-
-	return hitInfo;
+	if (bHit)
+	{
+		if (IsLocallyControlled() == false) return;
+		SRPC_Pickup(hitInfo);
+	}
+	
 }
 
+void APSH_Player::SRPC_Pickup_Implementation(FHitResult hitInfo)
+{
+	APSH_BlockActor* target = Cast<APSH_BlockActor>(hitInfo.GetActor());
+	if (target)
+	{
+		PRINTLOG(TEXT("PickUp"));
+
+		if (target->GetOwner() == nullptr)
+		{
+			target->SetOwner(this);
+			target->PickUp(handleComp);
+			PRINTLOG(TEXT("SetOwner : %s"),* target->GetOwner()->GetName());
+		}
+		else
+		{
+			PRINTLOG(TEXT("Not SetOwner : %s"),* target->GetOwner()->GetName());
+		}
+	}
+}
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
 								FVector & closestPt, float& dist , int32& closetPointIndex)
 {
@@ -313,10 +381,13 @@ FRotator APSH_Player::WorldHelperRotationOffset()
 	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]),FRotator(180,180,0));
 
 }
+
+// 현재 서버 클라 다불림.
+// 서버에서 불려야하지않나?
 void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 {
 	APSH_BlockActor * heldBlock =  Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
-
+	PRINTLOG(TEXT("PlaceBlock"));
 	if (hit)
 	{
 		FVector location = hitInfo.Location;
@@ -413,14 +484,29 @@ void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
 
 void APSH_Player::DropBlcok()
 {
-	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
+	
 }
 
+void APSH_Player::MRPC_DropBlcok_Implementation()
+{
+	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
+}
+void APSH_Player::SRPC_DropBlcok_Implementation()
+{
+	MRPC_DropBlcok(); 
+	// 저장 하는 무언가 필요.
+	
+}
 void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocation)
 {
-	if(handleComp->GetGrabbedComponent() == nullptr) return;
+	SRPC_HandleBlock(hitinfo, hit, rayEndLocation);
+}
+void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, FVector rayEndLocation)
+{
+	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
+
 	if (hit)
 	{
 		FVector localLocation = hitinfo.Location;
@@ -431,7 +517,7 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 		TArray<FVector> snapPoints; // 조인트 위치값
 		TArray<FRotator> snapDirection; // 조인트 방향
 
-		FVector closestPoint = FVector::ZeroVector; 
+		FVector closestPoint = FVector::ZeroVector;
 		float distance = 0;
 		int32 ClosestSnapPointIndex = 0;
 
@@ -444,14 +530,14 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 			if (hitActor->GetSnapPoints().IsEmpty()) return; // 비어있다면
 
 			snapPoints = hitActor->GetSnapPoints();
-			
+
 			ClosestPoint(snapPoints, localLocation, hitActorTransfrom, closestPoint, distance, ClosestSnapPointIndex);
 			snapDirection = hitActor->GetSnapDirections();
 			Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();
 		}
-		
-		bool bDist = snapDistance >= distance; // 비정상
-		bool bValidPoint = snapPoints.IsValidIndex(0); // 정상
+
+		bool bDist = snapDistance >= distance;
+		bool bValidPoint = snapPoints.IsValidIndex(0);
 		bool andBool = bDist && bValidPoint && hit;
 
 		if (heldActor == nullptr) return;
@@ -463,7 +549,7 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 			newLoc = localLocation + (heldActor->GetActorLocation() -
 				UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
 		}
-		else // 이게 실행이 안됨.
+		else
 		{
 			newLoc = UKismetMathLibrary::TransformLocation(hitActorTransfrom, closestPoint) +
 				(heldActor->GetActorLocation() - UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
@@ -488,14 +574,24 @@ void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocati
 		FRotator B = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetUpVector(newRot), rotationOffset.Yaw);
 
 		rotationHelper->AddWorldRotation(UKismetMathLibrary::ComposeRotators(A, B));
-
-		handleComp->SetTargetLocationAndRotation(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
+		ReplicatedLocation = rotationHelper->GetComponentLocation();
+		ReplicatedRotation = rotationHelper->GetComponentRotation();
+		//handleComp->SetTargetLocationAndRotation(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
 	}
 	else
 	{
-		handleComp->SetTargetLocationAndRotation(rayEndLocation,rotationOffset);
+		ReplicatedLocation = rayEndLocation;
+		ReplicatedRotation = rotationOffset;
+		//handleComp->SetTargetLocationAndRotation(rayEndLocation, rotationOffset);
 	}
+
+	MRPC_HandleBlock(ReplicatedLocation,ReplicatedRotation);
 }
+void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRot)
+{
+	handleComp->SetTargetLocationAndRotation(newLoc, newRot);
+}
+
 
 void APSH_Player::SpawnBlock()
 {
@@ -518,7 +614,7 @@ void APSH_Player::SpawnBlock()
 // 	}
 }
 
-void APSH_Player::RPCSpawnBlock(TSubclassOf<class APSH_BlockActor>& spawnActor)
+void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 	FActorSpawnParameters parm;
 	GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * 100), GetActorRotation(), parm);
@@ -627,7 +723,6 @@ void APSH_Player::VerticalRotChange(const FInputActionValue& value)
 
 void APSH_Player::BotMoveAndModeChange()
 {
-
 	if (bArtKey) // art 눌림
 	{
 		FHitResult hitresult;
@@ -661,6 +756,14 @@ void APSH_Player::BotMoveAndModeChange()
 		}
 	}
 }
+
+void APSH_Player::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	
+}
+
 void APSH_Player::OnArtKey()
 {
 	if (bArtKey)

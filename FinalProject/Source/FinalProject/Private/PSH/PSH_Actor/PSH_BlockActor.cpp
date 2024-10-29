@@ -7,6 +7,7 @@
 #include "Kismet/KismetArrayLibrary.h"
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "Net/UnrealNetwork.h"
+#include "../FinalProject.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -27,9 +28,6 @@ void APSH_BlockActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	APSH_Player * player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
-	SetOwner(player);
-
 	meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);
 }
 
@@ -55,15 +53,26 @@ void APSH_BlockActor::Tick(float DeltaTime)
 // 		playerHandle->SetTargetLocation(TargetLocation);
 // 	}
 }
+
+void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
+{
+	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
+	PRINTLOG(TEXT("PcickUp"));
+}
+
 void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 {
 	if (handle == nullptr) return;
 	
+	PRINTLOG(TEXT("Not Handle"));
+	if (handle == nullptr) return;
+	PRINTLOG(TEXT("can Handle"));
+
 	// 부모와의 연결 제거
 	Remove();
 
 	// 블록 잡기
-	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
+	MRPC_PickUp(handle);
 
 	pickedUp = true;
 
@@ -83,6 +92,8 @@ void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
 		physicshandle->ReleaseComponent();
 	}
 	
+	SetOwner(nullptr);
+
 	pickedUp = false;
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);

@@ -17,10 +17,13 @@ APSH_GarbageBot::APSH_GarbageBot()
 
     boxCol = CreateDefaultSubobject<UBoxComponent>(TEXT("boxCol"));
     SetRootComponent(boxCol);
+    boxCol->SetRelativeScale3D(FVector(0.25f));
 
 	compMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	compMesh->SetupAttachment(RootComponent);
     compMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    compMesh->SetRelativeScale3D(FVector(1.f));
+
 
     bReplicates = true;
     SetReplicateMovement(true);
@@ -139,10 +142,8 @@ void APSH_GarbageBot::DestroyState()
     APSH_BlockActor* block = Cast<APSH_BlockActor>(outHit.GetActor());
     if (bhit && block)
     {
-        // 히트된 위치에도 디버그용 점을 표시
-        UE_LOG(LogTemp, Warning, TEXT("%s"), *outHit.GetActor()->GetName());
 
-        if (sumScale >= 1.85f)
+        if (sumScale >= 1.5f)
         {
             return;
         }

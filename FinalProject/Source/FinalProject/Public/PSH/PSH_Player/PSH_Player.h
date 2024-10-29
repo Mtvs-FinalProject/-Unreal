@@ -83,10 +83,11 @@ public:
 	// 플레이어 행동
 	void PlayerJump();
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_Grab();
 	void Grab();
 
-	// 마우스 위치에 Ray
-	void PreTraceCheck(FVector & StartLoc, FVector & EndLoc);
+	void PreTraceCheck( FVector & StartLoc,   FVector & EndLoc);
 
 	TArray<class AActor*> actorsToIgnore;
 
@@ -96,7 +97,13 @@ public:
 
 	bool doonce;
 	// Ray 발사
-	FHitResult CastRay();
+
+	void CastRay();
+	
+	UFUNCTION(Server,Reliable)
+	void SRPC_Pickup(FHitResult hitInfo);
+	
+	//FHitResult CastRay();
 
 	// 레이 거리
 	double rayPower = 1000.f;
@@ -119,14 +126,24 @@ public:
 	void PlaceBlock(FHitResult hitInfo, bool hit);
 
 	void DropBlcok();
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_DropBlcok();
+	UFUNCTION(Server,Unreliable)
+	void SRPC_DropBlcok();
 
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_HandleBlock(FVector newLoc, FRotator newRot);
+	UFUNCTION(Server,Unreliable)
+	void SRPC_HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
 	void HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
+
 	void SpawnBlock();
 
-	void RPCSpawnBlock(TSubclassOf<class APSH_BlockActor> & spawnActor);
+	UFUNCTION(Server,Reliable)
+	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor>  spawnActor);
 
 	void SaveTest();
 
@@ -152,4 +169,11 @@ public:
 	class APSH_GarbageBot * bot;
 
 	void BotMoveAndModeChange();
+
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FVector ReplicatedLocation;
+
+	FRotator ReplicatedRotation;
 };

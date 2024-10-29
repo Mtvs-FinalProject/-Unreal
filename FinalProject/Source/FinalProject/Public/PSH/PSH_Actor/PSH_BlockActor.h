@@ -47,6 +47,9 @@ public:
 
 	bool pickedUp;
 
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_PickUp(class UPhysicsHandleComponent* handle);
 	void PickUp(class UPhysicsHandleComponent* handle);
 
 	void Remove();
