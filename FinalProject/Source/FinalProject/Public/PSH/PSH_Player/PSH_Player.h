@@ -152,4 +152,13 @@ public:
 	class APSH_GarbageBot * bot;
 
 	void BotMoveAndModeChange();
+
+	// 메인 UI 연결
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> FirstSelect;
+
+	// 현재 열려 있는 UI 위젯 인스턴스를 참조 (UI 열고 닫기 토글 상태 추적)
+    UPROPERTY()
+    UUserWidget* CurrentObjectWidget = nullptr;
+
 };

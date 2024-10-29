@@ -5,11 +5,24 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "YWK/MyChoiceActionWidget.h"
+#include "YWK/MyFlyActorComponent.h"
+#include "YWK/MyMoveActorComponent.h"
 #include "PSH/PSH_Player/PSH_Player.h"
+#include "Blueprint/UserWidget.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
-	
+	// 생성자에 블루프린트 클래스 로드
+	static ConstructorHelpers::FClassFinder<UMyChoiceActionWidget> WidgetClassFinder(TEXT("/Game/YWK/UI/WBP_Choice.WBP_Choice_C"));
+	if (WidgetClassFinder.Succeeded())
+	{
+		ChoiceWidgetClass = WidgetClassFinder.Class;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to find WBP_Choice at specified path"));
+	}
 }
 void APSH_PlayerController::PlayerTick(float DeltaTime)
 {
@@ -139,4 +152,43 @@ void APSH_PlayerController::ObjectLoad()
 // 		UE_LOG(LogTemp, Warning, TEXT("%d"), RowNum);
 // 	}
 // 	
+}
+
+void APSH_PlayerController::SelectObject(AActor* SelectedActor)
+{
+	UE_LOG(LogTemp, Warning, TEXT("SelectObject called for Actor: %s"), *SelectedActor->GetName());
+
+	APSH_BlockActor* BlockActor = Cast<APSH_BlockActor>(SelectedActor);
+
+	// 선택한 액터가 BlockActor이고, 필요한 컴포넌트를 가지고 있을 때만 UI 열기
+	if (BlockActor)
+	{
+		UMyMoveActorComponent* MoveComponent = BlockActor->FindComponentByClass<UMyMoveActorComponent>();
+		UMyFlyActorComponent* FlyComponent = BlockActor->FindComponentByClass<UMyFlyActorComponent>();
+
+		if (MoveComponent || FlyComponent)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BlockActor has active Move or Fly component"));
+
+			if (ChoiceWidgetClass && (!MyChoiceActionWidget || !MyChoiceActionWidget->IsInViewport()))
+			{
+				MyChoiceActionWidget = CreateWidget<UMyChoiceActionWidget>(this, ChoiceWidgetClass);
+				if (MyChoiceActionWidget)
+				{
+					MyChoiceActionWidget->AddToViewport();
+					MyChoiceActionWidget->SetVisibility(ESlateVisibility::Visible);
+					UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget set to Visible and added to viewport"));
+				}
+			}
+			return; // UI가 열렸으므로 함수 종료
+		}
+	}
+
+	// 조건이 충족되지 않을 경우 UI를 닫기
+	if (MyChoiceActionWidget && MyChoiceActionWidget->IsInViewport())
+	{
+		MyChoiceActionWidget->RemoveFromParent();
+		MyChoiceActionWidget = nullptr;
+		UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget removed from viewport"));
+	}
 }

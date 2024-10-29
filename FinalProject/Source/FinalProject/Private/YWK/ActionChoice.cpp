@@ -40,6 +40,7 @@ void UActionChoice::NativeConstruct()
 	{
 		Btn_StartAction->OnClicked.AddDynamic(this, &UActionChoice::OnStartActionClicked);
 	}
+
 }
 
 void UActionChoice::OnMoveClicked()
