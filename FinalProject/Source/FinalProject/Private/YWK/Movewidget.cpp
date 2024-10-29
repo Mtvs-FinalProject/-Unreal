@@ -310,7 +310,7 @@ void UMovewidget::OnDistanceTextCommitted(const FText& Text, ETextCommit::Type C
 AActor* UMovewidget::GetOwnerFromComponent()
 {
 	// 블루프린트 액터 찾아오기..
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_FunctionObject.BP_FunctionObject_C"));
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly_C"));
 
 	// 블루프린트 클래스 로드
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();

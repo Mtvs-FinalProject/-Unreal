@@ -19,6 +19,9 @@
 #include "PSH/PSH_Actor/PSH_GarbageBot.h"
 #include "Components/WidgetComponent.h"
 #include "PSH/PSH_UI/PSH_GarbageBotWidget.h"
+#include "YWK/MyMoveActorComponent.h"
+#include "YWK/MyFlyActorComponent.h"
+#include "YWK/MyChoiceActionWidget.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -593,7 +596,37 @@ void APSH_Player::LoadTest()
 }
 void APSH_Player::ShowInterface()
 {
-	// 창 열기 I키에 할당되어 있음.
+	// UI가 이미 열려있다면 닫기
+	if (CurrentObjectWidget)
+	{
+		CurrentObjectWidget->RemoveFromParent();
+		CurrentObjectWidget = nullptr;
+		UE_LOG(LogTemp, Warning, TEXT("UI Widget closed"));
+	}
+	else // UI가 열려있지 않다면 열기
+	{
+		if (FirstSelect)
+		{
+			APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+			if (PlayerController)
+			{
+				CurrentObjectWidget = CreateWidget<UUserWidget>(PlayerController, FirstSelect);
+				if (CurrentObjectWidget)
+				{
+					CurrentObjectWidget->AddToViewport();
+					UE_LOG(LogTemp, Warning, TEXT("UI Widget opened"));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to create UI widget"));
+				}
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("FirstSelect widget class is not set"));
+		}
+	}
 }
 
 void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
@@ -657,6 +690,23 @@ void APSH_Player::BotMoveAndModeChange()
 					botWidget->SetVisibility(ESlateVisibility::Visible);
 					botWidget->SetOwner(bot);
 				}
+			}
+		}
+		// 오브젝트 선택했을 때 컴포넌트가 있으면 UI열리기
+		AActor* SelectedActor = hitresult.GetActor();
+		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Calling SelectObject with Actor: %s"), *SelectedActor->GetName());
+			// 플레이어 컨트롤러의 selectobject 함수 호출해서 UI 열기
+			pc->SelectObject(SelectedActor);
+		}
+		else
+		{
+			// 선택된 오브젝트가 없거나 특정 컴포넌트가 없는경우 UI 닫기
+			if (pc->MyChoiceActionWidget)
+			{
+				pc->MyChoiceActionWidget->RemoveFromParent();
+				pc->MyChoiceActionWidget = nullptr;
 			}
 		}
 	}
