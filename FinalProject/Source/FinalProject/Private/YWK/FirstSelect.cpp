@@ -7,6 +7,7 @@
 #include "YWK/ActionChoice.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 void UFirstSelect::NativeConstruct()
 {
@@ -125,8 +126,49 @@ void UFirstSelect::OnCraftClicked()
 
 }
 
+// 액터 파괴시키기
 void UFirstSelect::OnDestroyClicked()
 {
-    
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        UE_LOG(LogTemp, Error, TEXT("World is null"));
+        return;
+    }
+
+    // 삭제할 블루프린트 클래스 경로 배열
+    TArray<FStringClassReference> BlueprintClassPaths = {
+        FStringClassReference(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C")),
+        FStringClassReference(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C")),
+        FStringClassReference(TEXT("/Game/PSH/PSH_BluePints/PSH_Actor/PSH_Block/BP_PSH_BlockActor.BP_PSH_BlockActor_C")),
+        FStringClassReference(TEXT("/Game/PSH/PSH_BluePints/PSH_Actor/PSH_Block/BP_PSH_ConeActor.BP_PSH_ConeActor_C")),
+        FStringClassReference(TEXT("/Game/PSH/PSH_BluePints/PSH_Actor/PSH_Block/BP_PSH_CylinderActor.BP_PSH_CylinderActor_C"))
+    };
+
+    // 각 경로에 해당하는 블루프린트 클래스 로드 및 액터 삭제
+    for (const FStringClassReference& ClassPath : BlueprintClassPaths)
+    {
+        UClass* TargetClass = ClassPath.TryLoadClass<AActor>();
+        if (TargetClass)
+        {
+            TArray<AActor*> ActorsToDestroy;
+            UGameplayStatics::GetAllActorsOfClass(World, TargetClass, ActorsToDestroy);
+
+            for (AActor* Actor : ActorsToDestroy)
+            {
+                if (Actor)
+                {
+                    Actor->Destroy();
+                    UE_LOG(LogTemp, Warning, TEXT("Destroyed Actor: %s"), *Actor->GetName());
+                }
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to load class for path: %s"), *ClassPath.ToString());
+        }
+    }
 }
+
+
 
