@@ -10,6 +10,7 @@
 #include "YWK/MyMoveActorComponent.h"
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "Blueprint/UserWidget.h"
+#include "CSR/UI/CSR_Proto_StartUI.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
@@ -38,9 +39,14 @@ void APSH_PlayerController::BeginPlay()
 		SetShowMouseCursor(true);
 		bEnableClickEvents = true;
 		bEnableMouseOverEvents = true;
-		SetInputMode(FInputModeGameAndUI());
-
 		curPlayer = Cast<APSH_Player>(GetPawn());
+		curPlayer->SetActorHiddenInGame(true);
+		this->SetInputMode(FInputModeUIOnly());
+		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
+		StartUI->AddToViewport();
+
+		//SetInputMode(FInputModeGameAndUI());
+
 }
 void APSH_PlayerController::LookMouseCursor()
 {
@@ -98,6 +104,7 @@ void APSH_PlayerController::ObjectSave()
 		}
 
 	}
+	SaveTheGame();
 }
 void APSH_PlayerController::ObjectLoad()
 {

@@ -51,4 +51,13 @@ public:
 
 	UPROPERTY()
     TSubclassOf<UUserWidget> ChoiceWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class UCSR_Proto_StartUI> StartUIFac; 
+
+	UPROPERTY()
+	class UCSR_Proto_StartUI *StartUI;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SaveTheGame();
 };

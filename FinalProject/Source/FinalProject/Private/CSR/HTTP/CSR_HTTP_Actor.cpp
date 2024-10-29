@@ -181,7 +181,7 @@ void ACSR_HTTP_Actor::Res_SaveUMapAndJson(FHttpRequestPtr Request, FHttpResponse
 void ACSR_HTTP_Actor::Req_DownMap()
 {
     TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
-    Request->SetURL(SERVERDOWN_URL); // FastAPI 서버의 다운로드 엔드포인트 설정
+    Request->SetURL(SERVERDOWN_URL + a); // FastAPI 서버의 다운로드 엔드포인트 설정
     Request->SetVerb("GET");
 
     // 응답 처리 델리게이트 설정

@@ -629,17 +629,17 @@ void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockAct
 
 void APSH_Player::SaveTest()
 {
-
-		if (handleComp->GetGrabbedComponent()->GetOwner() == nullptr) return; 
-
-		APSH_BlockActor* actor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 블럭
-		FName rowName = FName(*FString::FormatAsNumber(4));
-		if (actor && dataTable)
-		{
-			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
-			dataTable->AddRow(rowName, BlockData);
-		}
-		
+// 		
+// 		if (handleComp->GetGrabbedComponent()->GetOwner() == nullptr) return; 
+// 
+// 		APSH_BlockActor* actor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 블럭
+// 		FName rowName = FName(*FString::FormatAsNumber(4));
+// 		if (actor && dataTable)
+// 		{
+// 			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
+// 			dataTable->AddRow(rowName, BlockData);
+// 		}
+// 		
 			
 	
 // 		for (auto* testActor : actor->childsActors)

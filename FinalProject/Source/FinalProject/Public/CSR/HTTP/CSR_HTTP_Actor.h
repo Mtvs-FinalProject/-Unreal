@@ -28,13 +28,15 @@ protected:
 public:	
 	const FString UMAP_FILE_PATH = FPaths::ProjectContentDir() / TEXT("PSH/PSH_Map/PSH_Level.umap");
 
-	//const FString SERVERSAVE_URL = "http://192.168.0.21:8085/api/v1/map/upload";
+	const FString SERVERSAVE_URL = "http://www.mtvs.store:1818/api/v1/map/upload";
 
-	const FString SERVERSAVE_URL = "http://127.0.0.1:5000/upload";
+	//const FString SERVERSAVE_URL = "http://127.0.0.1:5000/upload";
 
-	//const FString SERVERDOWN_URL = "http://192.168.0.21:8085/api/v1/map/download?no=3";
+	const FString SERVERDOWN_URL = "http://www.mtvs.store:1818/api/v1/map/download?no=";
 
-	const FString SERVERDOWN_URL = "http://127.0.0.1:5000/down";
+	UPROPERTY(EditAnywhere)
+	FString a = "";
+	//const FString SERVERDOWN_URL = "http://127.0.0.1:5000/down";
 
 	const FString BOUNDARY = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
 
