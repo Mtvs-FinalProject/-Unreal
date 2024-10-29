@@ -18,6 +18,8 @@ public:
 	
 	virtual void NativeConstruct() override;
 
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
 	UPROPERTY(meta = (BindWidget))
 	class UScrollBox * Scroll_NomarlBlcok;
 
@@ -28,6 +30,11 @@ public:
 	class UButton * Btr_NormalLeft;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_NormalRight;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_FunctionLeft;
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_FunctionRight;
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Back;
@@ -64,9 +71,16 @@ public:
 	UFUNCTION()
 	void OnClickedCallBot();
 
+	
 	int32 CurrentIndex = 0;
 
 	float ScrollBoxHeight;
+
+	float nomalScrollOffset = 0.0f;
+	bool bIsNomalScrolling = false;
+
+	float functionScrollOffset = 0.0f;
+	bool bIsFunctionScrolling = false;
 
 	UFUNCTION()
 	void OnNormalScrollRightClicked();
@@ -74,4 +88,9 @@ public:
 	UFUNCTION()
 	void OnNormalScrollLeftClicked();
 
+	UFUNCTION()
+	void OnFunctionScrollLeftClicked();
+
+	UFUNCTION()
+	void OnFunctionScrollRightClicked();
 };

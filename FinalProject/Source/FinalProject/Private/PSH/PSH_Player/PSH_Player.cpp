@@ -86,10 +86,11 @@ void APSH_Player::Tick(float DeltaTime)
 	
 	if (pc && pc->IsLocalController())
 	{
-		//PRINTLOG(TEXT("DonGrabbedComponent("));
+	
+		// 잡은게 없다면 
 		if(handleComp->GetGrabbedComponent() == nullptr) return;
 
-		PRINTLOG(TEXT("canGrabbedComponent("));
+		// 잡은애 블럭이 없지 않다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
@@ -121,8 +122,6 @@ void APSH_Player::Tick(float DeltaTime)
 		HandleBlock(outHit, hit, point.endLocation);
 	}
 	
-// 	HandleBlock(outHit,hit, point.endLocation);
-// }
 }
 
 // Called to bind functionality to input
@@ -201,45 +200,7 @@ void APSH_Player::PlayerJump()
 {
 	Jump();
 }
-void APSH_Player::SRPC_Grab_Implementation()
-{
-	if (handleComp == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("NullHandle"))
-			return;
-	}
 
-	if (handleComp->GetGrabbedComponent() != nullptr) // 잡은 게 있다면
-	{
-
-		FLocationPoint point;
-		PreTraceCheck(point.startLocation, point.endLocation);
-
-		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
-		FHitResult OutHit;
-
-		bool hit = UKismetSystemLibrary::LineTraceSingle(
-			GetWorld(),
-			point.startLocation,
-			point.endLocation,
-			TraceChannel,
-			false,
-			actorsToIgnore,
-			EDrawDebugTrace::None,
-			OutHit,
-			true,
-			FColor::Green,
-			FColor::Red,
-			4
-		);
-		PRINTLOG(TEXT("Grab"));
-		PlaceBlock(OutHit, hit);
-	}
-	else // 잡은게 없다면
-	{
-		CastRay();
-	}
-}
 void APSH_Player::Grab()
 {
 	if (handleComp == nullptr)
@@ -271,7 +232,7 @@ void APSH_Player::Grab()
 			FColor::Red,
 			4
 		);
-		PRINTLOG(TEXT("Grab"));
+		
 		PlaceBlock(OutHit, hit); // 멀티 , 서버화 안되어 있음.
 	}
 	else // 잡은게 없다면
@@ -280,9 +241,9 @@ void APSH_Player::Grab()
 	}
 }
 
-void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 카메라와 마우스의 위치를 이용해 트레이스 거리 계산
+void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 
 {
-	PRINTLOG(TEXT("WhotHere"));
+	
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array에 저장
@@ -307,8 +268,6 @@ void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 카메라�
 void APSH_Player::CastRay() // 잡기위한 레이 
 {
 
-	FHitResult hitInfo;
-
 	FVector worldLoc;
 	FVector worldDir;
 
@@ -316,36 +275,33 @@ void APSH_Player::CastRay() // 잡기위한 레이
 
 	FVector StartLoc = cameraComp->GetComponentLocation(); // 터짐
 	FVector EndLoc = StartLoc + (rayPower * worldDir);
+	
+	if (IsLocallyControlled() == false) return;
+
+	SRPC_Pickup(StartLoc,EndLoc);
+}
+
+void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc) // 맞은 위치가 애매하다?
+{
+	
+	FHitResult hitInfo;
 
 	FCollisionQueryParams prams;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, StartLoc, EndLoc, ECC_Visibility, prams);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startLoc, endLoc, ECC_Visibility, prams);
 
 	if (bHit)
 	{
-		if (IsLocallyControlled() == false) return;
-		SRPC_Pickup(hitInfo);
+		APSH_BlockActor* target = Cast<APSH_BlockActor>(hitInfo.GetActor());
+		if (target)
+		{
+			if (target->GetOwner() == nullptr)
+			{
+				target->SetOwner(this);
+				target->PickUp(handleComp);
+			}
+		}
 	}
 	
-}
-
-void APSH_Player::SRPC_Pickup_Implementation(FHitResult hitInfo)
-{
-	APSH_BlockActor* target = Cast<APSH_BlockActor>(hitInfo.GetActor());
-	if (target)
-	{
-		PRINTLOG(TEXT("PickUp"));
-
-		if (target->GetOwner() == nullptr)
-		{
-			target->SetOwner(this);
-			target->PickUp(handleComp);
-			PRINTLOG(TEXT("SetOwner : %s"),* target->GetOwner()->GetName());
-		}
-		else
-		{
-			PRINTLOG(TEXT("Not SetOwner : %s"),* target->GetOwner()->GetName());
-		}
-	}
 }
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
 								FVector & closestPt, float& dist , int32& closetPointIndex)
