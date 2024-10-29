@@ -90,24 +90,25 @@ void APSH_BlockActor::Tick(float DeltaTime)
 void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
 {
 	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
-	PRINTLOG(TEXT("PcickUp"));
+\
 }
 
 void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 {
 	if (handle == nullptr) return;
 	
-	PRINTLOG(TEXT("Not Handle"));
+;
 	if (handle == nullptr) return;
-	PRINTLOG(TEXT("can Handle"));
 
+	
 	// 부모와의 연결 제거
 	Remove();
+
+	pickedUp = true;
 
 	// 블록 잡기
 	MRPC_PickUp(handle);
 
-	pickedUp = true;
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);

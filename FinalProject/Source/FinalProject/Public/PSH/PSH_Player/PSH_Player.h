@@ -83,31 +83,6 @@ public:
 	// 플레이어 행동
 	void PlayerJump();
 
-	UFUNCTION(Server,Reliable)
-	void SRPC_Grab();
-	void Grab();
-
-	void PreTraceCheck( FVector & StartLoc,   FVector & EndLoc);
-
-	TArray<class AActor*> actorsToIgnore;
-
-	// 블럭 이동 최대거리
-	UPROPERTY(EditAnywhere)
-	float playerReach = 1000.f;
-
-	bool doonce;
-	// Ray 발사
-
-	void CastRay();
-	
-	UFUNCTION(Server,Reliable)
-	void SRPC_Pickup(FHitResult hitInfo);
-	
-	//FHitResult CastRay();
-
-	// 레이 거리
-	double rayPower = 1000.f;
-
 	// 블럭 Rotation
 	FRotator rotationOffset;
 
@@ -187,4 +162,29 @@ public:
     UPROPERTY()
     UUserWidget* CurrentObjectWidget = nullptr;
 
+
+	// 서버화와 함께 리펙토링.
+	// 1. 잡기 시도. 잡은게 없다면 2번으로 있다면 번으로 
+	void Grab();
+
+	// 2. 잡기 위한 Ray 시도.
+	void CastRay();
+
+	// 레이 거리
+	double rayPower = 1000.f;
+
+	//3. 블럭 실제 잡기.
+	UFUNCTION(Server,Reliable)
+	void SRPC_Pickup(const FVector & startLoc, const FVector & endLoc);
+	
+	//4. 블럭의 이동 -> Tick
+
+	//5. 카메라와 마우스의 위치를 이용해 트레이스 거리 계산 엑터만 검사함. << 하던중
+	void PreTraceCheck( FVector & StartLoc,   FVector & EndLoc);
+
+	TArray<class AActor*> actorsToIgnore;
+
+	// 블럭 이동 최대거리 
+	UPROPERTY(EditAnywhere)
+	float playerReach = 1000.f;
 };

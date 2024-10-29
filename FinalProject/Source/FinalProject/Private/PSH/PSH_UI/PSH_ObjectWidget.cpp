@@ -28,7 +28,42 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Btr_NormalRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnNormalScrollRightClicked);
 	Btr_NormalLeft->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnNormalScrollLeftClicked);
 
+	Btr_FunctionRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnFunctionScrollRightClicked);
+	Btr_FunctionLeft->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnFunctionScrollLeftClicked);
+
 	AddchildBlock();
+}
+void UPSH_ObjectWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (bIsNomalScrolling)
+	{
+		float CurrentOffset = Scroll_NomarlBlcok->GetScrollOffset();
+		float NewOffset = FMath::FInterpTo(CurrentOffset, nomalScrollOffset, InDeltaTime, 10.0f);  // 보간 속도 10.0f 조절 가능
+		Scroll_NomarlBlcok->SetScrollOffset(NewOffset);
+
+		// 목표 오프셋에 거의 도달하면 스크롤 완료
+		if (FMath::IsNearlyEqual(NewOffset, nomalScrollOffset, 0.5f))
+		{
+			bIsNomalScrolling = false;
+			Scroll_NomarlBlcok->SetScrollOffset(nomalScrollOffset);  // 정확히 맞춰 줌
+		}
+	}
+
+	if (bIsFunctionScrolling)
+	{
+		float CurrentOffset = Scroll_FunctionBlcok->GetScrollOffset();
+		float NewOffset = FMath::FInterpTo(CurrentOffset, functionScrollOffset, InDeltaTime, 10.0f);  // 보간 속도 10.0f 조절 가능
+		Scroll_FunctionBlcok->SetScrollOffset(NewOffset);
+
+		// 목표 오프셋에 거의 도달하면 스크롤 완료
+		if (FMath::IsNearlyEqual(NewOffset, functionScrollOffset, 0.5f))
+		{
+			bIsFunctionScrolling = false;
+			Scroll_FunctionBlcok->SetScrollOffset(functionScrollOffset);  // 정확히 맞춰 줌
+		}
+	}
 }
 void UPSH_ObjectWidget::AddchildBlock() // 데이터 파싱해서 블럭 조정
 {
@@ -71,8 +106,6 @@ void UPSH_ObjectWidget::AddNomalBlock()
 		blockWidget->spawnActor = dataAraay[i]->actor;
 		
 		Scroll_NomarlBlcok->AddChild(blockWidget);
-
-
 	}
 }
 void UPSH_ObjectWidget::AddFunctionBlock()
@@ -159,18 +192,43 @@ void UPSH_ObjectWidget::OnNormalScrollRightClicked()
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	UE_LOG(LogTemp,Warning,TEXT("Right"));
-	// 스크롤 오프셋을 증가하여 다음 위젯으로 이동
+	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y;
 	CurrentIndex = (CurrentIndex + 1) % NumChildren;
-	Scroll_NomarlBlcok->SetScrollOffset(CurrentIndex * ScrollBoxHeight);
+	nomalScrollOffset = CurrentIndex * WidgetHeight;
+	bIsNomalScrolling = true;  // 스크롤 시작
+
 }
 void UPSH_ObjectWidget::OnNormalScrollLeftClicked()
 {
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Left"));
-	// 스크롤 오프셋을 감소하여 이전 위젯으로 이동
+	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y;
 	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
-	Scroll_NomarlBlcok->SetScrollOffset(CurrentIndex * ScrollBoxHeight);
+	nomalScrollOffset = CurrentIndex * WidgetHeight;
+	bIsNomalScrolling = true;  // 스크롤 시작
+}
+void UPSH_ObjectWidget::OnFunctionScrollLeftClicked()
+{
+	const int32 NumChildren = Scroll_FunctionBlcok->GetChildrenCount();
+	if (NumChildren == 0) return;
+
+	UE_LOG(LogTemp,Warning,TEXT("Left"));
+
+	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_FunctionBlcok->GetDesiredSize().Y;
+	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
+	functionScrollOffset = CurrentIndex * WidgetHeight;
+	bIsFunctionScrolling = true;  // 스크롤 시작
+}
+void UPSH_ObjectWidget::OnFunctionScrollRightClicked()
+{
+	const int32 NumChildren = Scroll_FunctionBlcok->GetChildrenCount();
+	if (NumChildren == 0) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Right"));
+
+	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_FunctionBlcok->GetDesiredSize().Y;
+	CurrentIndex = (CurrentIndex + 1) % NumChildren;
+	functionScrollOffset = CurrentIndex * WidgetHeight;
+	bIsFunctionScrolling = true;  // 스크롤 시작
 }
