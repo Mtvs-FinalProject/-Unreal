@@ -100,4 +100,13 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 특정 기능 컴포넌트 추가
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UMyFlyActorComponent* MyFlyActorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UMyMoveActorComponent* MyMoveActorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UMyRotateActorComponent* MyRotateActorComponent;
 };

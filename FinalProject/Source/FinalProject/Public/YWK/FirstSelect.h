@@ -35,6 +35,9 @@ class UButton* Btn_Destroy;
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UButton* Btn_end;
 
+UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+bool bIsEditMode;
+
 UFUNCTION()
 void OnActionClicked();
 
@@ -50,5 +53,9 @@ void OnDestroyClicked();
 // 행동으로 들어가기
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> ActionChoice;
+
+// 오브젝트 위젯으로 들어가기
+UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+TSubclassOf<UUserWidget> PSH_ObjectWidget;
 
 };

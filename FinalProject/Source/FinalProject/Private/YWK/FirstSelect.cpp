@@ -5,6 +5,7 @@
 #include "Components/Button.h"
 #include "Blueprint/UserWidget.h"
 #include "YWK/ActionChoice.h"
+#include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "GameFramework/PlayerController.h"
 
 void UFirstSelect::NativeConstruct()
@@ -35,10 +36,12 @@ void UFirstSelect::NativeConstruct()
         Btn_Destroy->OnClicked.AddDynamic(this, &UFirstSelect::OnDestroyClicked);
     }
 
+    bIsEditMode = false;
 }
 
 void UFirstSelect::OnActionClicked()
 {
+    
     // 현재 위젯 제거
     RemoveFromParent();
     UE_LOG(LogTemp, Warning, TEXT("RemoveFromParent called"));
@@ -84,7 +87,42 @@ void UFirstSelect::OnEndClicked()
 
 void UFirstSelect::OnCraftClicked()
 {
-    
+    // 현재 위젯 제거
+    RemoveFromParent();
+
+    // Object widget열기
+    if (PSH_ObjectWidget)
+    {
+        // 위젯 주인 가져오기
+        APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+
+        if (PlayerController)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("PlayerController is valid"));
+
+            // 위젯 생성
+            UUserWidget* NewObjectWidget = CreateWidget<UUserWidget>(PlayerController, PSH_ObjectWidget);
+            if (NewObjectWidget)
+            {
+                // 새 위젯 Viewport에 추가
+                NewObjectWidget->AddToViewport();
+                UE_LOG(LogTemp, Warning, TEXT("NewWidget added to viewport"));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Log, TEXT("Failed to create NewWidget"));
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Log, TEXT("PlayerController is null"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("PSH_ObjectWidget is null"));
+    }
+
 }
 
 void UFirstSelect::OnDestroyClicked()

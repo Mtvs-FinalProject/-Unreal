@@ -8,6 +8,9 @@
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "Net/UnrealNetwork.h"
 #include "../FinalProject.h"
+#include "YWK/MyMoveActorComponent.h"
+#include "YWK/MyFlyActorComponent.h"
+#include "YWK/MyRotateActorComponent.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -21,6 +24,16 @@ APSH_BlockActor::APSH_BlockActor()
 	
 	bReplicates = true;
 	SetReplicateMovement(true);
+
+	// 기능 컴포넌트들
+	MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
+	MyFlyActorComponent = CreateDefaultSubobject<UMyFlyActorComponent>(TEXT("FlyComponent"));
+	MyRotateActorComponent = CreateDefaultSubobject<UMyRotateActorComponent>(TEXT("RotateComponent"));
+
+	// 컴포넌트가 특정 상황에서만 활성화되도록 설정
+	MyMoveActorComponent->SetActive(false);
+	MyFlyActorComponent->SetActive(false);
+	MyRotateActorComponent->SetActive(false);
 }
 
 // Called when the game starts or when spawned
@@ -29,6 +42,26 @@ void APSH_BlockActor::BeginPlay()
 	Super::BeginPlay();
 	
 	meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);
+
+	if (MyMoveActorComponent && MyMoveActorComponent->IsComponentTickEnabled())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveComponent is active in %s"), *GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveComponent is NOT active in %s"), *GetName());
+		MyMoveActorComponent->SetComponentTickEnabled(true);  // 컴포넌트 활성화 설정
+	}
+
+	if (MyFlyActorComponent && MyFlyActorComponent->IsActive())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FlyComponent is active in %s"), *GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FlyComponent is NOT active in %s"), *GetName());
+		MyFlyActorComponent->SetActive(true);  // 활성화 설정
+	}
 }
 
 // Called every frame

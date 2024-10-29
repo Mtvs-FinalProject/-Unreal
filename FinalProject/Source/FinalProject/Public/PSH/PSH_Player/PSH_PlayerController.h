@@ -34,6 +34,21 @@ public:
 	void ObjectSave();
 	void ObjectLoad();
 
+	// 선택된 오브젝트와 연동된 ui 연결 함수
+	UFUNCTION()
+	void SelectObject(AActor* SelectedActor);
+
 	UPROPERTY()
 	class APSH_Player * curPlayer;
+
+	// URotationwidget 클래스에 대한 포인터 (UI 인스턴스)
+	UPROPERTY()
+	class URotationWidget* RotationWidget;
+
+	//UMyChoiceActionWidget 클래스에 대한 포인터(UI 인스턴스)
+	UPROPERTY()
+	class UMyChoiceActionWidget* MyChoiceActionWidget;
+
+	UPROPERTY()
+    TSubclassOf<UUserWidget> ChoiceWidgetClass;
 };
