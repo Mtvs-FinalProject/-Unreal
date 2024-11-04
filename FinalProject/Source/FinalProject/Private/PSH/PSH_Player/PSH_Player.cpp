@@ -24,6 +24,7 @@
 #include "YWK/MyMoveActorComponent.h"
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyChoiceActionWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -45,6 +46,9 @@ APSH_Player::APSH_Player()
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 
+	previewMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("previewMesh"));
+	previewMeshComp->SetupAttachment(RootComponent);
+
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -53,7 +57,8 @@ APSH_Player::APSH_Player()
 void APSH_Player::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	previewMeshComp->OnComponentBeginOverlap.AddDynamic(this,&APSH_Player::PreviewMeshBeginOverlap);
+	previewMeshComp->SetVisibility(false);
 	// 마우스 위젯 사용 
 	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
 	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
@@ -201,6 +206,47 @@ void APSH_Player::PlayerJump()
 	Jump();
 }
 
+void APSH_Player::SetPreviewMesh(class UStaticMesh* previewMesh , TSubclassOf<class APSH_BlockActor> spawnActor)
+{
+	
+	if (!previewMeshComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("previewMeshComp is not initialized."));
+		return;
+	}
+	previewMeshComp->SetVisibility(true);
+	// 2. 미리보기 메쉬 할당
+	if (previewMesh)
+	{
+		previewMeshComp->SetStaticMesh(previewMesh);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PreviewMesh is null."));
+		return;
+	}
+
+	blockSpawner = spawnActor;
+	// 3. 캐릭터의 위치와 방향을 기준으로 상대적 위치 설정
+	FVector CharacterLocation = GetActorLocation();
+	FVector RightVector = GetActorRightVector();
+	FVector ForwardVector = GetActorForwardVector();
+
+	FVector SpawnLocation = CharacterLocation + (RightVector * 200) + (ForwardVector * 100);
+
+	// 4. 월드 좌표 설정
+	previewMeshComp->SetWorldLocation(SpawnLocation);
+
+	// 5. 메쉬에 머테리얼 할당
+	previewMeshComp->SetMaterial(0, previewMat);
+
+	// 디버그 메시지 출력
+	UE_LOG(LogTemp, Log, TEXT("Preview mesh set at location: %s"), *SpawnLocation.ToString());
+}
+void APSH_Player::PreviewMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// 오버렙 시 소환 불가 .
+}
 void APSH_Player::Grab()
 {
 	if (handleComp == nullptr)
@@ -558,29 +604,24 @@ void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRo
 
 void APSH_Player::SpawnBlock()
 {
-	
-// 	for (int i = 1; i <= 3; i++)
-// 	{
-// 		FName Rowname = FName(*FString::FormatAsNumber(i));
-// 		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
-// 		float sum = 200.0f;
-// 		if (data && data->actor != nullptr)
-// 		{
-// 			TSubclassOf<APSH_BlockActor> spawnActor = data->actor;
-// 			if (spawnActor != nullptr)
-// 			{
-// 				FActorSpawnParameters parm;
-// 				GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * sum), GetActorRotation(), parm);
-// 				sum += 100.f;
-// 			}
-// 		}
-// 	}
+
 }
 
-void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
+void APSH_Player::SRPC_SpawnBlock_Implementation()
 {
-	FActorSpawnParameters parm;
-	GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, GetActorLocation() + (GetActorForwardVector() * 200), GetActorRotation(), parm);
+
+	// 캐릭터의 위치와 방향을 기준으로 상대적 위치를 설정
+	FVector CharacterLocation = GetActorLocation();
+	FVector RightVector = GetActorRightVector();  // 캐릭터의 오른쪽 방향
+	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 앞쪽 방향
+
+	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
+	FVector SpawnLocation = CharacterLocation + (RightVector * 200) + (ForwardVector * 100);
+
+	// 스폰 파라미터 설정 및 엑터 소환
+	FActorSpawnParameters SpawnParams;
+	APSH_BlockActor* SpawnedActor = GetWorld()->SpawnActor<APSH_BlockActor>(blockSpawner, SpawnLocation, GetActorRotation(), SpawnParams);
+
 }
 
 void APSH_Player::SaveTest()

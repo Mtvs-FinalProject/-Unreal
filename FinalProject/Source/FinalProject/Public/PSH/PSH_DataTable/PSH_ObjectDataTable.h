@@ -18,6 +18,9 @@ struct FPSH_UiBlockData : public FTableRowBase// 자식 데이터 베이스 저장할 공간.
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
 
+	UPROPERTY(EditAnywhere)
+	class UStaticMesh * mesh; // 청사진(프리뷰)에서 사용될 메쉬 데이터
+
 };
 
 UCLASS()

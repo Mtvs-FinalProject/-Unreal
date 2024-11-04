@@ -118,10 +118,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
 
-	void SpawnBlock();
-
-	UFUNCTION(Server,Reliable)
-	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor>  spawnActor);
+	
 
 	void SaveTest();
 
@@ -162,6 +159,25 @@ public:
     UPROPERTY()
     UUserWidget* CurrentObjectWidget = nullptr;
 
+	// 청사진 관련
+	UPROPERTY(EditDefaultsOnly)
+	class UStaticMeshComponent * previewMeshComp;
+
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterial * previewMat;
+
+	void SetPreviewMesh(class UStaticMesh * previewMesh , TSubclassOf<class APSH_BlockActor> spawnActor);
+
+	UFUNCTION()
+	void PreviewMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	void SpawnBlock();
+
+	TSubclassOf<class APSH_BlockActor> blockSpawner;
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_SpawnBlock();
 
 	// 서버화와 함께 리펙토링.
 	// 1. 잡기 시도. 잡은게 없다면 2번으로 있다면 번으로 

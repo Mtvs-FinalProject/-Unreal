@@ -25,6 +25,9 @@ public:
 	void SpawnBlock();
 
 	UPROPERTY()
+	class UStaticMesh * spawnMesh;
+
+	UPROPERTY()
 	TSubclassOf<class APSH_BlockActor> spawnActor;
 
 };
