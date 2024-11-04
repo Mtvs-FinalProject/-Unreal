@@ -146,14 +146,14 @@ void UMovewidget::OnMoveBackClicked()
 {
 	RemoveFromParent();
 
-	/*if (ActionChoice)
+	if (ActionChoice)
 	{
 		UUserWidget* BackMoveWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
 		if (BackMoveWidget)
 		{
 			BackMoveWidget->AddToViewport();
 		}
-	}*/
+	}
 }
 
 // 이 버튼 눌러야 움직이는거 시작됨

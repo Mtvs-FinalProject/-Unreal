@@ -163,39 +163,39 @@ void APSH_PlayerController::ObjectLoad()
 
 void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SelectObject called for Actor: %s"), *SelectedActor->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("SelectObject called for Actor: %s"), *SelectedActor->GetName());
 
-	APSH_BlockActor* BlockActor = Cast<APSH_BlockActor>(SelectedActor);
+	//APSH_BlockActor* BlockActor = Cast<APSH_BlockActor>(SelectedActor);
 
-	// 선택한 액터가 BlockActor이고, 필요한 컴포넌트를 가지고 있을 때만 UI 열기
-	if (BlockActor)
-	{
-		UMyMoveActorComponent* MoveComponent = BlockActor->FindComponentByClass<UMyMoveActorComponent>();
-		UMyFlyActorComponent* FlyComponent = BlockActor->FindComponentByClass<UMyFlyActorComponent>();
+	//// 선택한 액터가 BlockActor이고, 필요한 컴포넌트를 가지고 있을 때만 UI 열기
+	//if (BlockActor)
+	//{
+	//	UMyMoveActorComponent* MoveComponent = BlockActor->FindComponentByClass<UMyMoveActorComponent>();
+	//	UMyFlyActorComponent* FlyComponent = BlockActor->FindComponentByClass<UMyFlyActorComponent>();
 
-		if (MoveComponent || FlyComponent)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BlockActor has active Move or Fly component"));
+	//	if (MoveComponent || FlyComponent)
+	//	{
+	//		UE_LOG(LogTemp, Warning, TEXT("BlockActor has active Move or Fly component"));
 
-			if (ChoiceWidgetClass && (!MyChoiceActionWidget || !MyChoiceActionWidget->IsInViewport()))
-			{
-				MyChoiceActionWidget = CreateWidget<UMyChoiceActionWidget>(this, ChoiceWidgetClass);
-				if (MyChoiceActionWidget)
-				{
-					MyChoiceActionWidget->AddToViewport();
-					MyChoiceActionWidget->SetVisibility(ESlateVisibility::Visible);
-					UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget set to Visible and added to viewport"));
-				}
-			}
-			return; // UI가 열렸으므로 함수 종료
-		}
-	}
+	//		if (ChoiceWidgetClass && (!MyChoiceActionWidget || !MyChoiceActionWidget->IsInViewport()))
+	//		{
+	//			MyChoiceActionWidget = CreateWidget<UMyChoiceActionWidget>(this, ChoiceWidgetClass);
+	//			if (MyChoiceActionWidget)
+	//			{
+	//				MyChoiceActionWidget->AddToViewport();
+	//				MyChoiceActionWidget->SetVisibility(ESlateVisibility::Visible);
+	//				UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget set to Visible and added to viewport"));
+	//			}
+	//		}
+	//		return; // UI가 열렸으므로 함수 종료
+	//	}
+	//}
 
-	// 조건이 충족되지 않을 경우 UI를 닫기
-	if (MyChoiceActionWidget && MyChoiceActionWidget->IsInViewport())
-	{
-		MyChoiceActionWidget->RemoveFromParent();
-		MyChoiceActionWidget = nullptr;
-		UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget removed from viewport"));
-	}
+	//// 조건이 충족되지 않을 경우 UI를 닫기
+	//if (MyChoiceActionWidget && MyChoiceActionWidget->IsInViewport())
+	//{
+	//	MyChoiceActionWidget->RemoveFromParent();
+	//	MyChoiceActionWidget = nullptr;
+	//	UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget removed from viewport"));
+	//}
 }
