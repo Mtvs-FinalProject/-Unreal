@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -40,10 +40,10 @@ public:
 
 	const FString BOUNDARY = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
 
-	// util ÇÔ¼ö
+	// util í•¨ìˆ˜
 	TArray<uint8> LoadUMapFile(const FString& FilePath);
 
-	// 2. FPSH_ObjectData¸¦ JSON ¹®ÀÚ¿­·Î º¯È¯ÇÏ´Â ÇÔ¼ö
+	// 2. FPSH_ObjectDataë¥¼ JSON ë¬¸ìì—´ë¡œ ë³€í™˜í•˜ëŠ” í•¨ìˆ˜
 	FString ConvertStructToJsonString(const FPSH_ObjectData& ObjectData);
 
 	TArray<uint8> CreateMultipartData(const TArray<uint8>& FileData, const FString& JsonString);
