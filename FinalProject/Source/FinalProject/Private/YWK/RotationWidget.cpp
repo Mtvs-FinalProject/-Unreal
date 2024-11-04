@@ -257,7 +257,7 @@ AActor* ControlledActor = nullptr;
 
 AActor* URotationWidget::GetOwnerFromComponent()
 {
-	if (ControlledActor)
+	if (ControlledActor && ControlledActor->IsValidLowLevel())  // Null 검사를 추가하여 안정성 확보
 	{
 		UE_LOG(LogTemp, Log, TEXT("ControlledActor already set: %s"), *ControlledActor->GetName());
 		return ControlledActor;
@@ -281,7 +281,10 @@ AActor* URotationWidget::GetOwnerFromComponent()
 	if (FoundActors.Num() > 0)
 	{
 		ControlledActor = FoundActors[0];
-		UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
+		if (ControlledActor && ControlledActor->IsValidLowLevel()) // 추가적인 유효성 확인
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *ControlledActor->GetName());
+		}
 		return ControlledActor;
 	}
 	else
@@ -290,7 +293,7 @@ AActor* URotationWidget::GetOwnerFromComponent()
 
 		// 없으면 새로 스폰
 		ControlledActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
-		if (ControlledActor)
+		if (ControlledActor && ControlledActor->IsValidLowLevel())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Spawned new BP_FunctionObject: %s"), *ControlledActor->GetName());
 			return ControlledActor;
@@ -298,6 +301,7 @@ AActor* URotationWidget::GetOwnerFromComponent()
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to spawn BP_FunctionObject"));
+			ControlledActor = nullptr;
 			return nullptr;
 		}
 	}
