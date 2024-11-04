@@ -25,7 +25,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UStaticMeshComponent * meshComp;
 
 	/// 블럭 자식 오브젝트 배열
@@ -107,12 +107,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// 특정 기능 컴포넌트 추가
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UMyFlyActorComponent* MyFlyActorComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	//class UMyFlyActorComponent* MyFlyActorComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UMyMoveActorComponent* MyMoveActorComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	//class UMyMoveActorComponent* MyMoveActorComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UMyRotateActorComponent* MyRotateActorComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	//class UMyRotateActorComponent* MyRotateActorComponent;
 };
