@@ -22,6 +22,7 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Btr_Back->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedBack);
 	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
 	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
+	Btr_Spawn->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSpawn);
 	Btr_CallBot->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedCallBot);
 
 	// Nomal UI ¹öÆ°
@@ -104,6 +105,7 @@ void UPSH_ObjectWidget::AddNomalBlock()
 
 		blockWidget->Btn_Icon->SetStyle(btrStyle);
 		blockWidget->spawnActor = dataAraay[i]->actor;
+		blockWidget->spawnMesh = dataAraay[i]->mesh;
 		
 		Scroll_NomarlBlcok->AddChild(blockWidget);
 	}
@@ -142,6 +144,7 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 
 		blockWidget->Btn_Icon->SetStyle(btrStyle);
 		blockWidget->spawnActor = dataAraay[i]->actor;
+		blockWidget->spawnMesh = dataAraay[i]->mesh;
 
 		Scroll_FunctionBlcok->AddChild(blockWidget);
 
@@ -154,6 +157,10 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 }
 void UPSH_ObjectWidget::OnClickedBack()
 {
+	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+
+	if (player == nullptr ) return;
+	player->previewMeshComp->SetVisibility(false);
 	SetVisibility(ESlateVisibility::Hidden);
 }
 void UPSH_ObjectWidget::OnClickedSave()
@@ -173,6 +180,14 @@ void UPSH_ObjectWidget::OnClickedLoad()
 
 	player->pc->ObjectLoad();
 
+}
+void UPSH_ObjectWidget::OnClickedSpawn()
+{
+	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+	if(player == nullptr) return;
+
+	if(!player->previewMeshComp->IsVisible()) return;
+	player->SRPC_SpawnBlock();
 }
 void UPSH_ObjectWidget::OnClickedCallBot()
 {
