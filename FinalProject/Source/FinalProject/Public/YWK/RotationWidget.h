@@ -78,4 +78,19 @@ TSubclassOf<UUserWidget> ActionChoice;
 // 컴포넌트 오너를 가져오는 함수 선언
 AActor* GetOwnerFromComponent();
 
+// 콤보박스리스트
+UPROPERTY(meta=(BindWidget))
+class UComboBoxString* RotateBoxList;
+
+AActor* SelectedActor;
+TArray<AActor*> AllFunctionObject;
+
+UFUNCTION()
+void InitializeFunctionObjects();
+
+UFUNCTION()
+void AddObjectToComboBox(AActor* NewObject);
+
+UFUNCTION()
+void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 };

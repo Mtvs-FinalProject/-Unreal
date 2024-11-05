@@ -8,6 +8,7 @@
 #include "Components/Button.h"
 #include "Components/CheckBox.h"
 #include "Components/EditableTextBox.h"
+#include "Components/ComboBoxString.h"
 
 void URotationWidget::NativeConstruct()
 {
@@ -54,6 +55,8 @@ void URotationWidget::NativeConstruct()
 	{
 		Btn_RotateOrigin->OnClicked.AddDynamic(this, &URotationWidget::OnRotateOriginClicked);
 	}
+
+	InitializeFunctionObjects();
 }
 
 // X축 회전
@@ -193,9 +196,9 @@ void URotationWidget::OnRotateBackClicked()
 // 회전 시작
 void URotationWidget::OnRotateStartClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
 		if (RotateComponent)
 		{
 			RotateComponent->StartRolling();
@@ -210,9 +213,9 @@ void URotationWidget::OnRotateStartClicked()
 // 회전 초기화
 void URotationWidget::OnRotateOriginClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
 		if (RotateComponent)
 		{
 			RotateComponent->OriginRolling();
@@ -222,9 +225,9 @@ void URotationWidget::OnRotateOriginClicked()
 
 void URotationWidget::OnRotateStopClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
+		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
 		if (RotateComponent)
 		{
 			RotateComponent->StopRolling();
@@ -304,5 +307,57 @@ AActor* URotationWidget::GetOwnerFromComponent()
 			ControlledActor = nullptr;
 			return nullptr;
 		}
+	}
+}
+
+void URotationWidget::InitializeFunctionObjects()
+{
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
+	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+	if (BP_FunctionObjectClass && GetWorld())
+	{
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+		// 콤보박스에 이름 추가
+		if (RotateBoxList)
+		{
+			for (AActor* FunctionObject : AllFunctionObject)
+			{
+				if (FunctionObject)
+				{
+					RotateBoxList->AddOption(FunctionObject->GetName());
+				}
+			}
+			RotateBoxList->OnSelectionChanged.AddDynamic(this, &URotationWidget::OnFunctionObjectSelected);
+		}
+		if (AllFunctionObject.Num() > 0)
+		{
+			SelectedActor = AllFunctionObject[0];
+		}
+	}
+}
+
+void URotationWidget::AddObjectToComboBox(AActor* NewObject)
+{
+	if (NewObject && RotateBoxList)
+	{
+		FString DisplayName = NewObject->GetActorLabel();
+		RotateBoxList->AddOption(DisplayName);
+		AllFunctionObject.Add(NewObject);
+	}
+}
+
+void URotationWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	int32 SelectedIndex = RotateBoxList->FindOptionIndex(SelectedItem);
+	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+	{
+		SelectedActor = AllFunctionObject[SelectedIndex];
+		UE_LOG(LogTemp, Warning, TEXT("Selected rotation object: %s"), *SelectedActor->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
 	}
 }

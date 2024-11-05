@@ -42,6 +42,17 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UEditableText* FlyHightText;
+
+	// ComboBox Widget
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	class UComboBoxString* FlyBoxList;
+
+	// 현재 선택된 오브젝트
+	AActor* SelectedActor = nullptr;
+
+	// ALLFunctionObject: 생성된 기능 오브젝트들을 저장하는 배열
+	UPROPERTY()
+	TArray<AActor*> AllFunctionObject;
 	
 	UFUNCTION()
 	void OnUpButtonClicked();
@@ -82,6 +93,13 @@ public:
 	// 이동 저장할 변수
 	FVector StoredFlyDirection;
 
+	UFUNCTION()
+	void InitializeFunctionObjects();
 
+	UFUNCTION()
+	void AddObjectToComboBox(AActor* NewObject);
+
+	UFUNCTION()
+	void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 	
 };

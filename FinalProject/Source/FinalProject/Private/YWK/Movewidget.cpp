@@ -5,12 +5,21 @@
 #include "Components/Button.h"
 #include "YWK/ActionChoice.h"
 #include "YWK/MyMoveActorComponent.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/EditableText.h"
+#include "Components/ComboBoxString.h"
 
 void UMovewidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// 게임모드에서 오브젝트 생성 이벤트를 바인딩
+	APSH_GameModeBase* GameMode = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+	if (GameMode)
+	{
+		GameMode->OnObjectCreated.AddDynamic(this, &UMovewidget::AddObjectToComboBox);
+	}
 
 	// 뒤로가기 버튼
 	if (Btn_MoveBack)
@@ -71,18 +80,19 @@ void UMovewidget::NativeConstruct()
 		DistMoveText->OnTextCommitted.AddDynamic(this, &UMovewidget::OnDistanceTextCommitted);
 	}
 
+	InitializeFunctionObjects();
 }
 
 // 앞으로 가기
 void UMovewidget::OnFrontClicked()
 {
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			StoredMoveDirection = Owner->GetActorForwardVector();
+			StoredMoveDirection = SelectedActor->GetActorForwardVector();
 
 			// 로그 추가: 앞으로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving forward. New direction: %s"), *MoveComponent->MoveDirection.ToString());
@@ -94,12 +104,12 @@ void UMovewidget::OnFrontClicked()
 void UMovewidget::OnBackClicked()
 {
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			StoredMoveDirection = Owner->GetActorForwardVector() * -1;
+			StoredMoveDirection = SelectedActor->GetActorForwardVector() * -1;
 
 			// 로그 추가: 뒤로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving Backward. New direction: %s"), *MoveComponent->MoveDirection.ToString());
@@ -111,12 +121,12 @@ void UMovewidget::OnBackClicked()
 void UMovewidget::OnRightClicked()
 {
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			StoredMoveDirection = Owner->GetActorRightVector();
+			StoredMoveDirection = SelectedActor->GetActorRightVector();
 
 			// 로그 추가: 오른쪽으로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving Right. New direction: %s"), *MoveComponent->MoveDirection.ToString());
@@ -128,12 +138,12 @@ void UMovewidget::OnRightClicked()
 void UMovewidget::OnLeftClicked()
 {
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			StoredMoveDirection = Owner->GetActorRightVector() * -1;
+			StoredMoveDirection = SelectedActor->GetActorRightVector() * -1;
 
 			// 로그 추가: 왼쪽으로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving Left. New direction: %s"), *MoveComponent->MoveDirection.ToString());
@@ -159,21 +169,18 @@ void UMovewidget::OnMoveBackClicked()
 // 이 버튼 눌러야 움직이는거 시작됨
 void UMovewidget::OnStartButtonClicked()
 {
-	//RemoveFromParent();
-
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			// 저장된 방향으로 지정
+			// 저장된 방향을 MoveDirection으로 설정
 			MoveComponent->MoveDirection = StoredMoveDirection;
 
 			// 이동 시작 
 			MoveComponent->StartMoving();
 
-			// 이동시작 로그 
-			UE_LOG(LogTemp, Warning, TEXT("Starting move direction : %s"), *MoveComponent->MoveDirection.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("Starting movement for %s with direction: %s"), *SelectedActor->GetName(), *StoredMoveDirection.ToString());
 		}
 	}
 }
@@ -184,9 +191,9 @@ void UMovewidget::OnStopButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("Stop button clicked"));
 
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
 			MoveComponent->StopMoving();
@@ -205,9 +212,9 @@ void UMovewidget::OnOriginButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("Origin button clicked"));
 
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
 			MoveComponent->OriginMove();
@@ -242,9 +249,9 @@ void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue
 void UMovewidget::ApplyMovementValues()
 {
 	// 컴포넌트 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
 			// 속도값 설정
@@ -329,5 +336,66 @@ AActor* UMovewidget::GetOwnerFromComponent()
 		// 없으면 새로 스폰
 		return GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
 	}
-	return nullptr;
+	// 현재 선택된 `SelectedActor`를 반환
+	return SelectedActor;
+}
+
+// 기능 오브젝트 초기화
+void UMovewidget::InitializeFunctionObjects()
+{
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+	if (BP_FunctionObjectClass && GetWorld())
+	{
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+		// ComboBox에 초기 오브젝트 추가
+		if (MoveBoxList)
+		{
+			for (AActor* FunctionObject : AllFunctionObject)
+			{
+				if (FunctionObject)
+				{
+					MoveBoxList->AddOption(FunctionObject->GetName());
+				}
+			}
+			// 콤보박스 선택 변경 시 이벤트 바인딩
+			MoveBoxList->OnSelectionChanged.AddDynamic(this, &UMovewidget::OnFunctionObjectSelected);
+		}
+		// 배열의 첫 번째 오브젝트를 기본 선택
+		if (AllFunctionObject.Num() > 0)
+		{
+			SelectedActor = AllFunctionObject[0];
+		}
+	}
+}
+
+void UMovewidget::AddObjectToComboBox(AActor* NewObject)
+{
+	if (NewObject && MoveBoxList)
+	{
+		// ComboBox에 오브젝트 이름 추가
+		FString DisplayName = NewObject->GetActorLabel(); // 에디터에서 설정한 이름
+		MoveBoxList->AddOption(DisplayName);
+
+		// AllFunctionObject 배열에 오브젝트 참조 추가하여 ComboBox와 인덱스를 맞추기
+		AllFunctionObject.Add(NewObject);
+	}
+}
+
+void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	// ComboBox에서 선택된 인덱스 가져오기
+	int32 SelectedIndex = MoveBoxList->FindOptionIndex(SelectedItem);
+	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+	{
+		// AllFunctionObject 배열에서 선택된 인덱스의 오브젝트를 가져옴
+		SelectedActor = AllFunctionObject[SelectedIndex];
+		UE_LOG(LogTemp, Warning, TEXT("Selected function object: %s"), *SelectedActor->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
+	}
 }

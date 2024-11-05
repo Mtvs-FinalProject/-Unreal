@@ -57,24 +57,24 @@ void UMyMoveActorComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 {
-
 	if (AActor* Owner = GetOwner())
 	{
-
 		FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
-		Owner->SetActorLocation(NewLocation);
-
-		// 이동한 거리 계산
 		float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
-		// 이동한 거리가 MaxDistance보다 작을 때 이동
+		// 디버깅 로그
+		UE_LOG(LogTemp, Warning, TEXT("Current Location: %s, Target Location: %s, Distance Traveled: %f, Max Distance: %f"),
+			*Owner->GetActorLocation().ToString(), *NewLocation.ToString(), DistanceTraveled, MaxDistance);
+
+		// 이동이 MaxDistance 이내인지 확인
 		if (DistanceTraveled <= MaxDistance)
 		{
 			Owner->SetActorLocation(NewLocation);
+			UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
 		}
 		else
 		{
-			StopMoving(); // 거리를 초과하면 이동 멈춤 
+			StopMoving();
 			UE_LOG(LogTemp, Warning, TEXT("Max distance reached. Movement stopped."));
 		}
 	}
@@ -83,7 +83,21 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 // 이동시작 함수
 void UMyMoveActorComponent::StartMoving()
 {
+	if (AActor* Owner = GetOwner())
+	{
+		StartLocation = Owner->GetActorLocation(); // 시작 위치 초기화
+
+		// MaxDistance가 0이면 기본값으로 설정
+		if (MaxDistance == 0.0f)
+		{
+			MaxDistance = 1000.0f;  // 기본값 설정
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Movement started. StartLocation set to: %s, MaxDistance: %f"), *StartLocation.ToString(), MaxDistance);
+	}
+
 	bShouldMove = true;
+	UE_LOG(LogTemp, Warning, TEXT("Movement started with direction: %s and speed: %f"), *MoveDirection.ToString(), MoveSpeed);
 }
 
 // 이동 끝 함수

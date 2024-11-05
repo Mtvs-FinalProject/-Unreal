@@ -7,6 +7,7 @@
 #include "Components/EditableText.h"
 #include "Kismet/GameplayStatics.h"
 #include "YWK/MyFlyActorComponent.h"
+#include "Components/ComboBoxString.h"
 
 void UFlyWidget::NativeConstruct()
 {
@@ -49,27 +50,21 @@ void UFlyWidget::NativeConstruct()
 	{
 		FlyHightText->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnFlyDistanceTextCommitted);
 	}
+	// Initialize function objects in ComboBox
+	InitializeFunctionObjects();
 }
 
 // 위로 올라가기 버튼
 void UFlyWidget::OnUpButtonClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
-			StoredFlyDirection = Owner->GetActorUpVector();
+			StoredFlyDirection = SelectedActor->GetActorUpVector();
 			UE_LOG(LogTemp, Warning, TEXT("Moving Up. New direction: %s"), *FlyComponent->FlyDirection.ToString());
 		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("FlyComponent not found!"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Owner not found in OnUpButtonClicked!"));
 	}
 }
 
@@ -77,12 +72,12 @@ void UFlyWidget::OnUpButtonClicked()
 void UFlyWidget::OnDownButtonClicked()
 {
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
-			StoredFlyDirection = Owner->GetActorUpVector() * -1;
+			StoredFlyDirection = SelectedActor->GetActorUpVector() * -1;
 
 			// 로그 추가: 앞으로 이동 방향 설정 로그
 			UE_LOG(LogTemp, Warning, TEXT("Moving Down. New direction: %s"), *FlyComponent->FlyDirection.ToString());
@@ -93,9 +88,9 @@ void UFlyWidget::OnDownButtonClicked()
 // 날기 시작
 void UFlyWidget::OnStartButtonClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
 			// 저장된 방향으로 지정
@@ -116,9 +111,9 @@ void UFlyWidget::OnStopButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("Stop button clicked"));
 
 	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
 			FlyComponent->StopFly();
@@ -276,7 +271,63 @@ AActor* UFlyWidget::GetOwnerFromComponent()
 		// 없으면 새로 스폰
 		return GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
 	}
-	return nullptr;
+	return SelectedActor;
 	
+}
+
+void UFlyWidget::InitializeFunctionObjects()
+{
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+	if (BP_FunctionObjectClass && GetWorld())
+	{
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+		if (FlyBoxList)
+		{
+			for (AActor* FunctionObject : AllFunctionObject)
+			{
+				if (FunctionObject)
+				{
+					FlyBoxList->AddOption(FunctionObject->GetName());
+				}
+			}
+			FlyBoxList->OnSelectionChanged.AddDynamic(this, &UFlyWidget::OnFunctionObjectSelected);
+		}
+
+		if (AllFunctionObject.Num() > 0)
+		{
+			SelectedActor = AllFunctionObject[0];
+		}
+	}
+}
+
+void UFlyWidget::AddObjectToComboBox(AActor* NewObject)
+{
+	if (NewObject && FlyBoxList)
+	{
+		//Display name을 추가할 때 Object의 Label을 사용
+		FString DisplayName = NewObject->GetActorLabel();
+		FlyBoxList->AddOption(DisplayName);
+
+		//AllFunctionObject 배열에 추가하여 나중에 참조 가능하게 
+		AllFunctionObject.Add(NewObject);
+		UE_LOG(LogTemp, Warning, TEXT("Added new object to ComboBox: %s"), *DisplayName);
+	}
+}
+
+void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	int32 SelectedIndex = FlyBoxList->FindOptionIndex(SelectedItem);
+	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+	{
+		SelectedActor = AllFunctionObject[SelectedIndex];
+		UE_LOG(LogTemp, Warning, TEXT("Selected fly function object: %s"), *SelectedActor->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
+	}
 }
 

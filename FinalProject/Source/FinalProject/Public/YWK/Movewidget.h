@@ -43,6 +43,18 @@ class UButton* Btn_MoveStop;
 
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UButton* Btn_MoveOrigin;
+
+// ALLFunctionObject: 생성된 기능 오브젝트들을 저장하는 배열
+UPROPERTY()
+TArray<AActor*> AllFunctionObject;
+
+// ComboBox Widget
+UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+class UComboBoxString* MoveBoxList;
+
+// 현재 선택된 오브젝트
+AActor* SelectedActor = nullptr;
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UEditableText* SpeedMoveText;
@@ -98,5 +110,14 @@ AActor* GetOwnerFromComponent();
 
 // 이동 저장할 변수
 FVector StoredMoveDirection;
+
+UFUNCTION()
+void InitializeFunctionObjects();
+
+UFUNCTION()
+void AddObjectToComboBox(AActor* NewObject);
+
+UFUNCTION()
+void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 };
