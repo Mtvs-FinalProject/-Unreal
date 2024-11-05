@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CSR/HTTP/CSR_HTTP_Actor.h"
@@ -57,13 +57,13 @@ TArray<uint8> ACSR_HTTP_Actor::CreateMultipartData(const TArray<uint8>& FileData
     FString BeginBoundary = "--" + BOUNDARY + "\r\n";
     FString EndBoundary = "\r\n--" + BOUNDARY + "--\r\n";
 
-    // JSON ÆÄÆ® Ãß°¡ (ÇÊµå ÀÌ¸§À» json_data·Î º¯°æ)
+    // JSON íŒŒíŠ¸ ì¶”ê°€ (í•„ë“œ ì´ë¦„ì„ json_dataë¡œ ë³€ê²½)
     FString JsonPartHeader = BeginBoundary +
-        "Content-Disposition: form-data; name=\"data\"\r\n\r\n" + // ¼öÁ¤µÈ ºÎºĞ
+        "Content-Disposition: form-data; name=\"data\"\r\n\r\n" + // ìˆ˜ì •ëœ ë¶€ë¶„
         JsonString + "\r\n";
     Content.Append((uint8*)TCHAR_TO_UTF8(*JsonPartHeader), JsonPartHeader.Len());
 
-    // ÆÄÀÏ ÆÄÆ® Ãß°¡
+    // íŒŒì¼ íŒŒíŠ¸ ì¶”ê°€
     FString FilePartHeader = BeginBoundary +
         "Content-Disposition: form-data; name=\"file\"; filename=\"YourMap.umap\"\r\n" +
         "Content-Type: application/octet-stream\r\n\r\n";
@@ -84,13 +84,6 @@ void ACSR_HTTP_Actor::SendUMapAndJsonToServer()
         UE_LOG(LogTemp, Error, TEXT("Player or data table not found."));
         return;
     }
-
-
-    //if (!data)
-    //{
-    //    UE_LOG(LogTemp, Error, TEXT("Row not found in data table."));
-    //    return;
-    //}
 
     if (!FPaths::FileExists(UMAP_FILE_PATH))
     {
@@ -128,7 +121,7 @@ void ACSR_HTTP_Actor::SendUMapAndJsonToServer()
         return;
     }
 
-    // ÃÖÁ¾ JSON ¹®ÀÚ¿­ »ı¼º
+    // ìµœì¢… JSON ë¬¸ìì—´ ìƒì„±
     FString FinalJsonString;
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&FinalJsonString);
     FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), Writer);
@@ -144,11 +137,11 @@ void ACSR_HTTP_Actor::Req_SaveUMapAndJson(const TArray<uint8>& FileData, const F
     Request->SetVerb("POST");
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *BOUNDARY));
 
-    // ¸ÖÆ¼ÆÄÆ® µ¥ÀÌÅÍ ¼³Á¤
+    // ë©€í‹°íŒŒíŠ¸ ë°ì´í„° ì„¤ì •
     TArray<uint8> Content = CreateMultipartData(FileData, JsonString);
     Request->SetContent(Content);
 
-    // ÀÀ´ä Ã³¸® µ¨¸®°ÔÀÌÆ® ¼³Á¤
+    // ì‘ë‹µ ì²˜ë¦¬ ë¸ë¦¬ê²Œì´íŠ¸ ì„¤ì •
     Request->OnProcessRequestComplete().BindUObject(this, &ACSR_HTTP_Actor::Res_SaveUMapAndJson);
 
     Request->ProcessRequest();
@@ -160,12 +153,12 @@ void ACSR_HTTP_Actor::Res_SaveUMapAndJson(FHttpRequestPtr Request, FHttpResponse
     {
         UE_LOG(LogTemp, Log, TEXT("UMap and JSON sent successfully: %s"), *Response->GetContentAsString());
 
-        // °ÔÀÓ Àç½ÃÀÛ
+        // ê²Œì„ ì¬ì‹œì‘
         UWorld* World = GetWorld();
         if (World)
         {
-            FName CurrentLevelName = *World->GetMapName(); // ÇöÀç ·¹º§ ÀÌ¸§ °¡Á®¿À±â
-            UGameplayStatics::OpenLevel(World, CurrentLevelName); // ÇöÀç ·¹º§ ´Ù½Ã ¿­±â
+            FName CurrentLevelName = *World->GetMapName(); // í˜„ì¬ ë ˆë²¨ ì´ë¦„ ê°€ì ¸ì˜¤ê¸°
+            UGameplayStatics::OpenLevel(World, CurrentLevelName); // í˜„ì¬ ë ˆë²¨ ë‹¤ì‹œ ì—´ê¸°
         }
     }
     else
@@ -181,13 +174,13 @@ void ACSR_HTTP_Actor::Res_SaveUMapAndJson(FHttpRequestPtr Request, FHttpResponse
 void ACSR_HTTP_Actor::Req_DownMap()
 {
     TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
-    Request->SetURL(SERVERDOWN_URL + a); // FastAPI ¼­¹öÀÇ ´Ù¿î·Îµå ¿£µåÆ÷ÀÎÆ® ¼³Á¤
+    Request->SetURL(SERVERDOWN_URL + a); // FastAPI ì„œë²„ì˜ ë‹¤ìš´ë¡œë“œ ì—”ë“œí¬ì¸íŠ¸ ì„¤ì •
     Request->SetVerb("GET");
 
-    // ÀÀ´ä Ã³¸® µ¨¸®°ÔÀÌÆ® ¼³Á¤
+    // ì‘ë‹µ ì²˜ë¦¬ ë¸ë¦¬ê²Œì´íŠ¸ ì„¤ì •
     Request->OnProcessRequestComplete().BindUObject(this, &ACSR_HTTP_Actor::Res_DownMap);
 
-    // ¿äÃ» Àü¼Û
+    // ìš”ì²­ ì „ì†¡
     Request->ProcessRequest();
 }
 
@@ -200,32 +193,32 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
     }
 
     FString ResponseContent = Response->GetContentAsString();
-    FString Boundary = "--"; // boundary´Â ¼­¹ö ÀÀ´äÀÇ Content-Type Çì´õ¿¡¼­ ¾òÀ» ¼ö ÀÖ½À´Ï´Ù.
+    FString Boundary = "--"; // boundaryëŠ” ì„œë²„ ì‘ë‹µì˜ Content-Type í—¤ë”ì—ì„œ ì–»ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 
-    // Boundary¸¦ ±âÁØÀ¸·Î ÆÄÆ®¸¦ ºĞÇØ
+    // Boundaryë¥¼ ê¸°ì¤€ìœ¼ë¡œ íŒŒíŠ¸ë¥¼ ë¶„í•´
     TArray<FString> Parts;
     ResponseContent.ParseIntoArray(Parts, *Boundary, true);
 
     FString JsonContent;
 
-    // JSON ÆÄÆ®¸¦ ÃßÃâ
+    // JSON íŒŒíŠ¸ë¥¼ ì¶”ì¶œ
     for (const FString& Part : Parts)
     {
         if (Part.Contains(TEXT("Content-Type: application/json")))
         {
-            int32 ContentIndex = Part.Find(TEXT("{")); // JSON µ¥ÀÌÅÍ ½ÃÀÛ À§Ä¡ Ã£±â
+            int32 ContentIndex = Part.Find(TEXT("{")); // JSON ë°ì´í„° ì‹œì‘ ìœ„ì¹˜ ì°¾ê¸°
             if (ContentIndex != INDEX_NONE)
             {
-                JsonContent = Part.Mid(ContentIndex); // JSON µ¥ÀÌÅÍ ÃßÃâ
+                JsonContent = Part.Mid(ContentIndex); // JSON ë°ì´í„° ì¶”ì¶œ
                 UE_LOG(LogTemp, Log, TEXT("Extracted JSON: %s"), *JsonContent);
-                break; // JSON ÆÄÆ®¸¦ Ã£¾ÒÀ¸¹Ç·Î ·çÇÁ Á¾·á
+                break; // JSON íŒŒíŠ¸ë¥¼ ì°¾ì•˜ìœ¼ë¯€ë¡œ ë£¨í”„ ì¢…ë£Œ
             }
         }
     }
 
     FString CleanedJsonContent = JsonContent.Replace(TEXT(" "), TEXT("")).Replace(TEXT("\n"), TEXT("")).Replace(TEXT("\r"), TEXT(""));
 
-    // JSON¿¡¼­ "data_table" ÇÊµå¸¦ TArray<FPSH_ObjectData>·Î ÆÄ½Ì
+    // JSONì—ì„œ "data_table" í•„ë“œë¥¼ TArray<FPSH_ObjectData>ë¡œ íŒŒì‹±
     if (!JsonContent.IsEmpty())
     {
         TSharedPtr<FJsonObject> JsonObject;
@@ -235,7 +228,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
         {
             if (JsonObject->HasField("data_table"))
             {
-                // data_table ÇÊµå¸¦ TArray<FPSH_ObjectData>·Î ÆÄ½Ì
+                // data_table í•„ë“œë¥¼ TArray<FPSH_ObjectData>ë¡œ íŒŒì‹±
                 TArray<FPSH_ObjectData> DataTableArray;
                 const TArray<TSharedPtr<FJsonValue>>* JsonArray;
 
@@ -250,21 +243,21 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                         }
                     }
 
-                    // DataTableArrayÀÇ µ¥ÀÌÅÍ·Î ºí·Ï ½ºÆù
+                    // DataTableArrayì˜ ë°ì´í„°ë¡œ ë¸”ë¡ ìŠ¤í°
                     for (const FPSH_ObjectData& Entry : DataTableArray)
                     {
-                        // ·çÆ® ºí·Ï ½ºÆù
+                        // ë£¨íŠ¸ ë¸”ë¡ ìŠ¤í°
                         TSubclassOf<APSH_BlockActor> SpawnActor = Entry.actor;
                         if (SpawnActor)
                         {
                             FActorSpawnParameters Params;
-                            FVector SpawnLocation = GetActorLocation(); // ±âº» À§Ä¡ ¶Ç´Â ÀûÀıÇÑ ¿ÀÇÁ¼Â
+                            FVector SpawnLocation = GetActorLocation(); // ê¸°ë³¸ ìœ„ì¹˜ ë˜ëŠ” ì ì ˆí•œ ì˜¤í”„ì…‹
                             FRotator SpawnRotation = FRotator::ZeroRotator;
 
                             APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, SpawnLocation, SpawnRotation, Params);
                             if (SpawnedBlock)
                             {
-                                // ºí·Ï °èÃş ·Îµå
+                                // ë¸”ë¡ ê³„ì¸µ ë¡œë“œ
                                 SpawnedBlock->LoadBlockHierarchy(Entry);
                             }
                         }
