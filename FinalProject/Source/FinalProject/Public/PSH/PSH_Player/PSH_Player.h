@@ -162,15 +162,8 @@ public:
     UPROPERTY()
     UUserWidget* CurrentObjectWidget = nullptr;
 
-	// 청사진 관련
-	UPROPERTY(EditDefaultsOnly)
-	class UStaticMeshComponent * previewMeshComp;
-
 	UPROPERTY(EditDefaultsOnly)
 	class UMaterial * previewMat;
-
-	TSubclassOf<class APSH_BlockActor> blockSpawner;
-
 
 	// 카메라 조정
 	void ToggleARmLength();
@@ -185,6 +178,16 @@ public:
 	void NRPC_PickEffect();
 
 	FVector EffectEndLoc;
+
+	// Spawn
+
+	UPROPERTY(EditDefaultsOnly , Category = "Bot")
+	TSubclassOf<class APSH_SpawnBot> spawnBotFac;
+
+	UPROPERTY()
+	class APSH_SpawnBot * spawnBot;
+
+	bool bSpawn = true;
 
 	UFUNCTION(Server,Reliable)
 	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor> spawnActor);
