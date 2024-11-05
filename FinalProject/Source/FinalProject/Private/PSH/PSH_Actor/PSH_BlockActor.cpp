@@ -69,47 +69,15 @@ void APSH_BlockActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-// 	if (bGrab) // true 일떄
-// 	{
-// 		FVector worldLoc; // 마우스의 월드 포지션
-// 		FVector worldDir; // 카메라 포지션과 마우스 클릭 장소간의 방향
-// 
-// 		APlayerController* pc = Cast<APlayerController>(GetOwner());
-// 		UE_LOG(LogTemp, Warning, TEXT("%s"), *GetOwner()->GetName());
-// 
-// 		if (pc == nullptr) return;
-// 		pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
-// 
-// 		/*UE_LOG(LogTemp, Warning, TEXT("X : %f Y : %f Z : %f"), worldLoc.X, worldLoc.Y, worldLoc.Z);*/
-// 		FVector TargetLocation = worldLoc + (worldDir * 200.0f); // 약간 앞쪽으로 이동
-// 
-// 		playerHandle->SetTargetLocation(TargetLocation);
-// 	}
 }
 
 void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
 {
+	if (handle == nullptr) return;
+
 	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
-\
-}
-
-void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
-{
-	if (handle == nullptr) return;
-	
-;
-	if (handle == nullptr) return;
-
-	
-	// 부모와의 연결 제거
 	Remove();
-
 	pickedUp = true;
-
-	// 블록 잡기
-	MRPC_PickUp(handle);
-
-
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
 
@@ -117,6 +85,15 @@ void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryOnly);
 	}
+}
+
+void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
+{
+	if (handle == nullptr) return;
+	// 블록 잡기
+	MRPC_PickUp(handle);
+
+	// 합치기 플레이스 서버는된다, 여기 해결 
 }
 
 void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)

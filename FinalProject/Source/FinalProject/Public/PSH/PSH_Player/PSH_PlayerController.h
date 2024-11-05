@@ -38,6 +38,12 @@ public:
 	UFUNCTION()
 	void SelectObject(AActor* SelectedActor);
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class UUserWidget> objectWidgetFac;
+
+	UPROPERTY()
+	class UPSH_ObjectWidget * objectWidget;
+
 	UPROPERTY()
 	class APSH_Player * curPlayer;
 

@@ -44,8 +44,6 @@ public:
 	class UButton * Btr_Load;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_CallBot;
-	UPROPERTY(meta = (BindWidget))
-	class UButton * Btr_Spawn;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * nomalObjectData;
@@ -69,8 +67,6 @@ public:
 
 	UFUNCTION()
 	void OnClickedLoad();
-	UFUNCTION()
-	void OnClickedSpawn();
 
 	UFUNCTION()
 	void OnClickedCallBot();

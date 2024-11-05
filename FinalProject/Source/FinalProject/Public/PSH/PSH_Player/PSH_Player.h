@@ -48,6 +48,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TArray<class UInputAction*> inputActions;
 
+	UPROPERTY()
+	class UPSH_PlayerAnim * anim;
+
 	//Camera
 	UPROPERTY(EditDefaultsOnly)
 	class USpringArmComponent * springArm;
@@ -166,18 +169,25 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	class UMaterial * previewMat;
 
-	void SetPreviewMesh(class UStaticMesh * previewMesh , TSubclassOf<class APSH_BlockActor> spawnActor);
-
-	UFUNCTION()
-	void PreviewMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	void SpawnBlock();
-
 	TSubclassOf<class APSH_BlockActor> blockSpawner;
 
+
+	// 카메라 조정
+	void ToggleARmLength();
+
+	bool bShouldExtend = false;
+
+	// Beak Effect
+	UPROPERTY(EditDefaultsOnly,Category = Niagara)
+	class UNiagaraSystem * pickEffect;
+
+	UFUNCTION(NetMulticast , Reliable)
+	void NRPC_PickEffect();
+
+	FVector EffectEndLoc;
+
 	UFUNCTION(Server,Reliable)
-	void SRPC_SpawnBlock();
+	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor> spawnActor);
 
 	// 서버화와 함께 리펙토링.
 	// 1. 잡기 시도. 잡은게 없다면 2번으로 있다면 번으로 
@@ -192,6 +202,9 @@ public:
 	//3. 블럭 실제 잡기.
 	UFUNCTION(Server,Reliable)
 	void SRPC_Pickup(const FVector & startLoc, const FVector & endLoc);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MRPC_PickupAnim(class APSH_BlockActor* target);
 	
 	//4. 블럭의 이동 -> Tick
 
@@ -203,4 +216,11 @@ public:
 	// 블럭 이동 최대거리 
 	UPROPERTY(EditAnywhere)
 	float playerReach = 1000.f;
+
+	float NormalizeAxis(float Angle);
+
+
+	// 방향전환
+	UPROPERTY()
+	class APSH_BlockActor * GrabbedActor;
 };

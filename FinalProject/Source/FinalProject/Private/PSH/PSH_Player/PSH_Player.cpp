@@ -25,6 +25,11 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyChoiceActionWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "PSH/PSH_Component/PSH_PlayerAnim.h"
+#include "../../../../Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h"
+#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
+#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -57,8 +62,15 @@ APSH_Player::APSH_Player()
 void APSH_Player::BeginPlay()
 {
 	Super::BeginPlay();
-	previewMeshComp->OnComponentBeginOverlap.AddDynamic(this,&APSH_Player::PreviewMeshBeginOverlap);
+
 	previewMeshComp->SetVisibility(false);
+	FVector CharacterLocation = GetActorLocation();
+	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
+	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 위쪽 방향
+	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
+	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 200);
+
+	previewMeshComp->SetWorldLocation(SpawnLocation);
 	// 마우스 위젯 사용 
 	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
 	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
@@ -82,22 +94,60 @@ void APSH_Player::BeginPlay()
 		}
 	}
 
+	
+	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
+
 }
 
 // Called every frame
 void APSH_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+	// 목표 길이를 설정 (300 또는 500)
+	float TargetLength = bShouldExtend ? 500.0f : 300.0f;
+
+	// 현재 SpringArm의 길이를 목표 길이로 부드럽게 보간
+	springArm->TargetArmLength = FMath::FInterpTo(springArm->TargetArmLength, TargetLength, DeltaTime, 3.0f); // 3.0f는 보간 속도 조정
+
+	if (GrabbedActor) // 물체를 잡은 상태인지 확인
+	{
+		FVector PlayerLocation = GetActorLocation();
+		FVector ObjectLocation = GrabbedActor->GetActorLocation();
+
+		// 플레이어가 물체를 바라보도록 회전 계산
+		FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
+
+		// 부드럽게 회전하도록 InterpTo 적용
+		FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
+		SetActorRotation(NewRotation);
+
+		// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
+		FRotator CurrentControlRotation = GetControlRotation();
+
+		// Yaw를 360도로 감싸기 위한 DeltaYaw 계산
+		float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
+
+		if (FMath::Abs(DeltaYaw) > 60.0f) // 일정 이상 차이날 경우 회전 시작
+		{
+			if(FMath::Abs(DeltaYaw) > 90.0f) return;
+			CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // 부드러운 회전
+			Controller->SetControlRotation(CurrentControlRotation);
+		}
+	}
+
+
 	if (pc && pc->IsLocalController())
 	{
 	
 		// 잡은게 없다면 
 		if(handleComp->GetGrabbedComponent() == nullptr) return;
 
-		// 잡은애 블럭이 없지 않다면
+		// 잡은애 블럭이 있다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
+			EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
+			NRPC_PickEffect();
+			//PRINTLOG(TEXT("Sever?"));
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
 			if(snap)
 			snapPointIndexLength = snap->GetSnapPoints().Num();
@@ -155,9 +205,6 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
 		EnhancedInputComponent->BindAction(inputActions[3], ETriggerEvent::Started, this, &APSH_Player::PlayerJump);
 
-		// 스폰 블럭
-		EnhancedInputComponent->BindAction(inputActions[4], ETriggerEvent::Started, this, &APSH_Player::SpawnBlock);
-
 		// 블럭 저장
 		EnhancedInputComponent->BindAction(inputActions[5], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
 
@@ -183,13 +230,13 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	}
 
 }
+
 void APSH_Player::Move(const FInputActionValue& value)
 {
 	FVector2D input2D = value.Get<FVector2D>();
 
 	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
-
 
 	AddMovementInput(forwardVec, input2D.X);
 	AddMovementInput(rightVec, input2D.Y);
@@ -206,47 +253,6 @@ void APSH_Player::PlayerJump()
 	Jump();
 }
 
-void APSH_Player::SetPreviewMesh(class UStaticMesh* previewMesh , TSubclassOf<class APSH_BlockActor> spawnActor)
-{
-	
-	if (!previewMeshComp)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("previewMeshComp is not initialized."));
-		return;
-	}
-	previewMeshComp->SetVisibility(true);
-	// 2. 미리보기 메쉬 할당
-	if (previewMesh)
-	{
-		previewMeshComp->SetStaticMesh(previewMesh);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PreviewMesh is null."));
-		return;
-	}
-
-	blockSpawner = spawnActor;
-	// 3. 캐릭터의 위치와 방향을 기준으로 상대적 위치 설정
-	FVector CharacterLocation = GetActorLocation();
-	FVector RightVector = GetActorRightVector();
-	FVector ForwardVector = GetActorForwardVector();
-
-	FVector SpawnLocation = CharacterLocation + (RightVector * 200) + (ForwardVector * 100);
-
-	// 4. 월드 좌표 설정
-	previewMeshComp->SetWorldLocation(SpawnLocation);
-
-	// 5. 메쉬에 머테리얼 할당
-	previewMeshComp->SetMaterial(0, previewMat);
-
-	// 디버그 메시지 출력
-	UE_LOG(LogTemp, Log, TEXT("Preview mesh set at location: %s"), *SpawnLocation.ToString());
-}
-void APSH_Player::PreviewMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// 오버렙 시 소환 불가 .
-}
 void APSH_Player::Grab()
 {
 	if (handleComp == nullptr)
@@ -311,6 +317,12 @@ void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) //
 }
 
 
+float APSH_Player::NormalizeAxis(float Angle)
+{
+	while (Angle > 180.0f) Angle -= 360.0f;
+	while (Angle < -180.0f) Angle += 360.0f;
+	return Angle;
+}
 void APSH_Player::CastRay() // 잡기위한 레이 
 {
 
@@ -319,7 +331,7 @@ void APSH_Player::CastRay() // 잡기위한 레이
 
 	pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
 
-	FVector StartLoc = cameraComp->GetComponentLocation(); // 터짐
+	FVector StartLoc = cameraComp->GetComponentLocation(); 
 	FVector EndLoc = StartLoc + (rayPower * worldDir);
 	
 	if (IsLocallyControlled() == false) return;
@@ -327,7 +339,7 @@ void APSH_Player::CastRay() // 잡기위한 레이
 	SRPC_Pickup(StartLoc,EndLoc);
 }
 
-void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc) // 맞은 위치가 애매하다?
+void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc) 
 {
 	
 	FHitResult hitInfo;
@@ -342,12 +354,34 @@ void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVec
 		{
 			if (target->GetOwner() == nullptr)
 			{
+				
 				target->SetOwner(this);
 				target->PickUp(handleComp);
+				GrabbedActor = target;
+				MRPC_PickupAnim(target);
 			}
 		}
 	}
 	
+}
+
+void APSH_Player::NRPC_PickEffect_Implementation()
+{
+	FVector start = GetMesh()->GetSocketLocation(FName("LaserPoint"));
+	UNiagaraComponent * effect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),pickEffect, start);
+	if(!effect) return;
+	UE_LOG(LogTemp,Warning,TEXT("Shot"));
+	effect->SetVectorParameter("Beam Start Loc",start);
+	effect->SetVectorParameter("Beam End Loc", EffectEndLoc);
+}
+
+void APSH_Player::MRPC_PickupAnim_Implementation(class APSH_BlockActor* target)
+{
+	if(target == nullptr) return;
+	GrabbedActor = target;
+	if(anim == nullptr) return;
+
+	anim->PlayAnimPickUp();
 }
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
 								FVector & closestPt, float& dist , int32& closetPointIndex)
@@ -499,10 +533,14 @@ void APSH_Player::DropBlcok()
 void APSH_Player::MRPC_DropBlcok_Implementation()
 {
 	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
+	GrabbedActor = nullptr;
+	if(anim == nullptr) return;
+	anim->PlayAnimDrop();
 }
 void APSH_Player::SRPC_DropBlcok_Implementation()
 {
 	MRPC_DropBlcok(); 
+	GrabbedActor = nullptr;
 	// 저장 하는 무언가 필요.
 	
 }
@@ -516,12 +554,17 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 	snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
 
+
+	// 매 프레임마다 업데이트된 목표 위치 계산
+	FVector targetLoc;
+	FRotator targetRot;
 	if (hit)
 	{
 		FVector localLocation = hitinfo.Location;
 		FVector localNormal = hitinfo.Normal;
+
 		auto* hitActor = Cast<APSH_BlockActor>(hitinfo.GetActor()); // ray에 충돌한 엑터
-		FTransform hitActorTransfrom = hitinfo.GetActor()->GetActorTransform();
+		FTransform hitActorTransform = hitinfo.GetActor()->GetActorTransform();
 
 		TArray<FVector> snapPoints; // 조인트 위치값
 		TArray<FRotator> snapDirection; // 조인트 방향
@@ -530,9 +573,6 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		float distance = 0;
 		int32 ClosestSnapPointIndex = 0;
 
-		FVector newLoc; // 새로운 위치
-		FRotator newRot; // 새로운 방향
-
 		auto* heldActor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 엑터
 		if (Cast<APSH_BlockActor>(hitActor)) // 범위 안에 있는 상태
 		{
@@ -540,7 +580,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 			snapPoints = hitActor->GetSnapPoints();
 
-			ClosestPoint(snapPoints, localLocation, hitActorTransfrom, closestPoint, distance, ClosestSnapPointIndex);
+			ClosestPoint(snapPoints, localLocation, hitActorTransform, closestPoint, distance, ClosestSnapPointIndex);
 			snapDirection = hitActor->GetSnapDirections();
 			Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();
 		}
@@ -555,72 +595,66 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 		if (!andBool)
 		{
-			newLoc = localLocation + (heldActor->GetActorLocation() -
+			targetLoc = localLocation + (heldActor->GetActorLocation() -
 				UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
+			targetRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
 		}
 		else
 		{
-			newLoc = UKismetMathLibrary::TransformLocation(hitActorTransfrom, closestPoint) +
+			targetLoc = UKismetMathLibrary::TransformLocation(hitActorTransform, closestPoint) +
 				(heldActor->GetActorLocation() - UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
+			targetRot = UKismetMathLibrary::TransformRotation(hitActorTransform, snapDirection[ClosestSnapPointIndex]);
 		}
 
-		rotationHelper->SetWorldLocation(newLoc);
-
-		if (!andBool)
-		{
-			newRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
-		}
-		else
-		{
-			newRot = UKismetMathLibrary::TransformRotation(hitActorTransfrom, snapDirection[ClosestSnapPointIndex]);
-		}
-
-		rotationHelper->SetWorldRotation(newRot);
-
+		rotationHelper->SetWorldLocation(targetLoc);
+		rotationHelper->SetWorldRotation(targetRot);
 		rotationHelper->AddLocalRotation(WorldHelperRotationOffset());
 
-		FRotator A = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetRightVector(newRot), rotationOffset.Pitch);
-		FRotator B = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetUpVector(newRot), rotationOffset.Yaw);
+		FRotator A = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetRightVector(targetRot), rotationOffset.Pitch);
+		FRotator B = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetUpVector(targetRot), rotationOffset.Yaw);
 
 		rotationHelper->AddWorldRotation(UKismetMathLibrary::ComposeRotators(A, B));
-		ReplicatedLocation = rotationHelper->GetComponentLocation();
-		ReplicatedRotation = rotationHelper->GetComponentRotation();
-		//handleComp->SetTargetLocationAndRotation(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
 	}
 	else
 	{
-		ReplicatedLocation = rayEndLocation;
-		ReplicatedRotation = rotationOffset;
-		//handleComp->SetTargetLocationAndRotation(rayEndLocation, rotationOffset);
+		FVector newLoc = FMath::VInterpTo(rotationHelper->GetComponentLocation(), rayEndLocation, GetWorld()->DeltaTimeSeconds, 5.0f); // 속도를 높여 빠르게 이동
+		rotationHelper->SetWorldLocation(newLoc);
+
+		// 부드러운 보간으로 목표 회전으로 이동
+		FRotator newRot = FMath::RInterpTo(rotationHelper->GetComponentRotation(), rotationOffset, GetWorld()->DeltaTimeSeconds, 5.0f);
+		rotationHelper->SetWorldRotation(newRot);
 	}
 
+	ReplicatedLocation = rotationHelper->GetComponentLocation();
+	ReplicatedRotation = rotationHelper->GetComponentRotation();
+
 	MRPC_HandleBlock(ReplicatedLocation,ReplicatedRotation);
+
 }
 void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRot)
 {
 	handleComp->SetTargetLocationAndRotation(newLoc, newRot);
 }
 
-
-void APSH_Player::SpawnBlock()
+void APSH_Player::ToggleARmLength()
 {
-
+	bShouldExtend = !bShouldExtend;
 }
 
-void APSH_Player::SRPC_SpawnBlock_Implementation()
+void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 
 	// 캐릭터의 위치와 방향을 기준으로 상대적 위치를 설정
 	FVector CharacterLocation = GetActorLocation();
-	FVector RightVector = GetActorRightVector();  // 캐릭터의 오른쪽 방향
+	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
 	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 앞쪽 방향
 
 	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
-	FVector SpawnLocation = CharacterLocation + (RightVector * 200) + (ForwardVector * 100);
+	FVector SpawnLocation = CharacterLocation + (upVector * 200) + (ForwardVector * 200);
 
 	// 스폰 파라미터 설정 및 엑터 소환
 	FActorSpawnParameters SpawnParams;
-	APSH_BlockActor* SpawnedActor = GetWorld()->SpawnActor<APSH_BlockActor>(blockSpawner, SpawnLocation, GetActorRotation(), SpawnParams);
+	APSH_BlockActor* SpawnedActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
 
 }
 

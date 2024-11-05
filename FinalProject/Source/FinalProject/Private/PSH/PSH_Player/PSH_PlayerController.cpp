@@ -11,6 +11,7 @@
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "Blueprint/UserWidget.h"
 #include "CSR/UI/CSR_Proto_StartUI.h"
+#include "PSH/PSH_UI/PSH_ObjectWidget.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
@@ -35,17 +36,23 @@ void APSH_PlayerController::PlayerTick(float DeltaTime)
 void APSH_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
 		SetShowMouseCursor(true);
 		bEnableClickEvents = true;
 		bEnableMouseOverEvents = true;
-		curPlayer = Cast<APSH_Player>(GetPawn());
-		curPlayer->SetActorHiddenInGame(true);
-		this->SetInputMode(FInputModeUIOnly());
-		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
-		StartUI->AddToViewport();
+		//curPlayer = Cast<APSH_Player>(GetPawn());
+		//curPlayer->SetActorHiddenInGame(true);
+		//this->SetInputMode(FInputModeUIOnly());
+// 		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
+// 		StartUI->AddToViewport();
+		SetInputMode(FInputModeGameAndUI());
 
-		//SetInputMode(FInputModeGameAndUI());
+		
+		if(!IsLocalController()) return;
+		objectWidget = CreateWidget<UPSH_ObjectWidget>(this,objectWidgetFac);
+		objectWidget->AddToViewport();
+		objectWidget->SetVisibility(ESlateVisibility::Hidden);
+		
+
 
 }
 void APSH_PlayerController::LookMouseCursor()
