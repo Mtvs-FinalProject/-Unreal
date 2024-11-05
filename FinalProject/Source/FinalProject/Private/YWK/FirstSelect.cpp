@@ -11,6 +11,7 @@
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "PSH/PSH_Actor/PSH_SpawnBot.h"
 
 void UFirstSelect::NativeConstruct()
 {
@@ -100,15 +101,17 @@ void UFirstSelect::OnCraftClicked()
         // 위젯 주인 가져오기
         APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController());
         APSH_Player * player = Cast<APSH_Player>(PlayerController->GetPawn());
-        if (PlayerController)
+        if (PlayerController && player)
         {
             UE_LOG(LogTemp, Warning, TEXT("PlayerController is valid"));
-            if (PlayerController->objectWidget) // 위젯 보이기
+           
+            player->ToggleARmLength();
+
+            if (player->spawnBot)
             {
-                PlayerController->objectWidget->SetVisibility(ESlateVisibility::Visible);
-                player->ToggleARmLength();
-                player->previewMeshComp->SetVisibility(true);
+                player->spawnBot->MoveTo();
             }
+            
         }
         else
         {

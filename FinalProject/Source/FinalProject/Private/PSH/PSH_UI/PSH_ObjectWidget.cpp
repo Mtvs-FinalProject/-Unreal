@@ -14,6 +14,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/ScrollBoxSlot.h"
 #include "Styling/SlateColor.h"
+#include "PSH/PSH_Actor/PSH_SpawnBot.h"
 
 void UPSH_ObjectWidget::NativeConstruct()
 {
@@ -168,8 +169,13 @@ void UPSH_ObjectWidget::OnClickedBack()
 	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
 
 	if (player == nullptr ) return;
-	player->previewMeshComp->SetVisibility(false);
 	player->ToggleARmLength();
+
+	if (player->spawnBot)
+	{
+		player->spawnBot->SetState(EspawnState::IDLEMOVE);
+		player->spawnBot->lightMesh->SetVisibility(false);
+	}
 	
 	SetVisibility(ESlateVisibility::Hidden);
 }

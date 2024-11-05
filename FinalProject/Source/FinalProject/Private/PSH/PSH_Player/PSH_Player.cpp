@@ -30,6 +30,7 @@
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h"
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
+#include "PSH/PSH_Actor/PSH_SpawnBot.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -51,8 +52,8 @@ APSH_Player::APSH_Player()
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 
-	previewMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("previewMesh"));
-	previewMeshComp->SetupAttachment(RootComponent);
+// 	previewMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("previewMesh"));
+// 	previewMeshComp->SetupAttachment(RootComponent);
 
 	bReplicates = true;
 	SetReplicateMovement(true);
@@ -63,14 +64,15 @@ void APSH_Player::BeginPlay()
 {
 	Super::BeginPlay();
 
-	previewMeshComp->SetVisibility(false);
-	FVector CharacterLocation = GetActorLocation();
-	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
-	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 위쪽 방향
-	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
-	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 200);
+	FActorSpawnParameters param;
+	spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
 
-	previewMeshComp->SetWorldLocation(SpawnLocation);
+	if (spawnBot)
+	{
+		spawnBot->SetPlayer(this);
+		//spawnBot->compMesh->SetVisibility(false);
+	}
+
 	// 마우스 위젯 사용 
 	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
 	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
@@ -643,14 +645,14 @@ void APSH_Player::ToggleARmLength()
 
 void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
-
+	if(bSpawn == false) return;
 	// 캐릭터의 위치와 방향을 기준으로 상대적 위치를 설정
 	FVector CharacterLocation = GetActorLocation();
 	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
 	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 앞쪽 방향
 
 	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
-	FVector SpawnLocation = CharacterLocation + (upVector * 200) + (ForwardVector * 200);
+	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 300);
 
 	// 스폰 파라미터 설정 및 엑터 소환
 	FActorSpawnParameters SpawnParams;
