@@ -25,6 +25,16 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 
 	// 초기 최대 거리
 	MoveDistance = 1000.0f;
+
+	// 초기 왕복 모드
+	bLoopMode = false;
+
+	// 초기 왕복 카운트
+	LoopCount = 1;
+	
+	// 현재 왕복 횟수
+	CurrentLoop = 0;
+
 }
 
 
@@ -65,18 +75,45 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 		// 디버깅 로그
 		UE_LOG(LogTemp, Warning, TEXT("Current Location: %s, Target Location: %s, Distance Traveled: %f, Max Distance: %f"),
 			*Owner->GetActorLocation().ToString(), *NewLocation.ToString(), DistanceTraveled, MaxDistance);
-
-		// 이동이 MaxDistance 이내인지 확인
-		if (DistanceTraveled <= MaxDistance)
+		if (bSingleDirection)
 		{
-			Owner->SetActorLocation(NewLocation);
-			UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
+			// 단순 이동 모드 : 최대 거리 도달 시 이동 멈춤
+			if (DistanceTraveled <= MaxDistance)
+			{
+				Owner->SetActorLocation(NewLocation);
+				UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
+			}
+			else
+			{
+				StopMoving();
+				UE_LOG(LogTemp, Warning, TEXT("Max distance reached. Movement stopped."));
+			}
 		}
 		else
 		{
-			StopMoving();
-			UE_LOG(LogTemp, Warning, TEXT("Max distance reached. Movement stopped."));
+			// 왕복 이동 모드 : 최대 거리 도달 시 방향 반전
+			if (DistanceTraveled >= MaxDistance)
+			{
+				if (bLoopMode || CurrentLoop < LoopCount)
+				{
+					MoveDirection *= -1.0f; // 방향 반전
+					StartLocation = Owner->GetActorLocation(); //새 출발 위치
+
+					if (!bLoopMode)
+					{
+						CurrentLoop++; // 반복 횟수 증가
+					}
+					UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Actor changing direction."), CurrentLoop, LoopCount);
+				}
+				else
+				{
+					StopMoving(); // 왕복 횟수 충족 시 이동 정지
+					UE_LOG(LogTemp, Warning, TEXT("Movement stopped after %d loops."), CurrentLoop);
+				}
+			}
+			Owner->SetActorLocation(NewLocation);
 		}
+
 	}
 }
 
@@ -85,19 +122,11 @@ void UMyMoveActorComponent::StartMoving()
 {
 	if (AActor* Owner = GetOwner())
 	{
-		StartLocation = Owner->GetActorLocation(); // 시작 위치 초기화
-
-		// MaxDistance가 0이면 기본값으로 설정
-		if (MaxDistance == 0.0f)
-		{
-			MaxDistance = 1000.0f;  // 기본값 설정
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Movement started. StartLocation set to: %s, MaxDistance: %f"), *StartLocation.ToString(), MaxDistance);
+		StartLocation = Owner->GetActorLocation();
 	}
-
+	CurrentLoop = 0;  // 반복 횟수 초기화
 	bShouldMove = true;
-	UE_LOG(LogTemp, Warning, TEXT("Movement started with direction: %s and speed: %f"), *MoveDirection.ToString(), MoveSpeed);
+	UE_LOG(LogTemp, Warning, TEXT("Movement started"));
 }
 
 // 이동 끝 함수

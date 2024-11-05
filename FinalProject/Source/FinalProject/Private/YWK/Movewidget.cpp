@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/EditableText.h"
 #include "Components/ComboBoxString.h"
+#include "Components/CheckBox.h"
 
 void UMovewidget::NativeConstruct()
 {
@@ -81,6 +82,17 @@ void UMovewidget::NativeConstruct()
 	}
 
 	InitializeFunctionObjects();
+
+	// 왕복 모드 체크박스와 횟수 입력 필드 이벤트 바인딩
+	if (Chk_LoopMode)
+	{
+		Chk_LoopMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnLoopModeCheckChanged);
+	}
+
+	if (Chk_SingleDirectionMode)
+	{
+		Chk_SingleDirectionMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnSingleDirectionCheckChanged);
+	}
 }
 
 // 앞으로 가기
@@ -399,3 +411,43 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
 	}
 }
+
+void UMovewidget::OnLoopModeCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
+		if (MoveComponent)
+		{
+			MoveComponent->bLoopMode = bIsChecked;
+
+			// 왕복 모드가 활성화된 경우 단순 이동 모드 해제
+			if (bIsChecked && Chk_SingleDirectionMode)
+			{
+				Chk_SingleDirectionMode->SetIsChecked(false);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Loop mode set to: %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"));
+		}
+	}
+}
+
+void UMovewidget::OnSingleDirectionCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
+		if (MoveComponent)
+		{
+			MoveComponent->bSingleDirection = bIsChecked;
+
+			// 단순 이동모드가 활성화 된 경우 왕복 모드 해제
+			if (bIsChecked && Chk_LoopMode)
+			{
+				Chk_LoopMode->SetIsChecked(false);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Single Direction mode set to: %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"));
+		}
+	}
+}
+
+

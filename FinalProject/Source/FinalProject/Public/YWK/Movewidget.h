@@ -63,7 +63,13 @@ UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UEditableText* DistMoveText;
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+// 왕복 모드와 횟수 입력 위젯
+UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+class UCheckBox* Chk_LoopMode;  // 무한 왕복 모드 체크박스
 
+UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+class UCheckBox* Chk_SingleDirectionMode;  // 단순 이동 모드 체크박스
+//------------------------------------------------------------------------------------------------------------------------------------------
 UFUNCTION()
 void OnFrontClicked();
 
@@ -119,5 +125,13 @@ void AddObjectToComboBox(AActor* NewObject);
 
 UFUNCTION()
 void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+//-----------------------------------------------------------------------------------------------
+// 왕복관련 함수들
+UFUNCTION()
+void OnLoopModeCheckChanged(bool bIsChecked); // 체크박스 상태 변경 시 호출
+
+UFUNCTION()
+void OnSingleDirectionCheckChanged(bool bIsChecked);  // 단순 이동 모드 체크박스 상태 변경
 
 };
