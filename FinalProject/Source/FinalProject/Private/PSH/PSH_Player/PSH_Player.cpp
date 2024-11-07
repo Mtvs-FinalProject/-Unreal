@@ -64,39 +64,42 @@ void APSH_Player::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FActorSpawnParameters param;
-	spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
-
-	if (spawnBot)
+	if (HasAuthority())
 	{
-		spawnBot->SetPlayer(this);
-		//spawnBot->compMesh->SetVisibility(false);
-	}
+		PRINTLOG(TEXT("Spawn"));
+		FActorSpawnParameters param;
+		APSH_SpawnBot * spawn = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
+		APSH_GarbageBot * garbage = GetWorld()->SpawnActor<APSH_GarbageBot>(param);
 
-	// 마우스 위젯 사용 
-	mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
-	botWidget  = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
-
-	if (IsLocallyControlled())
-	{
-		pc = Cast<APSH_PlayerController>(GetController());
-	}
-
-	if (botWidget)
-	{
-		botWidget->AddToViewport();
-		botWidget->SetVisibility(ESlateVisibility::Hidden);
-	}
-
-	if (mouseWidget)
-	{
-		if (pc)
+		if (spawn && garbage)
 		{
-			pc->SetMouseCursorWidget(EMouseCursor::Default, mouseWidget);
+			spawn->SetOwner(this);
+			garbage->SetOwner(this);
+			CRPC_SetBot(spawn, garbage);
 		}
 	}
 
-	
+	// 마우스 위젯 사용 
+	if (IsLocallyControlled())
+	{
+		pc = Cast<APSH_PlayerController>(GetController());
+		mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
+		botWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
+		if (botWidget)
+		{
+			botWidget->AddToViewport();
+			botWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+
+		if (mouseWidget)
+		{
+			if (pc)
+			{
+				pc->SetMouseCursorWidget(EMouseCursor::Default, mouseWidget);
+			}
+		}
+	}
+
 	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
 
 }
@@ -111,7 +114,7 @@ void APSH_Player::Tick(float DeltaTime)
 	// 현재 SpringArm의 길이를 목표 길이로 부드럽게 보간
 	springArm->TargetArmLength = FMath::FInterpTo(springArm->TargetArmLength, TargetLength, DeltaTime, 3.0f); // 3.0f는 보간 속도 조정
 
-	if (GrabbedActor) // 물체를 잡은 상태인지 확인
+	if (GrabbedActor && pc != nullptr) // 물체를 잡은 상태인지 확인
 	{
 		FVector PlayerLocation = GetActorLocation();
 		FVector ObjectLocation = GrabbedActor->GetActorLocation();
@@ -133,22 +136,20 @@ void APSH_Player::Tick(float DeltaTime)
 		{
 			if(FMath::Abs(DeltaYaw) > 90.0f) return;
 			CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // 부드러운 회전
-			Controller->SetControlRotation(CurrentControlRotation);
+			pc->SetControlRotation(CurrentControlRotation);
 		}
 	}
 
-
 	if (pc && pc->IsLocalController())
 	{
-	
 		// 잡은게 없다면 
 		if(handleComp->GetGrabbedComponent() == nullptr) return;
 
 		// 잡은애 블럭이 있다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
-			EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
-			NRPC_PickEffect();
+			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
+			SRPC_PickEffect(EffectEndLoc);
 			//PRINTLOG(TEXT("Sever?"));
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
 			if(snap)
@@ -159,7 +160,8 @@ void APSH_Player::Tick(float DeltaTime)
 		PreTraceCheck(point.startLocation, point.endLocation); // 206 과 58 줄 널
 
 		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
-		FHitResult outHit;
+
+		FHitResult hitinfo;
 
 		bool hit = UKismetSystemLibrary::LineTraceSingle(
 			GetWorld(),
@@ -169,14 +171,25 @@ void APSH_Player::Tick(float DeltaTime)
 			false,
 			actorsToIgnore,
 			EDrawDebugTrace::None,
-			outHit,
+			hitinfo,
 			true,
 			FColor::Green,
 			FColor::Red,
 			4
 		);
 
-		HandleBlock(outHit, hit, point.endLocation);
+		SRPC_HandleBlock(hitinfo, hit, point.endLocation);
+// 		FVector currentLocation = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
+// 		if (FVector::Dist(previousLocation, currentLocation) > PositionThreshold || timeSinceLastSync >= syncInterval)
+// 		{
+// 			
+// 			previousLocation = currentLocation;
+// 			timeSinceLastSync = 0.0f;  // 마지막 동기화 후 시간 초기화
+// 		}
+// 		else
+// 		{
+// 			timeSinceLastSync += DeltaTime;
+// 		}
 	}
 	
 }
@@ -206,10 +219,6 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[1], ETriggerEvent::Triggered, this, &APSH_Player::Look);
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
 		EnhancedInputComponent->BindAction(inputActions[3], ETriggerEvent::Started, this, &APSH_Player::PlayerJump);
-
-		// 블럭 저장
-		EnhancedInputComponent->BindAction(inputActions[5], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
-
 		// 데이터 테이블 스폰 블럭
 		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
 
@@ -265,7 +274,6 @@ void APSH_Player::Grab()
 
 	if (handleComp->GetGrabbedComponent() != nullptr) // 잡은 게 있다면
 	{
-
 		FLocationPoint point;
 		PreTraceCheck(point.startLocation, point.endLocation);
 
@@ -295,55 +303,35 @@ void APSH_Player::Grab()
 	}
 }
 
-void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 
+FVector APSH_Player::GetMouseDir()
 {
-	
-	if (handleComp->GetGrabbedComponent() == nullptr) return;
-
-	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array에 저장
-
-	if(ChildBlcak == nullptr) return;
 
 	FVector WorldLoc;
 	FVector WorldDir;
 
+	if (pc == nullptr) return WorldDir;
+
 	pc->DeprojectMousePositionToWorld(WorldLoc, WorldDir); // 마우스 좌표 변환
 
-	actorsToIgnore = ChildBlcak->childsActors;
-	actorsToIgnore.Add(handleComp->GetGrabbedComponent()->GetOwner());
-	
-	FVector CameraLoc = cameraComp->GetComponentLocation();
-	StartLoc = CameraLoc;
-	EndLoc = CameraLoc + playerReach * WorldDir;
-
+	return WorldDir;
 }
 
-
-float APSH_Player::NormalizeAxis(float Angle)
-{
-	while (Angle > 180.0f) Angle -= 360.0f;
-	while (Angle < -180.0f) Angle += 360.0f;
-	return Angle;
-}
 void APSH_Player::CastRay() // 잡기위한 레이 
 {
 
-	FVector worldLoc;
-	FVector worldDir;
+	FVector worldDir = GetMouseDir();
 
-	pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
-
-	FVector StartLoc = cameraComp->GetComponentLocation(); 
+	FVector StartLoc = cameraComp->GetComponentLocation();
 	FVector EndLoc = StartLoc + (rayPower * worldDir);
-	
+
 	if (IsLocallyControlled() == false) return;
 
-	SRPC_Pickup(StartLoc,EndLoc);
+	SRPC_Pickup(StartLoc, EndLoc);
 }
 
-void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc) 
+void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc)
 {
-	
+	// 클라든 어디든 서버에서 불리는 함수.
 	FHitResult hitInfo;
 
 	FCollisionQueryParams prams;
@@ -354,208 +342,66 @@ void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVec
 		APSH_BlockActor* target = Cast<APSH_BlockActor>(hitInfo.GetActor());
 		if (target)
 		{
-			if (target->GetOwner() == nullptr)
+			if (target->GetMaster() == nullptr)
 			{
-				
-				target->SetOwner(this);
+				target->SetMaster(this);
 				target->PickUp(handleComp);
 				GrabbedActor = target;
 				MRPC_PickupAnim(target);
 			}
 		}
 	}
-	
+
 }
 
-void APSH_Player::NRPC_PickEffect_Implementation()
+void APSH_Player::SRPC_PickEffect_Implementation(FVector endLoc)
+{
+	NRPC_PickEffect(endLoc);
+}
+void APSH_Player::NRPC_PickEffect_Implementation(FVector endLoc)
 {
 	FVector start = GetMesh()->GetSocketLocation(FName("LaserPoint"));
-	UNiagaraComponent * effect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),pickEffect, start);
-	if(!effect) return;
-	UE_LOG(LogTemp,Warning,TEXT("Shot"));
-	effect->SetVectorParameter("Beam Start Loc",start);
-	effect->SetVectorParameter("Beam End Loc", EffectEndLoc);
+	UNiagaraComponent* effect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), pickEffect, start);
+	if (!effect) return;
+
+	effect->SetVectorParameter("Beam Start Loc", start);
+	effect->SetVectorParameter("Beam End Loc", endLoc);
 }
 
 void APSH_Player::MRPC_PickupAnim_Implementation(class APSH_BlockActor* target)
 {
-	if(target == nullptr) return;
+	if (target == nullptr) return;
 	GrabbedActor = target;
-	if(anim == nullptr) return;
+	if (anim == nullptr) return;
 
 	anim->PlayAnimPickUp();
 }
-void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
-								FVector & closestPt, float& dist , int32& closetPointIndex)
+void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 
 {
-	if (pointArray.Num() == 0) return;
-
-	FVector testLoc = UKismetMathLibrary::InverseTransformLocation(hitActorTransfrom,testLocation);
-
-
 	
-		closestPt = pointArray[0]; //
+	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
-		dist = FVector::Dist(closestPt, testLoc); //
+	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array에 저장
 
-		closetPointIndex = 0; //
-		
-	// 까지 한번만 반복
+	if(ChildBlcak == nullptr) return;
+
+	actorsToIgnore = ChildBlcak->childsActors;
+	actorsToIgnore.Add(handleComp->GetGrabbedComponent()->GetOwner());
+
+	FVector WorldDir = GetMouseDir();
 	
-	for (int32 i = 0 ; i < pointArray.Num(); i++) // 가장 가까운 포인트 찾기
-	{
-		float currentDist = (FVector::Dist(pointArray[i], testLoc));
-		if  (currentDist < dist)
-		{
-			closestPt = pointArray[i];
-			dist = currentDist;
-			closetPointIndex = i;
-			
-		}
-	} 
-	
-}
-FRotator APSH_Player::WorldHelperRotationOffset()
-{
-	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
-
-	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]),FRotator(180,180,0));
+	FVector CameraLoc = cameraComp->GetComponentLocation();
+	StartLoc = CameraLoc;
+	EndLoc = CameraLoc + playerReach * WorldDir;
 
 }
 
-// 현재 서버 클라 다불림.
-// 서버에서 불려야하지않나?
-void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
+void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, FVector endLoc)
 {
-	SRPC_PlaceBlock(hitInfo,hit);
-}	
 
-void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
-{
-	APSH_BlockActor* heldBlock = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
-	PRINTLOG(TEXT("PlaceBlock"));
-	if (hit)
-	{
-		FVector location = hitInfo.Location;
-		FVector normal = hitInfo.Normal;
-		APSH_BlockActor* actor = Cast<APSH_BlockActor>(hitInfo.GetActor());
-
-		if (Cast<APSH_BlockActor>(actor))
-		{
-			TArray<FVector> snapPoints = actor->GetSnapPoints();
-			TArray<FRotator> snapDirections = actor->GetSnapDirections();
-
-			FVector closestPoint = FVector::ZeroVector;
-			float distance = 0;
-			int32 arrayindex = 0;
-
-			ClosestPoint(snapPoints, location, actor->GetActorTransform(), closestPoint, distance, arrayindex);
-
-			TArray<FVector> heldBlockPoints = heldBlock->GetSnapPoints();
-
-			bool distBool = distance <= snapDistance;
-			bool bValidPoint = snapPoints.IsValidIndex(0);
-			bool andChek = distBool && bValidPoint;
-
-
-
-			FVector snapLocation;
-			if (!andChek)
-			{
-				snapLocation = location + (heldBlock->GetActorLocation() -
-					UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
-			}
-			else
-			{
-				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
-					(heldBlock->GetActorLocation() -
-						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
-			}
-
-			FTransform worldTransfrom;
-
-
-			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
-				actor->GetActorTransform(), snapLocation),
-				rotationHelper->GetComponentRotation());
-
-			if (actor->connectionsize >= heldBlock->connectionsize)
-			{
-				if (heldBlock->OvelapChek())
-				{
-					heldBlock->Place(actor, worldTransfrom);
-					DropBlcok();
-					snapPointIndex = 0;
-				}
-				else
-				{
-					if (GEngine)
-						GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("what?")));
-					return;
-				}
-			}
-			else
-			{
-				DropBlcok();
-			}
-		}
-		else
-		{
-			if (heldBlock->OvelapChek())
-			{
-				DropBlcok();
-			}
-			else
-			{
-				if (GEngine)
-					GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Not Cast , OvelapChek : Faslse")));
-				return;
-			}
-		}
-	}
-	else
-	{
-		if (heldBlock->OvelapChek())
-		{
-			DropBlcok();
-		}
-		else
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("hit : else , OvelapChek : Faslse")));
-			return;
-		}
-	}
-}
-void APSH_Player::DropBlcok()
-{
-	SRPC_DropBlcok();
-}
-
-void APSH_Player::MRPC_DropBlcok_Implementation()
-{
-	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
-	GrabbedActor = nullptr;
-	if(anim == nullptr) return;
-	anim->PlayAnimDrop();
-}
-void APSH_Player::SRPC_DropBlcok_Implementation()
-{
-	MRPC_DropBlcok(); 
-	GrabbedActor = nullptr;
-	// 저장 하는 무언가 필요.
-	
-}
-void APSH_Player::HandleBlock(FHitResult hitinfo, bool hit, FVector rayEndLocation)
-{
-	SRPC_HandleBlock(hitinfo, hit, rayEndLocation);
-}
-void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, FVector rayEndLocation)
-{
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
-
 
 	// 매 프레임마다 업데이트된 목표 위치 계산
 	FVector targetLoc;
@@ -581,7 +427,6 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 			if (hitActor->GetSnapPoints().IsEmpty()) return; // 비어있다면
 
 			snapPoints = hitActor->GetSnapPoints();
-
 			ClosestPoint(snapPoints, localLocation, hitActorTransform, closestPoint, distance, ClosestSnapPointIndex);
 			snapDirection = hitActor->GetSnapDirections();
 			Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();
@@ -619,7 +464,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 	}
 	else
 	{
-		FVector newLoc = FMath::VInterpTo(rotationHelper->GetComponentLocation(), rayEndLocation, GetWorld()->DeltaTimeSeconds, 5.0f); // 속도를 높여 빠르게 이동
+		FVector newLoc = FMath::VInterpTo(rotationHelper->GetComponentLocation(), endLoc, GetWorld()->DeltaTimeSeconds, 5.0f); // 속도를 높여 빠르게 이동
 		rotationHelper->SetWorldLocation(newLoc);
 
 		// 부드러운 보간으로 목표 회전으로 이동
@@ -627,10 +472,13 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		rotationHelper->SetWorldRotation(newRot);
 	}
 
-	ReplicatedLocation = rotationHelper->GetComponentLocation();
-	ReplicatedRotation = rotationHelper->GetComponentRotation();
+	MRPC_HandleBlock(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
+}
+FRotator APSH_Player::WorldHelperRotationOffset()
+{
+	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
 
-	MRPC_HandleBlock(ReplicatedLocation,ReplicatedRotation);
+	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]), FRotator(180, 180, 0));
 
 }
 void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRot)
@@ -638,11 +486,185 @@ void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRo
 	handleComp->SetTargetLocationAndRotation(newLoc, newRot);
 }
 
+
+float APSH_Player::NormalizeAxis(float Angle)
+{
+	while (Angle > 180.0f) Angle -= 360.0f;
+	while (Angle < -180.0f) Angle += 360.0f;
+	return Angle;
+}
+
+void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
+								FVector & closestPt, float& dist , int32& closetPointIndex)
+{
+	if (pointArray.Num() == 0) return;
+
+	FVector testLoc = UKismetMathLibrary::InverseTransformLocation(hitActorTransfrom,testLocation);
+
+	closestPt = pointArray[0]; //
+
+	dist = FVector::Dist(closestPt, testLoc); //
+
+	closetPointIndex = 0; //
+		
+	for (int32 i = 0 ; i < pointArray.Num(); i++) // 가장 가까운 포인트 찾기
+	{
+		float currentDist = (FVector::Dist(pointArray[i], testLoc));
+		if  (currentDist < dist)
+		{
+			closestPt = pointArray[i];
+			dist = currentDist;
+			closetPointIndex = i;
+		}
+	} 
+}
+
+void APSH_Player::PlaceBlock(FHitResult hitInfo, bool hit)
+{
+	SRPC_PlaceBlock(hitInfo,hit);
+}	
+
+void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
+{
+	APSH_BlockActor* heldBlock = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
+	
+	if (hit)
+	{
+		FVector location = hitInfo.Location;
+		FVector normal = hitInfo.Normal;
+		APSH_BlockActor* actor = Cast<APSH_BlockActor>(hitInfo.GetActor());
+
+		if (Cast<APSH_BlockActor>(actor))
+		{
+			TArray<FVector> snapPoints = actor->GetSnapPoints();
+			TArray<FRotator> snapDirections = actor->GetSnapDirections();
+
+			FVector closestPoint = FVector::ZeroVector;
+			float distance = 0;
+			int32 arrayindex = 0;
+
+			ClosestPoint(snapPoints, location, actor->GetActorTransform(), closestPoint, distance, arrayindex);
+
+			TArray<FVector> heldBlockPoints = heldBlock->GetSnapPoints();
+
+			bool distBool = distance <= snapDistance;
+			bool bValidPoint = snapPoints.IsValidIndex(0);
+			bool andChek = distBool && bValidPoint;
+
+			FVector snapLocation;
+			if (!andChek)
+			{
+				snapLocation = location + (heldBlock->GetActorLocation() -
+					UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+			}
+			else
+			{
+				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
+					(heldBlock->GetActorLocation() -
+						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+			}
+
+			FTransform worldTransfrom;
+
+
+			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
+				actor->GetActorTransform(), snapLocation),
+				rotationHelper->GetComponentRotation());
+
+			if (actor->connectionsize >= heldBlock->connectionsize)
+			{
+				if (heldBlock->OvelapChek())
+				{
+					heldBlock->Place(actor, worldTransfrom);
+					DropBlcok();
+					snapPointIndex = 0;
+					PRINTLOG(TEXT("PlaceAndDrop"));
+				}
+				else
+				{
+					PRINTLOG(TEXT("Not heldBlock->OvelapChek()"));
+					return;
+				}
+			}
+			else
+			{
+				DropBlcok();
+				PRINTLOG(TEXT("DropBlock"));
+			}
+		}
+		else
+		{
+			if (heldBlock->OvelapChek())
+			{
+				DropBlcok();
+				PRINTLOG(TEXT("DropBlock Not Cast"));
+			}
+			else
+			{
+				if (GEngine)
+					GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Not Cast , OvelapChek : Faslse")));
+				return;
+			}
+		}
+	}
+	else
+	{
+		if (heldBlock->OvelapChek())
+		{
+			DropBlcok();
+			PRINTLOG(TEXT("DropBlock Not Hit"));
+		}
+		else
+		{
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("hit : else , OvelapChek : Faslse")));
+			return;
+		}
+	}
+}
+
+void APSH_Player::DropBlcok()
+{
+	PRINTLOG(TEXT("Player Drop"));
+	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
+	MRPC_DropBlcok();
+	GrabbedActor = nullptr;
+}
+
+void APSH_Player::MRPC_DropBlcok_Implementation()
+{
+	PRINTLOG(TEXT("Net Player Drop"));
+	GrabbedActor = nullptr;
+	if(anim == nullptr) return;
+	anim->PlayAnimDrop();
+}
+void APSH_Player::SRPC_DropBlcok_Implementation()
+{
+	
+}
+
 void APSH_Player::ToggleARmLength()
 {
 	bShouldExtend = !bShouldExtend;
 }
 
+void APSH_Player::CRPC_SetBot_Implementation(class APSH_SpawnBot* spawn, class APSH_GarbageBot* garbage)
+{
+	if(spawn == nullptr || garbage == nullptr) return;
+
+	spawnBot = spawn;
+	spawnBot->SetPlayer(this);
+	garbagebot = garbage;
+	
+}
+void APSH_Player::NRPC_SetBot_Implementation(class APSH_SpawnBot* spawn, class APSH_GarbageBot* garbage)
+{
+	if (spawn == nullptr || garbage == nullptr) return;
+
+	spawnBot = spawn;
+	garbagebot = garbage;
+	
+}
 void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 	if(bSpawn == false) return;
@@ -656,52 +678,10 @@ void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockAct
 
 	// 스폰 파라미터 설정 및 엑터 소환
 	FActorSpawnParameters SpawnParams;
-	APSH_BlockActor* SpawnedActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
-
+	APSH_BlockActor* SpawnActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
+	SpawnActor->SetOwner(this);
 }
 
-void APSH_Player::SaveTest()
-{
-// 		
-// 		if (handleComp->GetGrabbedComponent()->GetOwner() == nullptr) return; 
-// 
-// 		APSH_BlockActor* actor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 블럭
-// 		FName rowName = FName(*FString::FormatAsNumber(4));
-// 		if (actor && dataTable)
-// 		{
-// 			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
-// 			dataTable->AddRow(rowName, BlockData);
-// 		}
-// 		
-			
-	
-// 		for (auto* testActor : actor->childsActors)
-// 		{
-// 			APSH_BlockActor* TestchildsActors = Cast<APSH_BlockActor>(testActor);
-// 			if (TestchildsActors->childsActors.IsEmpty())
-// 			{
-// 				UE_LOG(LogTemp, Warning, TEXT("ChildsActor : %s"), *TestchildsActors->GetName());
-// 			}
-// 			else
-// 			{
-// 				UE_LOG(LogTemp, Warning, TEXT("ChildsActor : %s"), *TestchildsActors->GetName());
-// 				for (int i=0; i <TestchildsActors->childsActors.Num(); i++)
-// 				{
-// 					UE_LOG(LogTemp, Warning, TEXT("TestchildsActors : %s"), *TestchildsActors->childsActors[i]->GetName());
-// 				}
-// 			}
-// 			
-// 		}
-
-// 		if (actor == nullptr) return;
-// 
-// 		FPSH_ObjectData data = actor->SaveBlockHierachy(); // 잡은 블럭 자식, 본인 전체 다 save
-// 
-// 		FName rowName = FName(*FString::FormatAsNumber(4));
-// 
-// 		dataTable->AddRow(rowName, data);
-	
-}
 void APSH_Player::LoadTest()
 {
 	
@@ -764,6 +744,16 @@ void APSH_Player::ShowInterface()
 
 void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
 {
+	
+	SRPC_HorizontalRotChange(value);
+	
+}
+void APSH_Player::SRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
+{
+	NRPC_HorizontalRotChange(value);
+}
+void APSH_Player::NRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
+{
 	float input2D = value.Get<float>();
 
 	if (input2D > 0) // q
@@ -775,7 +765,17 @@ void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
 		rotationOffset.Yaw = UKismetMathLibrary::ClampAxis(rotationOffset.Yaw + 45.f);
 	}
 }
+
 void APSH_Player::VerticalRotChange(const FInputActionValue& value)
+{
+	SRPC_VerticalRotChange(value);
+}
+
+void APSH_Player::SRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
+{
+	NRPC_VerticalRotChange(value);
+}
+void APSH_Player::NRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
 {
 	float input2D = value.Get<float>();
 
@@ -790,7 +790,6 @@ void APSH_Player::VerticalRotChange(const FInputActionValue& value)
 		//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
 	}
 }
-
 void APSH_Player::BotMoveAndModeChange()
 {
 	if (bArtKey) // art 눌림
@@ -800,10 +799,9 @@ void APSH_Player::BotMoveAndModeChange()
 
 		if (hit)
 		{
-			if (bot)
+			if (garbagebot)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Move"));
-				bot->MoveToLocation(*this,hitresult.ImpactPoint);
+				garbagebot->MoveToLocation(*this,hitresult.ImpactPoint);
 			}
 		}
 	}
@@ -814,13 +812,13 @@ void APSH_Player::BotMoveAndModeChange()
 
 		if (hit)
 		{
-			bot = Cast<APSH_GarbageBot>(hitresult.GetActor());
-			if(bot)
+			garbagebot = Cast<APSH_GarbageBot>(hitresult.GetActor());
+			if(garbagebot)
 			{
 				if (!botWidget->IsVisible())
 				{
 					botWidget->SetVisibility(ESlateVisibility::Visible);
-					botWidget->SetOwner(bot);
+					botWidget->SetOwner(garbagebot);
 				}
 			}
 		}
@@ -828,8 +826,6 @@ void APSH_Player::BotMoveAndModeChange()
 		AActor* SelectedActor = hitresult.GetActor();
 		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Calling SelectObject with Actor: %s"), *SelectedActor->GetName());
-			// 플레이어 컨트롤러의 selectobject 함수 호출해서 UI 열기
 			pc->SelectObject(SelectedActor);
 		}
 		else

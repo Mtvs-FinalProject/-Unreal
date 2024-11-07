@@ -37,6 +37,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	float timeSinceLastSync = 0.0f;
+	const float syncInterval = 0.1f;
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -96,34 +99,13 @@ public:
 
 	float snapDistance = 10;
 
-	int32 snapPointIndex = 0;
+	int32 snapPointIndex = 0; 
 
-	//World Helper - 고정된 액터의 면 스냅 방향에 대한 회전 오프셋 계산
-	FRotator WorldHelperRotationOffset(); 
-
-	void PlaceBlock(FHitResult hitInfo, bool hit);
-
-	UFUNCTION(Server,Reliable)
-	void SRPC_PlaceBlock(FHitResult hitInfo, bool hit);
-
-	void DropBlcok();
-	UFUNCTION(NetMulticast,Unreliable)
-	void MRPC_DropBlcok();
 	UFUNCTION(Server,Unreliable)
 	void SRPC_DropBlcok();
-
-	UFUNCTION(NetMulticast,Unreliable)
-	void MRPC_HandleBlock(FVector newLoc, FRotator newRot);
-	UFUNCTION(Server,Unreliable)
-	void SRPC_HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
-	void HandleBlock(FHitResult hitinfo, bool hit ,FVector rayEndLocation);
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
-
-	
-
-	void SaveTest();
 
 	int32 rowNam = 4;
 
@@ -135,24 +117,31 @@ public:
 	void ShowInterface();
 
 	void HorizontalRotChange(const FInputActionValue& value);
+	
+	UFUNCTION(Server,Reliable)
+	void SRPC_HorizontalRotChange(const FInputActionValue& value);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void NRPC_HorizontalRotChange(const FInputActionValue& value);
 
 	void VerticalRotChange(const FInputActionValue& value);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_VerticalRotChange(const FInputActionValue& value);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void NRPC_VerticalRotChange(const FInputActionValue& value);
 
 	void OnArtKey(); // art 확인
 	
 	bool bArtKey = false;
 
 	// 로봇 관련
-	class APSH_GarbageBot * bot;
+	class APSH_GarbageBot * garbagebot;
 
 	void BotMoveAndModeChange();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	FVector ReplicatedLocation;
-
-	FRotator ReplicatedRotation;
 
 	// 메인 UI 연결
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -170,15 +159,6 @@ public:
 
 	bool bShouldExtend = false;
 
-	// Beak Effect
-	UPROPERTY(EditDefaultsOnly,Category = Niagara)
-	class UNiagaraSystem * pickEffect;
-
-	UFUNCTION(NetMulticast , Reliable)
-	void NRPC_PickEffect();
-
-	FVector EffectEndLoc;
-
 	// Spawn
 
 	UPROPERTY(EditDefaultsOnly , Category = "Bot")
@@ -186,6 +166,11 @@ public:
 
 	UPROPERTY()
 	class APSH_SpawnBot * spawnBot;
+
+	UFUNCTION(Client, Reliable)
+	void CRPC_SetBot(class APSH_SpawnBot* spawn, class APSH_GarbageBot * garbage);
+	UFUNCTION(NetMulticast, Reliable)
+	void NRPC_SetBot(class APSH_SpawnBot* spawn, class APSH_GarbageBot * garbage);
 
 	bool bSpawn = true;
 
@@ -202,17 +187,51 @@ public:
 	// 레이 거리
 	double rayPower = 1000.f;
 
+	// 마우스 위치를 받아오는 함수
+	FVector GetMouseDir();
+
 	//3. 블럭 실제 잡기.
 	UFUNCTION(Server,Reliable)
 	void SRPC_Pickup(const FVector & startLoc, const FVector & endLoc);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MRPC_PickupAnim(class APSH_BlockActor* target);
+
+	// Beak Effect
+	UPROPERTY(EditDefaultsOnly,Category = Niagara)
+	class UNiagaraSystem * pickEffect;
+
+	UFUNCTION(Server , Reliable)
+	void SRPC_PickEffect(FVector endLoc);
+
+	UFUNCTION(NetMulticast , Reliable)
+	void NRPC_PickEffect(FVector endLoc);
 	
 	//4. 블럭의 이동 -> Tick
+	float PositionThreshold = 10.0f;
+	FVector previousLocation;
 
 	//5. 카메라와 마우스의 위치를 이용해 트레이스 거리 계산 엑터만 검사함. << 하던중
 	void PreTraceCheck( FVector & StartLoc,   FVector & EndLoc);
+
+	// 6. 마우스 위치에 따라 잡은 엑터를 움직이고 다른 블록과 닿아있으면 포인트에 맞게 방향을 전환
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_HandleBlock(FVector newLoc, FRotator newRot);
+	UFUNCTION(Server,Unreliable)
+	void SRPC_HandleBlock(FHitResult hitinfo, bool hit, FVector endLoc);
+
+	//World Helper - 고정된 액터의 면 스냅 방향에 대한 회전 오프셋 계산
+	FRotator WorldHelperRotationOffset();
+
+	// 7. 블럭 붙이기
+	void PlaceBlock(FHitResult hitInfo, bool hit);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_PlaceBlock(FHitResult hitInfo, bool hit);
+
+	void DropBlcok();
+	UFUNCTION(NetMulticast,reliable)
+	void MRPC_DropBlcok();
 
 	TArray<class AActor*> actorsToIgnore;
 

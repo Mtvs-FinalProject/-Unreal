@@ -29,6 +29,7 @@ public:
 	class UStaticMeshComponent * meshComp;
 
 	/// 블럭 자식 오브젝트 배열
+	UPROPERTY(EditAnywhere)
 	TArray<class AActor*> childsActors;
 
 	// 부착 위치
@@ -54,11 +55,15 @@ public:
 
 	void Remove();
 	
+	UFUNCTION(NetMulticast,Reliable)
+	void NRPC_Remove();
+
 	UFUNCTION(Server,Reliable)
 	void SRPC_Remove();
 
 	bool bGrab = false;
-
+	
+	UPROPERTY(EditAnywhere)
 	class APSH_BlockActor * parent;
 
 	TArray<FVector> GetSnapPoints();
@@ -75,11 +80,14 @@ public:
 
 	void Drop(class UPhysicsHandleComponent * physicshandle);
 
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_Drop(class UPhysicsHandleComponent * physicshandle);
+
+
 	void Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 	
-	UFUNCTION(Server,Reliable)
-	void SRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
-
+	UFUNCTION(NetMulticast,Reliable)
+	void NRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 
 	void AddChild(class APSH_BlockActor* childActor);
 
@@ -92,8 +100,6 @@ public:
 
 	UFUNCTION()
 	void OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
-
-	FTransform MyLocation;
 
 	FPSH_ObjectData SaveBlockHierachy();
 
@@ -115,4 +121,10 @@ public:
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	//class UMyRotateActorComponent* MyRotateActorComponent;
+
+	void SetMaster(class APSH_Player* owner);
+
+	APSH_Player * GetMaster();
+private:
+	class APSH_Player * master = nullptr;
 };

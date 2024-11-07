@@ -7,6 +7,7 @@
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "../FinalProject.h"
 
 // Sets default values
 APSH_SpawnBot::APSH_SpawnBot()
@@ -67,6 +68,9 @@ APSH_SpawnBot::APSH_SpawnBot()
 	spotLight->Intensity = 50878;
 	spotLight->IntensityUnits = ELightUnits::Unitless;
 
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 }
 
 // Called when the game starts or when spawned
@@ -74,6 +78,12 @@ void APSH_SpawnBot::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (!HasAuthority())
+	{
+		Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetPawn())->spawnBot = this;
+		PRINTLOG(TEXT("This"));
+	}
+
 }
 
 // Called every frame
