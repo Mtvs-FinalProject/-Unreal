@@ -61,6 +61,15 @@ public:
 
 	EspawnState state = EspawnState::IDLE;
 
+
+	/*void SetIdleState();*/
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_SetVisible(bool chek);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_SetMat(int32 arrayIndex);
+
 private:
 
 	void LineChek();

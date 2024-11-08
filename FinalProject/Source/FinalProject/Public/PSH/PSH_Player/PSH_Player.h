@@ -8,18 +8,6 @@
 #include "../PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH_Player.generated.h"
 
-USTRUCT(Atomic, BlueprintType)
-struct FLocationPoint // PreTraceChek 에서 사용하는 시작, 종료 위치 구조체
-{
-	GENERATED_USTRUCT_BODY()
-public:
-	
-	UPROPERTY(EditDefaultsOnly, Category = "LocationPoint")
-	FVector startLocation;
-	UPROPERTY(EditDefaultsOnly, Category = "LocationPoint")
-	FVector endLocation;
-};
-
 UCLASS()
 class FINALPROJECT_API APSH_Player : public ACharacter
 {
@@ -36,9 +24,6 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	float timeSinceLastSync = 0.0f;
-	const float syncInterval = 0.1f;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -67,16 +52,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	class USceneComponent * rotationHelper; // 회전 도우미
-
-	//Widgets 
-	UPROPERTY(EditDefaultsOnly, Category = "Widget")
-	TSubclassOf<class UUserWidget> mouseWidgetFac;
-	class UPSH_MouseWidget* mouseWidget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Widget")
-	TSubclassOf<class UUserWidget> botWidgetFac;
-	class UPSH_GarbageBotWidget* botWidget;
-
+	
+	void InitPcUi();
 	//PC
 	class APSH_PlayerController* pc;
 
@@ -100,9 +77,6 @@ public:
 	float snapDistance = 10;
 
 	int32 snapPointIndex = 0; 
-
-	UFUNCTION(Server,Unreliable)
-	void SRPC_DropBlcok();
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
@@ -167,10 +141,11 @@ public:
 	UPROPERTY()
 	class APSH_SpawnBot * spawnBot;
 
-	UFUNCTION(Client, Reliable)
-	void CRPC_SetBot(class APSH_SpawnBot* spawn, class APSH_GarbageBot * garbage);
-	UFUNCTION(NetMulticast, Reliable)
-	void NRPC_SetBot(class APSH_SpawnBot* spawn, class APSH_GarbageBot * garbage);
+	UFUNCTION(Server, Reliable)
+	void SRPC_SpawnbotIdel();
+
+	UFUNCTION(Server, Reliable)
+	void SRPC_SpawnBotMoveTo();
 
 	bool bSpawn = true;
 

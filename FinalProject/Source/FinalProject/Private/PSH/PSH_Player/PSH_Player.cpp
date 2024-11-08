@@ -31,6 +31,7 @@
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
+#include "PSH/PSH_UI/PSH_ObjectWidget.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -52,9 +53,6 @@ APSH_Player::APSH_Player()
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 
-// 	previewMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("previewMesh"));
-// 	previewMeshComp->SetupAttachment(RootComponent);
-
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -66,16 +64,15 @@ void APSH_Player::BeginPlay()
 
 	if (HasAuthority())
 	{
-		PRINTLOG(TEXT("Spawn"));
 		FActorSpawnParameters param;
-		APSH_SpawnBot * spawn = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
-		APSH_GarbageBot * garbage = GetWorld()->SpawnActor<APSH_GarbageBot>(param);
+		spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
+		garbagebot = GetWorld()->SpawnActor<APSH_GarbageBot>(param);
 
-		if (spawn && garbage)
+		if (spawnBot && garbagebot)
 		{
-			spawn->SetOwner(this);
-			garbage->SetOwner(this);
-			CRPC_SetBot(spawn, garbage);
+			spawnBot->SetOwner(this);
+			spawnBot->SetPlayer(this);
+			garbagebot->SetOwner(this);
 		}
 	}
 
@@ -83,25 +80,10 @@ void APSH_Player::BeginPlay()
 	if (IsLocallyControlled())
 	{
 		pc = Cast<APSH_PlayerController>(GetController());
-		mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), mouseWidgetFac));
-		botWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), botWidgetFac));
-		if (botWidget)
-		{
-			botWidget->AddToViewport();
-			botWidget->SetVisibility(ESlateVisibility::Hidden);
-		}
-
-		if (mouseWidget)
-		{
-			if (pc)
-			{
-				pc->SetMouseCursorWidget(EMouseCursor::Default, mouseWidget);
-			}
-		}
+		InitPcUi();
 	}
 
 	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
-
 }
 
 // Called every frame
@@ -150,14 +132,15 @@ void APSH_Player::Tick(float DeltaTime)
 		{
 			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
 			SRPC_PickEffect(EffectEndLoc);
-			//PRINTLOG(TEXT("Sever?"));
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
 			if(snap)
 			snapPointIndexLength = snap->GetSnapPoints().Num();
 		}
 
-		FLocationPoint point; 
-		PreTraceCheck(point.startLocation, point.endLocation); // 206 과 58 줄 널
+		FVector StartLoc;
+		FVector EndLoc;
+		
+		PreTraceCheck(StartLoc, EndLoc);
 
 		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
 
@@ -165,8 +148,8 @@ void APSH_Player::Tick(float DeltaTime)
 
 		bool hit = UKismetSystemLibrary::LineTraceSingle(
 			GetWorld(),
-			point.startLocation,
-			point.endLocation,
+			StartLoc,
+			EndLoc,
 			TraceChannel,
 			false,
 			actorsToIgnore,
@@ -178,18 +161,7 @@ void APSH_Player::Tick(float DeltaTime)
 			4
 		);
 
-		SRPC_HandleBlock(hitinfo, hit, point.endLocation);
-// 		FVector currentLocation = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
-// 		if (FVector::Dist(previousLocation, currentLocation) > PositionThreshold || timeSinceLastSync >= syncInterval)
-// 		{
-// 			
-// 			previousLocation = currentLocation;
-// 			timeSinceLastSync = 0.0f;  // 마지막 동기화 후 시간 초기화
-// 		}
-// 		else
-// 		{
-// 			timeSinceLastSync += DeltaTime;
-// 		}
+		SRPC_HandleBlock(hitinfo, hit, EndLoc);
 	}
 	
 }
@@ -239,6 +211,40 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
 		
 	}
+}
+
+void APSH_Player::InitPcUi()
+{
+	if(pc == nullptr) return;
+	
+	if (pc->mouseWidgetFac)
+	{
+		pc->mouseWidget = Cast<UPSH_MouseWidget>(CreateWidget(GetWorld(), pc->mouseWidgetFac));
+		if (pc->mouseWidget)
+		{
+			pc->SetMouseCursorWidget(EMouseCursor::Default, pc->mouseWidget);
+		}
+	}
+
+	if (pc->botWidgetFac)
+	{
+		pc->botWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), pc->botWidgetFac));
+		if (pc->botWidget)
+		{
+			pc->botWidget->AddToViewport();
+			pc->botWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	if (pc->objectWidgetFac)
+	{
+		pc->objectWidget = CreateWidget<UPSH_ObjectWidget>(GetWorld(), pc->objectWidgetFac);
+		if (pc->objectWidget)
+		{
+			pc->objectWidget->AddToViewport();
+			pc->objectWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
 
 }
 
@@ -274,16 +280,17 @@ void APSH_Player::Grab()
 
 	if (handleComp->GetGrabbedComponent() != nullptr) // 잡은 게 있다면
 	{
-		FLocationPoint point;
-		PreTraceCheck(point.startLocation, point.endLocation);
+		FVector startLoc;
+		FVector EndLoc;
+		PreTraceCheck(startLoc, EndLoc);
 
 		ETraceTypeQuery TraceChannel = UEngineTypes::ConvertToTraceType(ECC_Visibility);
 		FHitResult OutHit;
 
 		bool hit = UKismetSystemLibrary::LineTraceSingle(
 			GetWorld(),
-			point.startLocation,
-			point.endLocation,
+			startLoc,
+			EndLoc,
 			TraceChannel,
 			false,
 			actorsToIgnore,
@@ -305,7 +312,6 @@ void APSH_Player::Grab()
 
 FVector APSH_Player::GetMouseDir()
 {
-
 	FVector WorldLoc;
 	FVector WorldDir;
 
@@ -318,7 +324,6 @@ FVector APSH_Player::GetMouseDir()
 
 void APSH_Player::CastRay() // 잡기위한 레이 
 {
-
 	FVector worldDir = GetMouseDir();
 
 	FVector StartLoc = cameraComp->GetComponentLocation();
@@ -358,6 +363,7 @@ void APSH_Player::SRPC_PickEffect_Implementation(FVector endLoc)
 {
 	NRPC_PickEffect(endLoc);
 }
+
 void APSH_Player::NRPC_PickEffect_Implementation(FVector endLoc)
 {
 	FVector start = GetMesh()->GetSocketLocation(FName("LaserPoint"));
@@ -372,13 +378,13 @@ void APSH_Player::MRPC_PickupAnim_Implementation(class APSH_BlockActor* target)
 {
 	if (target == nullptr) return;
 	GrabbedActor = target;
+
 	if (anim == nullptr) return;
 
 	anim->PlayAnimPickUp();
 }
 void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 
 {
-	
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array에 저장
@@ -393,12 +399,10 @@ void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) //
 	FVector CameraLoc = cameraComp->GetComponentLocation();
 	StartLoc = CameraLoc;
 	EndLoc = CameraLoc + playerReach * WorldDir;
-
 }
 
 void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, FVector endLoc)
 {
-
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
 	snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
@@ -474,6 +478,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 	MRPC_HandleBlock(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
 }
+
 FRotator APSH_Player::WorldHelperRotationOffset()
 {
 	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
@@ -481,16 +486,18 @@ FRotator APSH_Player::WorldHelperRotationOffset()
 	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]), FRotator(180, 180, 0));
 
 }
+
 void APSH_Player::MRPC_HandleBlock_Implementation(FVector newLoc, FRotator newRot)
 {
 	handleComp->SetTargetLocationAndRotation(newLoc, newRot);
 }
 
-
 float APSH_Player::NormalizeAxis(float Angle)
 {
 	while (Angle > 180.0f) Angle -= 360.0f;
+
 	while (Angle < -180.0f) Angle += 360.0f;
+
 	return Angle;
 }
 
@@ -538,8 +545,8 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 		{
 			TArray<FVector> snapPoints = actor->GetSnapPoints();
 			TArray<FRotator> snapDirections = actor->GetSnapDirections();
-
 			FVector closestPoint = FVector::ZeroVector;
+			FTransform worldTransfrom;
 			float distance = 0;
 			int32 arrayindex = 0;
 
@@ -564,9 +571,6 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
 			}
 
-			FTransform worldTransfrom;
-
-
 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
 				actor->GetActorTransform(), snapLocation),
 				rotationHelper->GetComponentRotation());
@@ -578,18 +582,15 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 					heldBlock->Place(actor, worldTransfrom);
 					DropBlcok();
 					snapPointIndex = 0;
-					PRINTLOG(TEXT("PlaceAndDrop"));
 				}
 				else
 				{
-					PRINTLOG(TEXT("Not heldBlock->OvelapChek()"));
 					return;
 				}
 			}
 			else
 			{
 				DropBlcok();
-				PRINTLOG(TEXT("DropBlock"));
 			}
 		}
 		else
@@ -597,12 +598,9 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 			if (heldBlock->OvelapChek())
 			{
 				DropBlcok();
-				PRINTLOG(TEXT("DropBlock Not Cast"));
 			}
 			else
 			{
-				if (GEngine)
-					GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Not Cast , OvelapChek : Faslse")));
 				return;
 			}
 		}
@@ -612,12 +610,9 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 		if (heldBlock->OvelapChek())
 		{
 			DropBlcok();
-			PRINTLOG(TEXT("DropBlock Not Hit"));
 		}
 		else
 		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("hit : else , OvelapChek : Faslse")));
 			return;
 		}
 	}
@@ -625,7 +620,6 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 
 void APSH_Player::DropBlcok()
 {
-	PRINTLOG(TEXT("Player Drop"));
 	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
 	MRPC_DropBlcok();
 	GrabbedActor = nullptr;
@@ -633,14 +627,9 @@ void APSH_Player::DropBlcok()
 
 void APSH_Player::MRPC_DropBlcok_Implementation()
 {
-	PRINTLOG(TEXT("Net Player Drop"));
 	GrabbedActor = nullptr;
 	if(anim == nullptr) return;
 	anim->PlayAnimDrop();
-}
-void APSH_Player::SRPC_DropBlcok_Implementation()
-{
-	
 }
 
 void APSH_Player::ToggleARmLength()
@@ -648,23 +637,20 @@ void APSH_Player::ToggleARmLength()
 	bShouldExtend = !bShouldExtend;
 }
 
-void APSH_Player::CRPC_SetBot_Implementation(class APSH_SpawnBot* spawn, class APSH_GarbageBot* garbage)
+void APSH_Player::SRPC_SpawnbotIdel_Implementation()
 {
-	if(spawn == nullptr || garbage == nullptr) return;
-
-	spawnBot = spawn;
-	spawnBot->SetPlayer(this);
-	garbagebot = garbage;
-	
+	if (spawnBot == nullptr) return;
+	spawnBot->SetState(EspawnState::IDLEMOVE);
 }
-void APSH_Player::NRPC_SetBot_Implementation(class APSH_SpawnBot* spawn, class APSH_GarbageBot* garbage)
+
+void APSH_Player::SRPC_SpawnBotMoveTo_Implementation()
 {
-	if (spawn == nullptr || garbage == nullptr) return;
+	if(spawnBot == nullptr) return;
 
-	spawnBot = spawn;
-	garbagebot = garbage;
-	
+	spawnBot->MoveTo();
+
 }
+
 void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 	if(bSpawn == false) return;
@@ -707,6 +693,7 @@ void APSH_Player::LoadTest()
 		}
 	}
 }
+
 void APSH_Player::ShowInterface()
 {
 	// UI가 이미 열려있다면 닫기
@@ -744,14 +731,14 @@ void APSH_Player::ShowInterface()
 
 void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
 {
-	
 	SRPC_HorizontalRotChange(value);
-	
 }
+
 void APSH_Player::SRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
 {
 	NRPC_HorizontalRotChange(value);
 }
+
 void APSH_Player::NRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
 {
 	float input2D = value.Get<float>();
@@ -775,6 +762,7 @@ void APSH_Player::SRPC_VerticalRotChange_Implementation(const FInputActionValue&
 {
 	NRPC_VerticalRotChange(value);
 }
+
 void APSH_Player::NRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
 {
 	float input2D = value.Get<float>();
@@ -790,6 +778,7 @@ void APSH_Player::NRPC_VerticalRotChange_Implementation(const FInputActionValue&
 		//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
 	}
 }
+
 void APSH_Player::BotMoveAndModeChange()
 {
 	if (bArtKey) // art 눌림
@@ -815,10 +804,10 @@ void APSH_Player::BotMoveAndModeChange()
 			garbagebot = Cast<APSH_GarbageBot>(hitresult.GetActor());
 			if(garbagebot)
 			{
-				if (!botWidget->IsVisible())
+				if (!pc->botWidget->IsVisible())
 				{
-					botWidget->SetVisibility(ESlateVisibility::Visible);
-					botWidget->SetOwner(garbagebot);
+					pc->botWidget->SetVisibility(ESlateVisibility::Visible);
+					pc->botWidget->SetOwner(garbagebot);
 				}
 			}
 		}

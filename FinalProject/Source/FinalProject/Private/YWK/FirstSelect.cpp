@@ -106,12 +106,8 @@ void UFirstSelect::OnCraftClicked()
             UE_LOG(LogTemp, Warning, TEXT("PlayerController is valid"));
            
             player->ToggleARmLength();
+            player->SRPC_SpawnBotMoveTo();
 
-            if (player->spawnBot)
-            {
-                player->spawnBot->MoveTo();
-            }
-            
         }
         else
         {

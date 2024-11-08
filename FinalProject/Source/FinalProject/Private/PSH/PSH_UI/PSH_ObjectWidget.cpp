@@ -15,6 +15,7 @@
 #include "Components/ScrollBoxSlot.h"
 #include "Styling/SlateColor.h"
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
+#include "../FinalProject.h"
 
 void UPSH_ObjectWidget::NativeConstruct()
 {
@@ -170,13 +171,7 @@ void UPSH_ObjectWidget::OnClickedBack()
 
 	if (player == nullptr ) return;
 	player->ToggleARmLength();
-
-	if (player->spawnBot)
-	{
-		player->spawnBot->SetState(EspawnState::IDLEMOVE);
-		player->spawnBot->lightMesh->SetVisibility(false);
-	}
-	
+	player->SRPC_SpawnbotIdel();
 	SetVisibility(ESlateVisibility::Hidden);
 }
 void UPSH_ObjectWidget::OnClickedSave()
