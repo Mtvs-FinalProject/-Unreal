@@ -27,6 +27,12 @@ APSH_BlockActor::APSH_BlockActor()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
+	ConstructorHelpers::FObjectFinder<UMaterial> tempOutLine(TEXT("/Script/Engine.Material'/Game/YWK/Effect/Mt_Outline.Mt_Outline'"));
+
+	if (tempOutLine.Succeeded())
+	{
+		outLineMat = tempOutLine.Object;
+	}
 	// 기능 컴포넌트들
 	//MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
 	//MyFlyActorComponent = CreateDefaultSubobject<UMyFlyActorComponent>(TEXT("FlyComponent"));
@@ -94,7 +100,7 @@ void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 {
 	if (handle == nullptr) return;
 	// 블록 잡기
-	NRPC_Remove(); // 항상 서버라서
+	MRPC_Remove(); // 항상 서버라서
 
 	pickedUp = true;
 	MRPC_PickUp(handle);
@@ -104,7 +110,6 @@ void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 // srpc
 void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
 {
-	PRINTLOG(TEXT("Block Drop"));
 	MRPC_Drop(physicshandle);
 }
 
@@ -113,16 +118,12 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 	if (physicshandle != nullptr)
 	{
 		physicshandle->ReleaseComponent();
-		PRINTLOG(TEXT("physicshandle"));
 	}
 	else
 	{
-		PRINTLOG(TEXT("Not physicshandle"));
 		return;
 	}
 
-	PRINTLOG(TEXT("NetRpc Block Drop"));
-	
 
 	pickedUp = false;
 
@@ -138,12 +139,11 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 }
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
-	NRPC_Place(attachActor,worldTransform);
+	MRPC_Place(attachActor,worldTransform);
 }
 
-void APSH_BlockActor::NRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
+void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
-	PRINTLOG(TEXT("Place"));
 	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
 
 	meshComp->SetSimulatePhysics(false);
@@ -180,15 +180,13 @@ void APSH_BlockActor::Remove()
 	SRPC_Remove();
 }
 
-void APSH_BlockActor::NRPC_Remove_Implementation()
+void APSH_BlockActor::MRPC_Remove_Implementation()
 {
 	if (parent == nullptr) return;
 
 	// 부모에서 분리
 	FDetachmentTransformRules rule = FDetachmentTransformRules::KeepWorldTransform;
 	DetachFromActor(rule);
-
-	PRINTLOG(TEXT("Remove"));
 
 	// 시물레이션 활성화
 	meshComp->SetSimulatePhysics(true);
@@ -203,7 +201,7 @@ void APSH_BlockActor::NRPC_Remove_Implementation()
 }
 void APSH_BlockActor::SRPC_Remove_Implementation()
 {
-	NRPC_Remove();
+	MRPC_Remove();
 }
 void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 {
@@ -231,7 +229,7 @@ void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
 void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // 자식 콜리전 업데이트
 {
 	meshComp->SetCollisionEnabled(NewType);
-	PRINTLOG(TEXT("Block ChildCollisionUpdate"));
+	
 	ECollisionResponse newResponse = ECR_Ignore;
 
 	switch (NewType)
@@ -543,3 +541,41 @@ APSH_Player * APSH_BlockActor::GetMaster()
 {
 	return master;
 }
+void APSH_BlockActor::SRPC_BlockScale_Implementation(float axis)
+{
+	if (axis > 0)
+	{
+		if (blockScale >= 4) return;
+
+		blockScale += GetWorld()->GetDeltaSeconds() * 10;
+	}
+	else
+	{
+		if (blockScale <= 0.5f) return;
+
+		blockScale -= GetWorld()->GetDeltaSeconds() * 10;
+	}
+	MRPC_BlockScale(scale * blockScale);
+}
+
+void APSH_BlockActor::MRPC_BlockScale_Implementation(FVector scaleVec)
+{
+	SetActorScale3D(scaleVec);
+}
+void APSH_BlockActor::SetOutLine(bool chek)
+{
+	MRPC_SetOutLine(chek);
+}
+void APSH_BlockActor::MRPC_SetOutLine_Implementation(bool chek)
+{
+	if (chek)
+	{
+		if (outLineMat == nullptr) return;
+		meshComp->SetOverlayMaterial(outLineMat);
+	}
+	else
+	{
+		meshComp->SetOverlayMaterial(nullptr);
+	}
+}
+	

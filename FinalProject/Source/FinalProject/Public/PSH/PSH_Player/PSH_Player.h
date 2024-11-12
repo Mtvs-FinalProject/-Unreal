@@ -53,9 +53,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	class USceneComponent * rotationHelper; // 회전 도우미
 	
-	void InitPcUi();
 	//PC
 	class APSH_PlayerController* pc;
+	void InitPcUi();
 
 	// 이동
 	FVector Dir;
@@ -65,23 +65,9 @@ public:
 
 	// 플레이어 행동
 	void PlayerJump();
-
-	// 블럭 Rotation
-	FRotator rotationOffset;
-
-	int32 snapPointIndexLength;
-
-	void ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom,
-		FVector& closestPt, float& dist, int32& closetPointIndex);
-
-	float snapDistance = 10;
-
-	int32 snapPointIndex = 0; 
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
-
-	int32 rowNam = 4;
 
 	bool test = false;
 
@@ -90,30 +76,12 @@ public:
 	// 설정창? 창 열기 
 	void ShowInterface();
 
-	void HorizontalRotChange(const FInputActionValue& value);
-	
-	UFUNCTION(Server,Reliable)
-	void SRPC_HorizontalRotChange(const FInputActionValue& value);
-
-	UFUNCTION(NetMulticast,Reliable)
-	void NRPC_HorizontalRotChange(const FInputActionValue& value);
-
-	void VerticalRotChange(const FInputActionValue& value);
-
-	UFUNCTION(Server,Reliable)
-	void SRPC_VerticalRotChange(const FInputActionValue& value);
-
-	UFUNCTION(NetMulticast,Reliable)
-	void NRPC_VerticalRotChange(const FInputActionValue& value);
-
 	void OnArtKey(); // art 확인
 	
+	//스케일 조정
+	void OnBlockScale(const FInputActionValue & value);
+
 	bool bArtKey = false;
-
-	// 로봇 관련
-	class APSH_GarbageBot * garbagebot;
-
-	void BotMoveAndModeChange();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -133,8 +101,7 @@ public:
 
 	bool bShouldExtend = false;
 
-	// Spawn
-
+	// Spawn Bot
 	UPROPERTY(EditDefaultsOnly , Category = "Bot")
 	TSubclassOf<class APSH_SpawnBot> spawnBotFac;
 
@@ -148,6 +115,21 @@ public:
 	void SRPC_SpawnBotMoveTo();
 
 	bool bSpawn = true;
+	// garbageBot
+	UPROPERTY(EditAnywhere)
+	class APSH_GarbageBot* garbagebot;
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_GabageBotMovePoint(const FVector & Movelocation);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_GarbageBotInitPoint();
+
+	UFUNCTION(Server, Reliable)
+	void SRPC_GarbageBotSetState(EState state);
+
+	void BotMoveAndModeChange();
+
 
 	UFUNCTION(Server,Reliable)
 	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor> spawnActor);
@@ -180,7 +162,7 @@ public:
 	void SRPC_PickEffect(FVector endLoc);
 
 	UFUNCTION(NetMulticast , Reliable)
-	void NRPC_PickEffect(FVector endLoc);
+	void MRPC_PickEffect(FVector endLoc);
 	
 	//4. 블럭의 이동 -> Tick
 	float PositionThreshold = 10.0f;
@@ -194,6 +176,18 @@ public:
 	void MRPC_HandleBlock(FVector newLoc, FRotator newRot);
 	UFUNCTION(Server,Unreliable)
 	void SRPC_HandleBlock(FHitResult hitinfo, bool hit, FVector endLoc);
+
+	// 블럭 Rotation
+	FRotator rotationOffset;
+
+	int32 snapPointIndexLength;
+
+	void ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom,
+		FVector& closestPt, float& dist, int32& closetPointIndex);
+
+	float snapDistance = 10;
+
+	int32 snapPointIndex = 0;
 
 	//World Helper - 고정된 액터의 면 스냅 방향에 대한 회전 오프셋 계산
 	FRotator WorldHelperRotationOffset();
@@ -216,6 +210,22 @@ public:
 
 	float NormalizeAxis(float Angle);
 
+	// 블럭 방향 전환
+	void HorizontalRotChange(const FInputActionValue& value);
+	
+	UFUNCTION(Server,Reliable)
+	void SRPC_HorizontalRotChange(const FInputActionValue& value);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_HorizontalRotChange(const FInputActionValue& value);
+
+	void VerticalRotChange(const FInputActionValue& value);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_VerticalRotChange(const FInputActionValue& value);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_VerticalRotChange(const FInputActionValue& value);
 
 	// 방향전환
 	UPROPERTY()

@@ -39,6 +39,20 @@ APSH_Player::APSH_Player()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> tempMesh(TEXT("/Script/Engine.SkeletalMesh'/Game/YWK/CH_AN/Character/rovotfbxligging.rovotfbxligging'"));
+
+	if (tempMesh.Succeeded())
+	{
+		GetMesh()->SetSkeletalMesh(tempMesh.Object);
+	}
+
+	ConstructorHelpers::FClassFinder<UAnimInstance> tempAnim(TEXT("/Script/Engine.AnimBlueprint'/Game/YWK/CH_AN/Animation/ABP_Player.ABP_Player_C'"));
+	
+	if (tempAnim.Succeeded())
+	{
+		GetMesh()->SetAnimClass(tempAnim.Class);
+	}
+
 	// 스프링 컴포넌트
 	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	springArm->SetupAttachment(RootComponent);
@@ -65,15 +79,21 @@ void APSH_Player::BeginPlay()
 	if (HasAuthority())
 	{
 		FActorSpawnParameters param;
-		spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
 		garbagebot = GetWorld()->SpawnActor<APSH_GarbageBot>(param);
+		if (garbagebot)
+		{
+			garbagebot->SetOwner(this);
+			garbagebot->SetPlayer(this);
+			garbagebot->InitializeMovePoint(); 
+		}
 
-		if (spawnBot && garbagebot)
+		spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
+		if (spawnBot)
 		{
 			spawnBot->SetOwner(this);
 			spawnBot->SetPlayer(this);
-			garbagebot->SetOwner(this);
 		}
+
 	}
 
 	// 마우스 위젯 사용 
@@ -82,8 +102,8 @@ void APSH_Player::BeginPlay()
 		pc = Cast<APSH_PlayerController>(GetController());
 		InitPcUi();
 	}
+		anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
 
-	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
 }
 
 // Called every frame
@@ -91,6 +111,9 @@ void APSH_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	// 목표 길이를 설정 (300 또는 500)
+
+	
+
 	float TargetLength = bShouldExtend ? 500.0f : 300.0f;
 
 	// 현재 SpringArm의 길이를 목표 길이로 부드럽게 보간
@@ -98,33 +121,99 @@ void APSH_Player::Tick(float DeltaTime)
 
 	if (GrabbedActor && pc != nullptr) // 물체를 잡은 상태인지 확인
 	{
-		FVector PlayerLocation = GetActorLocation();
-		FVector ObjectLocation = GrabbedActor->GetActorLocation();
+		FVector2D ViewportSize;
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
 
-		// 플레이어가 물체를 바라보도록 회전 계산
-		FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
-
-		// 부드럽게 회전하도록 InterpTo 적용
-		FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
-		SetActorRotation(NewRotation);
-
-		// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
-		FRotator CurrentControlRotation = GetControlRotation();
-
-		// Yaw를 360도로 감싸기 위한 DeltaYaw 계산
-		float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
-
-		if (FMath::Abs(DeltaYaw) > 60.0f) // 일정 이상 차이날 경우 회전 시작
+		// 캐릭터의 화면 중심 위치 계산
+		FVector2D CharacterScreenPosition;
+		if (pc && pc->ProjectWorldLocationToScreen(GetActorLocation(), CharacterScreenPosition))
 		{
-			if(FMath::Abs(DeltaYaw) > 90.0f) return;
-			CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // 부드러운 회전
-			pc->SetControlRotation(CurrentControlRotation);
+			// 현재 마우스 위치 확인
+			float MouseX, MouseY;
+			if (pc->GetMousePosition(MouseX, MouseY)) // veiwport 안에서 마우스의 위치가 확인 됬을때
+			{
+// 				FVector PlayerLocation = GetActorLocation();
+// 				FVector ObjectLocation = GrabbedActor->GetActorLocation();
+// 				
+// 				FVector ForwardVector3D = GetActorRightVector();
+// 				FVector2D ForwardVector = FVector2D(ForwardVector3D.X, ForwardVector3D.Y);
+// 
+// 				// 캐릭터에서 마우스 위치까지의 벡터 (2D)
+// 				FVector2D CharacterToMouse = FVector2D(MouseX, MouseY) - CharacterScreenPosition;
+// 
+// 				// 두 벡터의 내적을 계산하여 후방 여부 확인
+// 				float DotProduct = FVector2D::DotProduct(ForwardVector.GetSafeNormal(), CharacterToMouse.GetSafeNormal());
+// 
+// 				if (DotProduct > 0) // 마우스가 전방에 있을 경우
+// 				{
+// 					// 플레이어가 물체를 바라보도록 회전 계산
+// 					FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
+// 					// 부드럽게 회전하도록 InterpTo 적용
+// 					FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
+// 					// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
+// 					FRotator CurrentControlRotation = GetControlRotation();
+// 					//SetActorRotation(NewRotation);
+// 					// Yaw를 360도로 감싸기 위한 DeltaYaw 계산
+// 					float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
+// 					if (DotProduct <= 0.2f) // 일정 이상 차이날 경우 회전 시작
+// 					{
+// 						CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 1.f); // 부드러운 회전
+// 					//	pc->SetControlRotation(CurrentControlRotation);
+// 					}
+// 					// 캐릭터 화면 위치와 마우스 위치 간 거리 계산
+// 					float DistanceToCharacter = FVector2D::Distance(CharacterScreenPosition, FVector2D(MouseX, MouseY));
+// 					const float MaxDistance = 300.0f;  // 캐릭터로부터의 최대 거리 제한
+// 					const float MinDistance = 100.0f; // 캐릭터로의 최소 거리
+// 					// 캐릭터와 닿는 범위 제한
+// 					if (MinDistance > DistanceToCharacter)
+// 					{
+// 						FVector2D Direction = (FVector2D(MouseX, MouseY) - CharacterScreenPosition).GetSafeNormal();
+// 						FVector2D ClampedPosition = CharacterScreenPosition + Direction * MinDistance;
+// 
+// 						// 마우스 위치 강제 이동
+// 						pc->SetMouseLocation(ClampedPosition.X, ClampedPosition.Y);
+// 					}
+// 
+// 					// 거리가 제한 범위를 넘을 경우
+// 					if (DistanceToCharacter > MaxDistance)
+// 					{
+// 						// 제한 범위 내 위치로 보정
+// 						FVector2D Direction = (FVector2D(MouseX, MouseY) - CharacterScreenPosition).GetSafeNormal();
+// 						FVector2D ClampedPosition = CharacterScreenPosition + Direction * MaxDistance;
+// 
+// 						// 마우스 위치 강제 이동
+// 						pc->SetMouseLocation(ClampedPosition.X, ClampedPosition.Y);
+// 					}
+// 				}
+// 				else
+// 				{
+// 					// 마우스를 전방으로 제한 (예: 캐릭터 전방에서 200픽셀 거리로 제한)
+// 					FVector2D LimitedPosition = CharacterScreenPosition + ForwardVector * 200.0f;
+// 					pc->SetMouseLocation(LimitedPosition.X, LimitedPosition.Y);
+// 				}
+
+			}
+			else 	// 혹시모를 화면 밖으로 나갔을때
+			{
+				if (pc)
+				{
+					// 화면의 중앙으로 이동
+					
+					GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+					float CenterX = ViewportSize.X / 2.0f;
+					float CenterY = ViewportSize.Y / 2.0f;
+
+					pc->SetMouseLocation(CenterX, CenterY);
+				}
+			}
 		}
 	}
 
 	if (pc && pc->IsLocalController())
 	{
 		// 잡은게 없다면 
+		
 		if(handleComp->GetGrabbedComponent() == nullptr) return;
 
 		// 잡은애 블럭이 있다면
@@ -187,28 +276,35 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	if (EnhancedInputComponent != nullptr)
 	{
+		// 플레이어 행동
 		EnhancedInputComponent->BindAction(inputActions[0], ETriggerEvent::Triggered, this, &APSH_Player::Move);
 		EnhancedInputComponent->BindAction(inputActions[1], ETriggerEvent::Triggered, this, &APSH_Player::Look);
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
 		EnhancedInputComponent->BindAction(inputActions[3], ETriggerEvent::Started, this, &APSH_Player::PlayerJump);
-		// 데이터 테이블 스폰 블럭
-		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
-
+		// 쪼그려 앉기
+		// 달리기 / 걷기
+		
 		// 인터페이스 관련
-		EnhancedInputComponent->BindAction(inputActions[7], ETriggerEvent::Started, this, &APSH_Player::ShowInterface);
+		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::ShowInterface);
 
 		// 좌 우로 45도 돌리기
-		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::HorizontalRotChange);
+		EnhancedInputComponent->BindAction(inputActions[7], ETriggerEvent::Started, this, &APSH_Player::HorizontalRotChange);
 		
 		// 위 아래로 45도 돌리기
-		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::VerticalRotChange);
+		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::VerticalRotChange);
 		
 		// Art확인
-		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::OnArtKey);
-		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Completed, this, &APSH_Player::OnArtKey);
+		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::OnArtKey);
+		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Completed, this, &APSH_Player::OnArtKey);
 
 		// bot 모드와 이동 관리
-		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
+		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
+
+		// 데이터 테이블 스폰 블럭
+		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
+
+		// 블럭 크기 조정
+		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::OnBlockScale);
 		
 	}
 }
@@ -226,13 +322,12 @@ void APSH_Player::InitPcUi()
 		}
 	}
 
-	if (pc->botWidgetFac)
+	if (pc->garbageBotWidgetFac)
 	{
-		pc->botWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), pc->botWidgetFac));
-		if (pc->botWidget)
+		pc->garbageBotWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), pc->garbageBotWidgetFac));
+		if (pc->garbageBotWidget)
 		{
-			pc->botWidget->AddToViewport();
-			pc->botWidget->SetVisibility(ESlateVisibility::Hidden);
+			pc->garbageBotWidget->AddToViewport();
 		}
 	}
 
@@ -272,6 +367,17 @@ void APSH_Player::PlayerJump()
 
 void APSH_Player::Grab()
 {
+	if (pc)
+	{
+		if (pc->garbageBotWidget)
+		{
+			if (pc->garbageBotWidget->bHoverdBot)
+			{
+				pc->garbageBotWidget->OnClickBackGround();
+			}
+		}
+	}
+
 	if (handleComp == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("NullHandle"))
@@ -350,6 +456,8 @@ void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVec
 			if (target->GetMaster() == nullptr)
 			{
 				target->SetMaster(this);
+				target->SetOwner(this);
+				target->SetOutLine(true);
 				target->PickUp(handleComp);
 				GrabbedActor = target;
 				MRPC_PickupAnim(target);
@@ -361,10 +469,10 @@ void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVec
 
 void APSH_Player::SRPC_PickEffect_Implementation(FVector endLoc)
 {
-	NRPC_PickEffect(endLoc);
+	MRPC_PickEffect(endLoc);
 }
 
-void APSH_Player::NRPC_PickEffect_Implementation(FVector endLoc)
+void APSH_Player::MRPC_PickEffect_Implementation(FVector endLoc)
 {
 	FVector start = GetMesh()->GetSocketLocation(FName("LaserPoint"));
 	UNiagaraComponent* effect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), pickEffect, start);
@@ -380,8 +488,9 @@ void APSH_Player::MRPC_PickupAnim_Implementation(class APSH_BlockActor* target)
 	GrabbedActor = target;
 
 	if (anim == nullptr) return;
-
+	PRINTLOG(TEXT("Anim"));
 	anim->PlayAnimPickUp();
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) // 
 {
@@ -474,6 +583,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		// 부드러운 보간으로 목표 회전으로 이동
 		FRotator newRot = FMath::RInterpTo(rotationHelper->GetComponentRotation(), rotationOffset, GetWorld()->DeltaTimeSeconds, 5.0f);
 		rotationHelper->SetWorldRotation(newRot);
+		
 	}
 
 	MRPC_HandleBlock(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
@@ -620,14 +730,22 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 
 void APSH_Player::DropBlcok()
 {
-	Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->Drop(handleComp);
+	APSH_BlockActor * taget = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
+	
+	if(taget == nullptr) return;
+
+	taget->Drop(handleComp);
+	taget->SetOutLine(false);
+
 	MRPC_DropBlcok();
 	GrabbedActor = nullptr;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void APSH_Player::MRPC_DropBlcok_Implementation()
 {
 	GrabbedActor = nullptr;
+
 	if(anim == nullptr) return;
 	anim->PlayAnimDrop();
 }
@@ -664,8 +782,79 @@ void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockAct
 
 	// 스폰 파라미터 설정 및 엑터 소환
 	FActorSpawnParameters SpawnParams;
+	
 	APSH_BlockActor* SpawnActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
+	
 	SpawnActor->SetOwner(this);
+}
+
+void APSH_Player::SRPC_GabageBotMovePoint_Implementation(const FVector& Movelocation)
+{
+	if (garbagebot)
+	{
+		garbagebot->SRPC_MoveToLocation(Movelocation);
+	}
+}
+void APSH_Player::SRPC_GarbageBotInitPoint_Implementation()
+{
+	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint"));
+	if (garbagebot == nullptr) return;
+
+	garbagebot->InitializeMovePoint();
+
+	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint_Implementation"));
+}
+
+void APSH_Player::SRPC_GarbageBotSetState_Implementation(EState state)
+{
+	if (garbagebot == nullptr) return;
+
+	garbagebot->SetState(state);
+}
+
+void APSH_Player::BotMoveAndModeChange()
+{
+	if (bArtKey) // art 눌림
+	{
+		FHitResult hitresult;
+		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
+
+		if (hit)
+		{
+			SRPC_GabageBotMovePoint(hitresult.ImpactPoint);
+		}
+	}
+	else // art 안눌림
+	{
+		FHitResult hitresult;
+		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
+
+		if (hit)
+		{
+			if (garbagebot)
+			{
+				if (!pc->garbageBotWidget->IsVisible())
+				{
+					pc->garbageBotWidget->SetVisibility(ESlateVisibility::Visible);
+				}
+			}
+		}
+		// 오브젝트 선택했을 때 컴포넌트가 있으면 UI열리기
+		AActor* SelectedActor = hitresult.GetActor();
+		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
+		{
+			pc->SelectObject(SelectedActor);
+		}
+		else
+		{
+			// 선택된 오브젝트가 없거나 특정 컴포넌트가 없는경우 UI 닫기
+			if (pc->MyChoiceActionWidget)
+			{
+				pc->MyChoiceActionWidget->RemoveFromParent();
+				pc->MyChoiceActionWidget = nullptr;
+			}
+		}
+	}
 }
 
 void APSH_Player::LoadTest()
@@ -736,10 +925,10 @@ void APSH_Player::HorizontalRotChange(const FInputActionValue& value)
 
 void APSH_Player::SRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
 {
-	NRPC_HorizontalRotChange(value);
+	MRPC_HorizontalRotChange(value);
 }
 
-void APSH_Player::NRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
+void APSH_Player::MRPC_HorizontalRotChange_Implementation(const FInputActionValue& value)
 {
 	float input2D = value.Get<float>();
 
@@ -760,10 +949,10 @@ void APSH_Player::VerticalRotChange(const FInputActionValue& value)
 
 void APSH_Player::SRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
 {
-	NRPC_VerticalRotChange(value);
+	MRPC_VerticalRotChange(value);
 }
 
-void APSH_Player::NRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
+void APSH_Player::MRPC_VerticalRotChange_Implementation(const FInputActionValue& value)
 {
 	float input2D = value.Get<float>();
 
@@ -776,56 +965,6 @@ void APSH_Player::NRPC_VerticalRotChange_Implementation(const FInputActionValue&
 	{
 		rotationOffset.Pitch = UKismetMathLibrary::ClampAxis(rotationOffset.Pitch + 45.f);
 		//snapPointIndex = (snapPointIndex + 1) % snapPointIndexLength;
-	}
-}
-
-void APSH_Player::BotMoveAndModeChange()
-{
-	if (bArtKey) // art 눌림
-	{
-		FHitResult hitresult;
-		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
-
-		if (hit)
-		{
-			if (garbagebot)
-			{
-				garbagebot->MoveToLocation(*this,hitresult.ImpactPoint);
-			}
-		}
-	}
-	else // art 안눌림
-	{
-		FHitResult hitresult;
-		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
-
-		if (hit)
-		{
-			garbagebot = Cast<APSH_GarbageBot>(hitresult.GetActor());
-			if(garbagebot)
-			{
-				if (!pc->botWidget->IsVisible())
-				{
-					pc->botWidget->SetVisibility(ESlateVisibility::Visible);
-					pc->botWidget->SetOwner(garbagebot);
-				}
-			}
-		}
-		// 오브젝트 선택했을 때 컴포넌트가 있으면 UI열리기
-		AActor* SelectedActor = hitresult.GetActor();
-		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
-		{
-			pc->SelectObject(SelectedActor);
-		}
-		else
-		{
-			// 선택된 오브젝트가 없거나 특정 컴포넌트가 없는경우 UI 닫기
-			if (pc->MyChoiceActionWidget)
-			{
-				pc->MyChoiceActionWidget->RemoveFromParent();
-				pc->MyChoiceActionWidget = nullptr;
-			}
-		}
 	}
 }
 
@@ -849,4 +988,13 @@ void APSH_Player::OnArtKey()
 		UE_LOG(LogTemp, Warning, TEXT("On"));
 	}
 	
+}
+void APSH_Player::OnBlockScale(const FInputActionValue& value)
+{
+	if(GrabbedActor == nullptr) return;
+
+	float axis = value.Get<float>();
+
+	GrabbedActor->SRPC_BlockScale(axis);
+	//크기 조정 +=
 }

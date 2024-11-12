@@ -24,7 +24,7 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Btr_Back->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedBack);
 	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
 	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
-	Btr_CallBot->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedCallBot);
+
 
 	// Nomal UI 버튼
 	Btr_NormalRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnNormalScrollRightClicked);
@@ -193,19 +193,20 @@ void UPSH_ObjectWidget::OnClickedLoad()
 
 }
 
-void UPSH_ObjectWidget::OnClickedCallBot()
-{
-	APSH_GarbageBot * bot = Cast<APSH_GarbageBot>(UGameplayStatics::GetActorOfClass(GetWorld(),APSH_GarbageBot::StaticClass()));
-	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+// void UPSH_ObjectWidget::OnClickedCallBot()
+// {
+// 	APSH_GarbageBot * bot = Cast<APSH_GarbageBot>(UGameplayStatics::GetActorOfClass(GetWorld(),APSH_GarbageBot::StaticClass()));
+// 	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+// 
+// 	if (bot && player)
+// 	{
+// 		FVector playerLoc = player->GetActorLocation();
+// 		// 곱하기 10 해놓고 갈게유!
+// 		bot->SetActorLocation(player->GetActorLocation() + (player->GetActorForwardVector() * 500) );
+// 		bot->InitializeMovePoint();
+// 	}
+//}
 
-	if (bot && player)
-	{
-		FVector playerLoc = player->GetActorLocation();
-		// 곱하기 10 해놓고 갈게유!
-		bot->SetActorLocation(player->GetActorLocation() + (player->GetActorForwardVector() * 500) );
-		bot->InitializeMovePoint();
-	}
-}
 void UPSH_ObjectWidget::OnNormalScrollRightClicked()
 {
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();

@@ -56,7 +56,7 @@ public:
 	void Remove();
 	
 	UFUNCTION(NetMulticast,Reliable)
-	void NRPC_Remove();
+	void MRPC_Remove();
 
 	UFUNCTION(Server,Reliable)
 	void SRPC_Remove();
@@ -87,7 +87,7 @@ public:
 	void Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 	
 	UFUNCTION(NetMulticast,Reliable)
-	void NRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
+	void MRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 
 	void AddChild(class APSH_BlockActor* childActor);
 
@@ -122,9 +122,31 @@ public:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	//class UMyRotateActorComponent* MyRotateActorComponent;
 
+	// 플레이어 중복잡기 방지를 위해 오너 정해주기 ( Net에서 사용하는 GetSetOwner과 다르게 작동을 위해 직접 생성)
 	void SetMaster(class APSH_Player* owner);
 
 	APSH_Player * GetMaster();
+	
+	UFUNCTION(Server,Unreliable)
+	void SRPC_BlockScale(float axis);
+
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_BlockScale(FVector scaleVec);
+
+	float blockScale = 1;
+
+	FVector scale = FVector(1.f);
+
+	// 잡았을때 이펙트 생성
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterial * outLineMat;
+
+	void SetOutLine(bool chek);
+	
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_SetOutLine(bool chek);
+
 private:
 	class APSH_Player * master = nullptr;
+
 };
