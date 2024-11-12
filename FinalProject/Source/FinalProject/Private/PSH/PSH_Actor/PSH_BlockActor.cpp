@@ -89,6 +89,7 @@ void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* 
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
+	meshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	for (auto* actor : childsActors)
 	{
@@ -129,6 +130,7 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	meshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	for (auto* actor : childsActors)

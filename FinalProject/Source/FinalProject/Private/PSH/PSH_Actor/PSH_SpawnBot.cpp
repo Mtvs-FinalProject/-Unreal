@@ -87,8 +87,8 @@ void APSH_SpawnBot::Tick(float DeltaTime)
 
 	if(player == nullptr) return;
 
-	const FString myState = UEnum::GetValueAsString(state);
-	DrawDebugString(GetWorld(), GetActorLocation(), myState, nullptr, FColor::Red, 0, true);
+// 	const FString myState = UEnum::GetValueAsString(state);
+// 	DrawDebugString(GetWorld(), GetActorLocation(), myState, nullptr, FColor::Red, 0, true);
 
 	switch (state)
 	{

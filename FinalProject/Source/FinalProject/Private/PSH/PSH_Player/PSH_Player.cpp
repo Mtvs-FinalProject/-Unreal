@@ -112,8 +112,6 @@ void APSH_Player::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	// 목표 길이를 설정 (300 또는 500)
 
-	
-
 	float TargetLength = bShouldExtend ? 500.0f : 300.0f;
 
 	// 현재 SpringArm의 길이를 목표 길이로 부드럽게 보간
@@ -121,93 +119,7 @@ void APSH_Player::Tick(float DeltaTime)
 
 	if (GrabbedActor && pc != nullptr) // 물체를 잡은 상태인지 확인
 	{
-		FVector2D ViewportSize;
-		GEngine->GameViewport->GetViewportSize(ViewportSize);
-
-		// 캐릭터의 화면 중심 위치 계산
-		FVector2D CharacterScreenPosition;
-		if (pc && pc->ProjectWorldLocationToScreen(GetActorLocation(), CharacterScreenPosition))
-		{
-			// 현재 마우스 위치 확인
-			float MouseX, MouseY;
-			if (pc->GetMousePosition(MouseX, MouseY)) // veiwport 안에서 마우스의 위치가 확인 됬을때
-			{
-// 				FVector PlayerLocation = GetActorLocation();
-// 				FVector ObjectLocation = GrabbedActor->GetActorLocation();
-// 				
-// 				FVector ForwardVector3D = GetActorRightVector();
-// 				FVector2D ForwardVector = FVector2D(ForwardVector3D.X, ForwardVector3D.Y);
-// 
-// 				// 캐릭터에서 마우스 위치까지의 벡터 (2D)
-// 				FVector2D CharacterToMouse = FVector2D(MouseX, MouseY) - CharacterScreenPosition;
-// 
-// 				// 두 벡터의 내적을 계산하여 후방 여부 확인
-// 				float DotProduct = FVector2D::DotProduct(ForwardVector.GetSafeNormal(), CharacterToMouse.GetSafeNormal());
-// 
-// 				if (DotProduct > 0) // 마우스가 전방에 있을 경우
-// 				{
-// 					// 플레이어가 물체를 바라보도록 회전 계산
-// 					FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
-// 					// 부드럽게 회전하도록 InterpTo 적용
-// 					FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
-// 					// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
-// 					FRotator CurrentControlRotation = GetControlRotation();
-// 					//SetActorRotation(NewRotation);
-// 					// Yaw를 360도로 감싸기 위한 DeltaYaw 계산
-// 					float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
-// 					if (DotProduct <= 0.2f) // 일정 이상 차이날 경우 회전 시작
-// 					{
-// 						CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 1.f); // 부드러운 회전
-// 					//	pc->SetControlRotation(CurrentControlRotation);
-// 					}
-// 					// 캐릭터 화면 위치와 마우스 위치 간 거리 계산
-// 					float DistanceToCharacter = FVector2D::Distance(CharacterScreenPosition, FVector2D(MouseX, MouseY));
-// 					const float MaxDistance = 300.0f;  // 캐릭터로부터의 최대 거리 제한
-// 					const float MinDistance = 100.0f; // 캐릭터로의 최소 거리
-// 					// 캐릭터와 닿는 범위 제한
-// 					if (MinDistance > DistanceToCharacter)
-// 					{
-// 						FVector2D Direction = (FVector2D(MouseX, MouseY) - CharacterScreenPosition).GetSafeNormal();
-// 						FVector2D ClampedPosition = CharacterScreenPosition + Direction * MinDistance;
-// 
-// 						// 마우스 위치 강제 이동
-// 						pc->SetMouseLocation(ClampedPosition.X, ClampedPosition.Y);
-// 					}
-// 
-// 					// 거리가 제한 범위를 넘을 경우
-// 					if (DistanceToCharacter > MaxDistance)
-// 					{
-// 						// 제한 범위 내 위치로 보정
-// 						FVector2D Direction = (FVector2D(MouseX, MouseY) - CharacterScreenPosition).GetSafeNormal();
-// 						FVector2D ClampedPosition = CharacterScreenPosition + Direction * MaxDistance;
-// 
-// 						// 마우스 위치 강제 이동
-// 						pc->SetMouseLocation(ClampedPosition.X, ClampedPosition.Y);
-// 					}
-// 				}
-// 				else
-// 				{
-// 					// 마우스를 전방으로 제한 (예: 캐릭터 전방에서 200픽셀 거리로 제한)
-// 					FVector2D LimitedPosition = CharacterScreenPosition + ForwardVector * 200.0f;
-// 					pc->SetMouseLocation(LimitedPosition.X, LimitedPosition.Y);
-// 				}
-
-			}
-			else 	// 혹시모를 화면 밖으로 나갔을때
-			{
-				if (pc)
-				{
-					// 화면의 중앙으로 이동
-					
-					GEngine->GameViewport->GetViewportSize(ViewportSize);
-
-					float CenterX = ViewportSize.X / 2.0f;
-					float CenterY = ViewportSize.Y / 2.0f;
-
-					pc->SetMouseLocation(CenterX, CenterY);
-				}
-			}
-		}
+		MoisePosition(DeltaTime);
 	}
 
 	if (pc && pc->IsLocalController())
@@ -255,6 +167,112 @@ void APSH_Player::Tick(float DeltaTime)
 	
 }
 
+void APSH_Player::InterpToRotation(const float & DeltaTime)
+{
+	FVector PlayerLocation = GetActorLocation();
+	FVector ObjectLocation = GrabbedActor->GetActorLocation();
+	// 플레이어가 물체를 바라보도록 회전 계산
+	FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
+	// 부드럽게 회전하도록 InterpTo 적용
+	FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
+	// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
+	SetActorRotation(NewRotation);
+
+	FRotator CurrentControlRotation = GetControlRotation();
+	// Yaw를 360도로 감싸기 위한 DeltaYaw 계산
+	float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
+	if (FMath::Abs(DeltaYaw) > 60.0f && FMath::Abs(DeltaYaw) <= 90.0f) // 일정 이상 차이날 경우 회전 시작
+	{
+		CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // 부드러운 회전
+		pc->SetControlRotation(CurrentControlRotation);
+	}
+}
+
+
+void APSH_Player::MoisePosition(const float& DeltaTime)
+{
+	if(pc == nullptr) return;
+
+	FVector2D ViewportSize;
+	GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+	// 마우스 이동 제한 영역 설정
+	const float TopMargin = ViewportSize.Y * MarginPercent;  // 상단에서 5%
+	const float BottomMargin = ViewportSize.Y * (1.0f - MarginPercent);  // 하단에서 5%
+	const float LeftMargin = ViewportSize.X * MarginPercent;  // 좌측에서 5%
+	const float RightMargin = ViewportSize.X * (1.0f - MarginPercent);  // 우측에서 5%
+
+	// 캐릭터의 화면 중심 위치 계산
+	FVector2D CharacterScreenPosition;
+	if (pc && pc->ProjectWorldLocationToScreen(GetActorLocation(), CharacterScreenPosition))
+	{
+		// 현재 마우스 위치 확인
+		float MouseX, MouseY;
+		if (pc->GetMousePosition(MouseX, MouseY)) // veiwport 안에서 마우스의 위치가 확인 됬을때
+		{
+			// 캐릭터에서 마우스 위치까지의 벡터 (2D)
+			FVector2D CharacterToMouse = FVector2D(MouseX, MouseY) - CharacterScreenPosition;
+
+			InterpToRotation(DeltaTime);
+
+			// 캐릭터 화면 위치와 마우스 위치 간 거리 계산
+			float DistanceToCharacter = FVector2D::Distance(CharacterScreenPosition, FVector2D(MouseX, MouseY));
+
+			bool needsRepositioning = false;
+			FVector2D newMousePosition(MouseX, MouseY);
+
+			// 캐릭터와의 최소 거리 체크
+			if (DistanceToCharacter < MinDistance)
+			{
+				FVector2D DirectionToCharacter = CharacterToMouse.GetSafeNormal();
+				newMousePosition = CharacterScreenPosition + DirectionToCharacter * MinDistance;
+				needsRepositioning = true;
+			}
+
+			// 화면 경계 체크 및 제한된 영역으로 클램핑
+			if (MouseX <= LeftMargin || MouseX >= RightMargin ||
+				MouseY <= TopMargin || MouseY >= BottomMargin)
+			{
+				newMousePosition.X = FMath::Clamp(newMousePosition.X, LeftMargin, RightMargin);
+				newMousePosition.Y = FMath::Clamp(newMousePosition.Y, TopMargin, BottomMargin);
+				needsRepositioning = true;
+			}
+
+			// 마우스 위치 업데이트가 필요한 경우에만 실행
+			if (needsRepositioning)
+			{
+				pc->SetMouseLocation(newMousePosition.X, newMousePosition.Y);
+			}
+
+			// 디버그 표시 (개발 중에만 사용)
+// 			if (GEngine)
+// 			{
+// 				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow,
+// 					FString::Printf(TEXT("Mouse Position: X=%.1f, Y=%.1f"), MouseX, MouseY));
+// 				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green,
+// 					FString::Printf(TEXT("Bottom Margin: %.1f"), BottomMargin));
+// 			}
+		}
+		else // GetMousePosition 실패 시
+		{
+			// 안전한 위치 계산
+			FVector2D SafePosition = CharacterScreenPosition;
+			// 제한된 영역 내로 클램핑
+			SafePosition.X = FMath::Clamp(SafePosition.X, LeftMargin, RightMargin);
+			SafePosition.Y = FMath::Clamp(SafePosition.Y, TopMargin, BottomMargin);
+
+			// 최소 거리 유지를 위한 오프셋
+			FVector2D Offset(MinDistance * 0.707f, MinDistance * 0.707f);
+			SafePosition += Offset;
+
+			// 다시 한번 제한된 영역으로 클램핑
+			SafePosition.X = FMath::Clamp(SafePosition.X, LeftMargin, RightMargin);
+			SafePosition.Y = FMath::Clamp(SafePosition.Y, TopMargin, BottomMargin);
+
+			pc->SetMouseLocation(SafePosition.X, SafePosition.Y);
+		}
+	}
+}
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

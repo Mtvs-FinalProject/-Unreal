@@ -230,4 +230,14 @@ public:
 	// 방향전환
 	UPROPERTY()
 	class APSH_BlockActor * GrabbedActor;
+
+	void InterpToRotation(const float& DeltaTime);
+
+	void MoisePosition(const float& DeltaTime);
+	const float MaxDistance = 300.0f;  // 캐릭터로부터의 최대 거리 제한
+	const float MinDistance = 125.0f; // 캐릭터로의 최소 거리
+
+	// 마우스 이동 제한 영역 설정
+	const float MarginPercent = 0.05f; // 5% 여백
+	
 };
