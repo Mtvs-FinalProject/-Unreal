@@ -38,11 +38,24 @@ public:
 	UFUNCTION()
 	void SelectObject(AActor* SelectedActor);
 
-	UPROPERTY(EditDefaultsOnly)
+	//Widgets 
+	UPROPERTY(EditDefaultsOnly, Category = "Widget")
 	TSubclassOf<class UUserWidget> objectWidgetFac;
-
 	UPROPERTY()
 	class UPSH_ObjectWidget * objectWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Widget")
+	TSubclassOf<class UUserWidget> mouseWidgetFac;
+	UPROPERTY()
+	class UPSH_MouseWidget* mouseWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Widget")
+	TSubclassOf<class UUserWidget> garbageBotWidgetFac;
+	UPROPERTY()
+	class UPSH_GarbageBotWidget* garbageBotWidget;
+
+	UFUNCTION(Client,Reliable)
+	void CRPC_ShowObjectWidget();
 
 	UPROPERTY()
 	class APSH_Player * curPlayer;

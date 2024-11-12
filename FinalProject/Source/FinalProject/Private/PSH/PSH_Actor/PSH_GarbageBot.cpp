@@ -8,22 +8,33 @@
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "../FinalProject.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APSH_GarbageBot::APSH_GarbageBot()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-    boxCol = CreateDefaultSubobject<UBoxComponent>(TEXT("boxCol"));
-    SetRootComponent(boxCol);
-    boxCol->SetRelativeScale3D(FVector(0.25f));
-
+// 
+//     boxCol = CreateDefaultSubobject<UBoxComponent>(TEXT("boxCol"));
+//     SetRootComponent(boxCol);
+//     boxCol->SetRelativeScale3D(FVector(0.25f));
+// 
 	compMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	compMesh->SetupAttachment(RootComponent);
+    compMesh->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
+    compMesh->SetRelativeScale3D(FVector(0.25f));
+    compMesh->SetCollisionProfileName(FName("GarBageBot"));
     compMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    compMesh->SetRelativeScale3D(FVector(1.f));
+   
 
+    ConstructorHelpers::FObjectFinder<UStaticMesh> tempMesh(TEXT("/Script/Engine.StaticMesh'/Game/YWK/BP/Bot/robotpat.robotpat'"));
+
+    if (tempMesh.Succeeded())
+    {
+        compMesh->SetStaticMesh(tempMesh.Object);
+    }
 
     bReplicates = true;
     SetReplicateMovement(true);
@@ -34,15 +45,8 @@ void APSH_GarbageBot::BeginPlay()
 {
 	Super::BeginPlay();
 
-    boxCol->OnComponentBeginOverlap.AddDynamic(this,&APSH_GarbageBot::BeginOverlap);
+    compMesh->OnComponentBeginOverlap.AddDynamic(this,&APSH_GarbageBot::BeginOverlap);
 
-	player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
-    
-    if (player)
-    {
-        SetOwner(player);
-        InitializeMovePoint();
-    }
 }
 
 // Called every frame
@@ -67,6 +71,7 @@ void APSH_GarbageBot::Tick(float DeltaTime)
 
         SetActorRotation(SmoothedRotation);
     }
+
 	switch (state)
 	{
 	case EState::IDLE: IdleState();
@@ -78,12 +83,17 @@ void APSH_GarbageBot::Tick(float DeltaTime)
 	}
 }
 
+void APSH_GarbageBot::SetPlayer(class APSH_Player* playerclass)
+{
+    player = playerclass;
+}
+
 void APSH_GarbageBot::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	
+	PRINTLOG(TEXT("Overlap"));
 	APSH_BlockActor * block = Cast<APSH_BlockActor>(OtherActor);
 
-	if (block && !block->pickedUp && bDestroy)
+	if (block && !block->pickedUp )
 	{
 		block->AllDestroy();
 	}
@@ -114,9 +124,14 @@ void APSH_GarbageBot::MoveState(const float& deltaTime)
     SetActorLocation(NewLoc);
    
 }
+void APSH_GarbageBot::MRPC_SetScale_Implementation(FVector DeltaTimescale)
+{
+    SetActorScale3D(DeltaTimescale);
+}
 
 void APSH_GarbageBot::DestroyState()
 {
+    if(HasAuthority() == false) return;
 
     FHitResult outHit;
     FVector start = GetActorLocation();
@@ -142,14 +157,11 @@ void APSH_GarbageBot::DestroyState()
     APSH_BlockActor* block = Cast<APSH_BlockActor>(outHit.GetActor());
     if (bhit && block)
     {
-
         if (sumScale >= 1.5f)
         {
             return;
         }
-        bDestroy = true;
         sumScale += GetWorld()->DeltaTimeSeconds;
-        SetActorScale3D(scale * sumScale);
     }
     else
     {
@@ -157,36 +169,35 @@ void APSH_GarbageBot::DestroyState()
         {
             return;
         }
-        bDestroy = false;
         sumScale -= GetWorld()->DeltaTimeSeconds;
-        SetActorScale3D(scale * sumScale);
     }
+
+    MRPC_SetScale(scale * sumScale);
 }
 
 void APSH_GarbageBot::SetState(EState nextState)
 {
     state = nextState;
+    PRINTLOG(TEXT("State"));
 }
 
-
-void APSH_GarbageBot::MoveToLocation(const class APSH_Player& owner, const FVector& TargetLocation)
+void APSH_GarbageBot::SRPC_MoveToLocation_Implementation(const FVector& TargetLocation)
 {
+   
     Dir = TargetLocation;
 
     Dir.Z = GetActorLocation().Z;
-
-    // 이동 경로 계산
-//     NewLoc = GetActorLocation() + Dir * MoveSpeed * GetWorld()->DeltaTimeSeconds;
-
 }
 
 void APSH_GarbageBot::InitializeMovePoint()
 {
     if (player)
     {
-        Dir = player->GetActorLocation() + GetActorForwardVector() * 250;
+        Dir = player->GetActorLocation() + player->GetActorForwardVector() * 250;
+        SetActorLocation(Dir);
     }
 }
+
 TArray<FNavigationNode*> APSH_GarbageBot::FindPath(FNavigationNode* StartNode, FNavigationNode* TargetNode)
 {
     if (!StartNode || !TargetNode) 
@@ -287,6 +298,7 @@ float APSH_GarbageBot::CalculateHeuristic(FNavigationNode* FromNode, FNavigation
 {
     return FVector::Dist(FromNode->NodeLocation, ToNode->NodeLocation);
 }
+
 FNavigationNode* APSH_GarbageBot::GetNodeWithLowestFCost(TArray<FNavigationNode*>& OpenSet)
 {
     FNavigationNode* LowestFCostNode = OpenSet[0];
@@ -298,4 +310,12 @@ FNavigationNode* APSH_GarbageBot::GetNodeWithLowestFCost(TArray<FNavigationNode*
         }
     }
     return LowestFCostNode;
+}
+
+void APSH_GarbageBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(APSH_GarbageBot, sumScale);
+    DOREPLIFETIME(APSH_GarbageBot, scale);
 }

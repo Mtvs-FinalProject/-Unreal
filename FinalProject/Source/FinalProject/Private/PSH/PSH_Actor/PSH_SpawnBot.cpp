@@ -7,6 +7,7 @@
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "../FinalProject.h"
 
 // Sets default values
 APSH_SpawnBot::APSH_SpawnBot()
@@ -66,6 +67,9 @@ APSH_SpawnBot::APSH_SpawnBot()
 	spotLight->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
 	spotLight->Intensity = 50878;
 	spotLight->IntensityUnits = ELightUnits::Unitless;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 }
 
@@ -134,13 +138,13 @@ void APSH_SpawnBot::SpawnMoveState(const float& deltaTime)
 	if (FVector::Dist(myLoc, TagetLoc) <= 10.f) // 10.f는 허용 오차 범위
 	{
 		SetActorLocation(TagetLoc); // 정확한 위치에 도달하도록 설정
-		APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController());
-		if (PlayerController->objectWidget) // 위젯 보이기
+		APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetOwner()->GetOwner());
+		if (PlayerController) // 위젯 보이기
 		{
-			PlayerController->objectWidget->SetVisibility(ESlateVisibility::Visible);
+			PlayerController->CRPC_ShowObjectWidget();
 		}
-		lightMesh->SetVisibility(true);
-		lightMesh->SetMaterial(0,matArray[1]);
+		
+		MRPC_SetMat(1);
 		SetState(EspawnState::SPAWN);
 	}
 	else
@@ -205,6 +209,29 @@ void APSH_SpawnBot::SpawnState(const float& deltaTime)
 void APSH_SpawnBot::SetState(EspawnState State)
 {
 	state = State;
+
+	if(state == EspawnState::IDLEMOVE)
+	{
+		MRPC_SetVisible(false);
+	}
+}
+
+void APSH_SpawnBot::MRPC_SetVisible_Implementation(bool chek)
+{
+	if (lightMesh == nullptr) return;
+	
+	lightMesh->SetVisibility(chek);
+
+	/*if(chek == false) */
+}
+void APSH_SpawnBot::MRPC_SetMat_Implementation(int32 arrayIndex)
+{
+	if(lightMesh == nullptr) return;
+	
+	if(!lightMesh->IsVisible()) MRPC_SetVisible(true);
+
+	lightMesh->SetMaterial(0, matArray[arrayIndex]);
+
 }
 void APSH_SpawnBot::LineChek()
 {
@@ -232,8 +259,8 @@ void APSH_SpawnBot::LineChek()
 		/*DrawDebugSphere(GetWorld(), hitInfo.Location, radius, 12, FColor::Yellow, false, 1.0f);*/
 		if (Cast<APSH_BlockActor>(hitInfo.GetActor()))
 		{
-			lightMesh->SetMaterial(0, matArray[2]);
-
+			
+			MRPC_SetMat(2);
 			if(player == nullptr) return;
 
 			player->bSpawn = false;
@@ -241,7 +268,7 @@ void APSH_SpawnBot::LineChek()
 	}
 	else
 	{
-		lightMesh->SetMaterial(0, matArray[1]);
+		MRPC_SetMat(1);
 
 		if (player == nullptr) return;
 

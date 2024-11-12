@@ -29,6 +29,7 @@ public:
 	class UStaticMeshComponent * meshComp;
 
 	/// 블럭 자식 오브젝트 배열
+	UPROPERTY(EditAnywhere)
 	TArray<class AActor*> childsActors;
 
 	// 부착 위치
@@ -54,11 +55,15 @@ public:
 
 	void Remove();
 	
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_Remove();
+
 	UFUNCTION(Server,Reliable)
 	void SRPC_Remove();
 
 	bool bGrab = false;
-
+	
+	UPROPERTY(EditAnywhere)
 	class APSH_BlockActor * parent;
 
 	TArray<FVector> GetSnapPoints();
@@ -75,11 +80,14 @@ public:
 
 	void Drop(class UPhysicsHandleComponent * physicshandle);
 
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_Drop(class UPhysicsHandleComponent * physicshandle);
+
+
 	void Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 	
-	UFUNCTION(Server,Reliable)
-	void SRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
-
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_Place(class APSH_BlockActor* attachActor, FTransform worldTransform);
 
 	void AddChild(class APSH_BlockActor* childActor);
 
@@ -92,8 +100,6 @@ public:
 
 	UFUNCTION()
 	void OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
-
-	FTransform MyLocation;
 
 	FPSH_ObjectData SaveBlockHierachy();
 
@@ -115,4 +121,32 @@ public:
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	//class UMyRotateActorComponent* MyRotateActorComponent;
+
+	// 플레이어 중복잡기 방지를 위해 오너 정해주기 ( Net에서 사용하는 GetSetOwner과 다르게 작동을 위해 직접 생성)
+	void SetMaster(class APSH_Player* owner);
+
+	APSH_Player * GetMaster();
+	
+	UFUNCTION(Server,Unreliable)
+	void SRPC_BlockScale(float axis);
+
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_BlockScale(FVector scaleVec);
+
+	float blockScale = 1;
+
+	FVector scale = FVector(1.f);
+
+	// 잡았을때 이펙트 생성
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterial * outLineMat;
+
+	void SetOutLine(bool chek);
+	
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_SetOutLine(bool chek);
+
+private:
+	class APSH_Player * master = nullptr;
+
 };

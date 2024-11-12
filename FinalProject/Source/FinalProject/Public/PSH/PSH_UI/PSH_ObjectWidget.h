@@ -42,8 +42,8 @@ public:
 	class UButton * Btr_Save;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Load;
-	UPROPERTY(meta = (BindWidget))
-	class UButton * Btr_CallBot;
+// 	UPROPERTY(meta = (BindWidget))
+// 	class UButton * Btr_CallBot;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * nomalObjectData;
@@ -68,8 +68,8 @@ public:
 	UFUNCTION()
 	void OnClickedLoad();
 
-	UFUNCTION()
-	void OnClickedCallBot();
+// 	UFUNCTION()
+// 	void OnClickedCallBot();
 
 	
 	int32 CurrentIndex = 0;
