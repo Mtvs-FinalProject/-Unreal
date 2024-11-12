@@ -26,6 +26,8 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 	// 초기 최대 거리
 	MoveDistance = 1000.0f;
 
+	bSingleDirection = true;
+
 	// 초기 왕복 모드
 	bLoopMode = false;
 
@@ -42,14 +44,8 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 void UMyMoveActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// 초기 위치 저장
-	if (AActor* Owner = GetOwner())
-	{
-		StartLocation = Owner->GetActorLocation();
-		UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
-	}
-
+	StartLocation = GetOwner()->GetActorLocation();
+	UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
 }
 
 
@@ -67,66 +63,63 @@ void UMyMoveActorComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 {
-	if (AActor* Owner = GetOwner())
-	{
-		FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
-		float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
+    AActor* Owner = GetOwner();
+    if (!Owner) return;
 
-		// 디버깅 로그
-		UE_LOG(LogTemp, Warning, TEXT("Current Location: %s, Target Location: %s, Distance Traveled: %f, Max Distance: %f"),
-			*Owner->GetActorLocation().ToString(), *NewLocation.ToString(), DistanceTraveled, MaxDistance);
-		if (bSingleDirection)
-		{
-			// 단순 이동 모드 : 최대 거리 도달 시 이동 멈춤
-			if (DistanceTraveled <= MaxDistance)
-			{
-				Owner->SetActorLocation(NewLocation);
-				UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
-			}
-			else
-			{
-				StopMoving();
-				UE_LOG(LogTemp, Warning, TEXT("Max distance reached. Movement stopped."));
-			}
-		}
-		else
-		{
-			// 왕복 이동 모드 : 최대 거리 도달 시 방향 반전
-			if (DistanceTraveled >= MaxDistance)
-			{
-				if (bLoopMode || CurrentLoop < LoopCount)
-				{
-					MoveDirection *= -1.0f; // 방향 반전
-					StartLocation = Owner->GetActorLocation(); //새 출발 위치
+    FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
+    float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
-					if (!bLoopMode)
-					{
-						CurrentLoop++; // 반복 횟수 증가
-					}
-					UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Actor changing direction."), CurrentLoop, LoopCount);
-				}
-				else
-				{
-					StopMoving(); // 왕복 횟수 충족 시 이동 정지
-					UE_LOG(LogTemp, Warning, TEXT("Movement stopped after %d loops."), CurrentLoop);
-				}
-			}
-			Owner->SetActorLocation(NewLocation);
-		}
+    UE_LOG(LogTemp, Warning, TEXT("Current Location: %s, Distance Traveled: %f, Max Distance: %f"),
+        *NewLocation.ToString(), DistanceTraveled, MaxDistance);
 
-	}
+    if (DistanceTraveled >= MaxDistance)
+    {
+        if (bSingleDirection)
+        {
+            // If in single direction mode, stop movement once max distance is reached
+            StopMoving();
+            UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping movement."));
+        }
+        else
+        {
+            // Loop mode: reverse direction and reset start location
+            if (bLoopMode || CurrentLoop < LoopCount)
+            {
+                // Reverse direction
+                MoveDirection *= -1.0f;
+                StartLocation = Owner->GetActorLocation();
+
+                // Increment loop count if not in continuous loop mode
+                if (!bLoopMode)
+                {
+                    CurrentLoop++;
+                }
+                UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Reversing direction. New direction: %s"),
+                    CurrentLoop, LoopCount, *MoveDirection.ToString());
+            }
+            else
+            {
+                // Stop moving if loop count limit has been reached
+                StopMoving();
+                UE_LOG(LogTemp, Warning, TEXT("Max loop count reached. Stopping movement."));
+            }
+        }
+    }
+    else
+    {
+        // Move actor to new location
+        Owner->SetActorLocation(NewLocation);
+        UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
+    }
 }
 
 // 이동시작 함수
 void UMyMoveActorComponent::StartMoving()
 {
-	if (AActor* Owner = GetOwner())
-	{
-		StartLocation = Owner->GetActorLocation();
-	}
-	CurrentLoop = 0;  // 반복 횟수 초기화
-	bShouldMove = true;
-	UE_LOG(LogTemp, Warning, TEXT("Movement started"));
+    StartLocation = GetOwner()->GetActorLocation();
+    CurrentLoop = 0;
+    bShouldMove = true;
+    UE_LOG(LogTemp, Warning, TEXT("Movement started with direction: %s"), *MoveDirection.ToString());
 }
 
 // 이동 끝 함수

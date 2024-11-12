@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "MyMoveActorComponent.h"
 #include "Movewidget.generated.h"
 
 /**
@@ -70,42 +71,42 @@ class UCheckBox* Chk_LoopMode;  // 무한 왕복 모드 체크박스
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UCheckBox* Chk_SingleDirectionMode;  // 단순 이동 모드 체크박스
 //------------------------------------------------------------------------------------------------------------------------------------------
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnFrontClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnBackClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnRightClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnLeftClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnMoveBackClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnStartButtonClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnStopButtonClicked();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnOriginButtonClicked();
 
 //속도값 SetText로 설정하기
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void UpdateMovementValuesInUI(float SpeedValue, float DistanceValue);
 
 // 속도나 이동값 넣기 위한 함수
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void ApplyMovementValues();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnSpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod);
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnDistanceTextCommitted(const FText& Text, ETextCommit::Type CommitMethod);
 
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -117,21 +118,44 @@ AActor* GetOwnerFromComponent();
 // 이동 저장할 변수
 FVector StoredMoveDirection;
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void InitializeFunctionObjects();
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void AddObjectToComboBox(AActor* NewObject);
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 //-----------------------------------------------------------------------------------------------
 // 왕복관련 함수들
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnLoopModeCheckChanged(bool bIsChecked); // 체크박스 상태 변경 시 호출
 
-UFUNCTION()
+UFUNCTION(BlueprintCallable)
 void OnSingleDirectionCheckChanged(bool bIsChecked);  // 단순 이동 모드 체크박스 상태 변경
+
+//------------------------------------------------------------------------------------------------
+
+// Array to store multiple MoveActor components
+UPROPERTY()
+TArray<UMyMoveActorComponent*> ControlledMoveComponents;
+
+// Add a move component to the widget's control list
+void AddControlledMoveComponent(UMyMoveActorComponent* MoveComponent);
+
+void SetMoveDirection(FVector Direction);
+
+UPROPERTY()
+TMap<UMyMoveActorComponent*, FVector> MoveDirectionMap;
+
+UPROPERTY()
+TMap<UMyMoveActorComponent*, float> MoveSpeedMap;
+
+//----------------------------------------------------------------------------------------------
+   // Preview Actor 관련 변수 및 함수
+AActor* PreviewActor = nullptr;           // 프리뷰 오브젝트
+void SpawnPreviewActor();                 // 프리뷰 액터 스폰 함수
+void UpdatePreviewLocation(FVector Direction, float Distance);  // 프리뷰 위치 업데이트
 
 };
