@@ -15,7 +15,7 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 
 	// 초기 상승 상태
 	bShouldFly = false;
-
+	
 	// 초기 상승 방향
 	FlyDirection = FVector(0.0f, 0.0f, 1.0f);
 
@@ -24,6 +24,11 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 
 	// 초기 상승 최대 높이
 	MaxFlyDistance = 1000.0f;
+
+	bLoopMode = false;
+	bSingleDirection = false;
+	LoopCount = 1;
+	CurrentLoop = 0;
 }
 
 
@@ -33,11 +38,8 @@ void UMyFlyActorComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// 초기 위치 저장
-	if (AActor* Owner = GetOwner())
-	{
-		StartLocation = Owner->GetActorLocation();
-		UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
-	}	
+    StartLocation = GetOwner()->GetActorLocation();
+    UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
 }
 
 
@@ -57,31 +59,61 @@ void UMyFlyActorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 void UMyFlyActorComponent::ObjectFly(float DeltaTime)
 {
-	if (AActor* Owner = GetOwner())
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
+	float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
+
+	float Tolerance = 1.0f;
+
+	if (bSingleDirection)
 	{
-		FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
-		Owner->SetActorLocation(NewLocation);
-
-		// 이동한 거리 계산
-		float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
-
-		// 이동한 거리가 MaxDistance보다 작을 때만 이동
 		if (DistanceTraveled <= MaxFlyDistance)
 		{
 			Owner->SetActorLocation(NewLocation);
 		}
 		else
 		{
-			StopFly(); // 거리를 초과하면 이동 멈춤
-			UE_LOG(LogTemp, Warning, TEXT("Max distance reached. Movement stopped."));
+			StopFly();
+			UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping flight."));
+		}
+	}
+	else
+	{
+		if (DistanceTraveled >= MaxFlyDistance - Tolerance)
+		{
+			if (bLoopMode || CurrentLoop < LoopCount)
+			{
+				FlyDirection *= -1.0f;
+				StartLocation = Owner->GetActorLocation();
+
+				if (!bLoopMode)
+				{
+					CurrentLoop++;
+				}
+				UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Reversing direction for fly. New direction: %s"), CurrentLoop, LoopCount, *FlyDirection.ToString());
+			}
+			else
+			{
+				StopFly();
+				UE_LOG(LogTemp, Warning, TEXT("Max loop count reached. Stopping flight."));
+			}
+		}
+		else
+		{
+			Owner->SetActorLocation(NewLocation);
 		}
 	}
 }
 
+
 void UMyFlyActorComponent::StartFly()
 {
+	StartLocation = GetOwner()->GetActorLocation();
+	CurrentLoop = 0;
 	bShouldFly = true;
-	UE_LOG(LogTemp, Warning, TEXT("StartFly called. bShouldFly = %s"), bShouldFly ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Warning, TEXT("Flight started with direction: %s"), *FlyDirection.ToString());
 }
 
 void UMyFlyActorComponent::StopFly()

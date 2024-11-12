@@ -37,6 +37,20 @@ public:
 	// ÃÖ´ë »ó½Â °Å¸®
 	float MaxFlyDistance;
 
+	// ¹«ÇÑ ¿Õº¹ ¸ðµå
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	bool bLoopMode;
+
+	// ´Ü¼ø ÀÌµ¿ ¸ðµå
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	bool bSingleDirection;
+
+	// ¿Õº¹ È½¼ö
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+    int32 LoopCount;
+
+	int32 CurrentLoop;  // ÇöÀç ¿Õº¹ È½¼ö
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

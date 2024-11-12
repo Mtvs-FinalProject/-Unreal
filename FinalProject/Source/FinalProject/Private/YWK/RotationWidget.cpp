@@ -1,363 +1,407 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "YWK/RotationWidget.h"
-#include "YWK/ActionChoice.h"
 #include "YWK/MyRotateActorComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/Button.h"
 #include "Components/CheckBox.h"
-#include "Components/EditableTextBox.h"
+#include "Components/EditableText.h"
 #include "Components/ComboBoxString.h"
+#include "Kismet/GameplayStatics.h"
 
 void URotationWidget::NativeConstruct()
 {
-	Super::NativeConstruct();
+    Super::NativeConstruct();
 
-	// ui뒤로가기 버튼
-	if (Btn_RotateBack)
-	{
-		Btn_RotateBack->OnClicked.AddDynamic(this, &URotationWidget::OnRotateBackClicked);
-	}
-	
-	// X축으로 돌기
-	if (Btn_X)
-	{
-		Btn_X->OnClicked.AddDynamic(this, &URotationWidget::OnXClicked);
-	}
-	
-	// y축으로 돌기
-	if (Btn_Y)
-	{
-		Btn_Y->OnClicked.AddDynamic(this, &URotationWidget::OnYClicked);
-	}
+    if (RotateSpeedText)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("RotateSpeedText initialized successfully in RotationWidget"));
+        RotateSpeedText->OnTextCommitted.AddDynamic(this, &URotationWidget::OnRotateSpeedTextCommitted);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("RotateSpeedText is null in RotationWidget"));
+    }
 
-	// z축으로 돌기
-	if (Btn_Z)
-	{
-		Btn_Z->OnClicked.AddDynamic(this, &URotationWidget::OnZClicked);
-	}
+    if (Btn_X)
+    {
+        Btn_X->OnClicked.AddDynamic(this, &URotationWidget::OnXClicked);
+    }
+    if (Btn_Y)
+    {
+        Btn_Y->OnClicked.AddDynamic(this, &URotationWidget::OnYClicked);
+    }
+    if (Btn_Z)
+    {
+        Btn_Z->OnClicked.AddDynamic(this, &URotationWidget::OnZClicked);
+    }
+    if (Btn_RotateBack)
+    {
+        Btn_RotateBack->OnClicked.AddDynamic(this, &URotationWidget::OnRotateBackClicked);
+    }
+    if (Btn_RotateStart)
+    {
+        Btn_RotateStart->OnClicked.AddDynamic(this, &URotationWidget::OnRotateStartClicked);
+    }
+    if (Btn_RotateStop)
+    {
+        Btn_RotateStop->OnClicked.AddDynamic(this, &URotationWidget::OnRotateStopClicked);
+    }
+    if (Btn_RotateOrigin)
+    {
+        Btn_RotateOrigin->OnClicked.AddDynamic(this, &URotationWidget::OnRotateOriginClicked);
+    }
 
-	// 회전 시작
-	if (Btn_RotateStart)
-	{
-		Btn_RotateStart->OnClicked.AddDynamic(this, &URotationWidget::OnRotateStartClicked);
-	}
+    if (TimesRotateText)
+    {
+        TimesRotateText->OnTextCommitted.AddDynamic(this, &URotationWidget::UpdateTimesTextUI);
+    }
+    if (RotateLoop)
+    {
+        RotateLoop->OnCheckStateChanged.AddDynamic(this, &URotationWidget::OnLoopModeCheckChanged);
+    }
 
-	// 회전 정지
-	if (Btn_RotateStop)
-	{
-		Btn_RotateStop->OnClicked.AddDynamic(this, &URotationWidget::OnRotateStopClicked);
-	}
-
-	// 원위치로 돌기
-	if (Btn_RotateOrigin)
-	{
-		Btn_RotateOrigin->OnClicked.AddDynamic(this, &URotationWidget::OnRotateOriginClicked);
-	}
-
-	InitializeFunctionObjects();
+    InitializeFunctionObjects();
 }
 
-// X축 회전
 void URotationWidget::OnXClicked()
 {
-	AActor* Owner = GetOwnerFromComponent();  // Owner 액터를 가져옴
-	if (!Owner)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Owner is null in OnXClicked()"));
-		return;  // Owner가 null이면 더 이상 진행하지 않음
-	}
-
-	// UMyRotateActorComponent 찾기
-	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
-
-	// RotateComponent가 없으면 동적으로 추가
-	if (!RotateComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("RotateComponent is null. Adding a new MyRotateActorComponent."));
-		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
-		if (RotateComponent)
-		{
-			Owner->AddInstanceComponent(RotateComponent);  // 컴포넌트를 액터에 추가
-			RotateComponent->RegisterComponent();  // 컴포넌트를 등록
-		}
-	}
-
-	// RotatorComponent가 있다면 회전 방향만 바꿈
-	if (RotateComponent)
-	{
-		RotateComponent->RotateDirection = FRotator(1.0f, 0.0f, 0.0f);
-		UE_LOG(LogTemp, Log, TEXT("X-axis rotation direction set."));
-	}
+    if (SelectedActor)
+    {
+        SetRotationDirection(FRotator(1.0f, 0.0f, 0.0f));
+    }
 }
 
-
-// Y축 회전
 void URotationWidget::OnYClicked()
 {
-	AActor* Owner = GetOwnerFromComponent();  // Owner 액터를 가져옴
-	if (!Owner)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnYClicked"));
-		return;  // Owner가 null이면 더 이상 진행하지 않음
-	}
-
-	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
-	if (!RotateComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("RotateComponent not found in OnYClicked, creating new one"));
-
-		// NewObject로 컴포넌트 생성
-		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
-		if (RotateComponent)
-		{
-			// 액터에 추가 및 등록
-			Owner->AddInstanceComponent(RotateComponent);
-			RotateComponent->RegisterComponent();
-
-			UE_LOG(LogTemp, Log, TEXT("New RotateComponent created and registered successfully"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to create RotateComponent in OnYClicked"));
-			return;  // 컴포넌트 생성 실패 시 반환
-		}
-	}
-
-	// RotateComponent가 null이 아니면 회전 방향 설정
-	if (RotateComponent)
-	{
-		RotateComponent->RotateDirection = FRotator(0.0f, 1.0f, 0.0f);
-		UE_LOG(LogTemp, Log, TEXT("Y-axis rotation direction set."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("RotateComponent is still null after creation attempt in OnYClicked"));
-	}
+    if (SelectedActor)
+    {
+        SetRotationDirection(FRotator(0.0f, 1.0f, 0.0f));
+    }
 }
 
-
-
-// Z축 회전
 void URotationWidget::OnZClicked()
 {
-	AActor* Owner = GetOwnerFromComponent();
-	if (!Owner)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Owner is null in OnZClicked"));
-		return;
-	}
-
-	UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
-	if (!RotateComponent)
-	{
-		UE_LOG(LogTemp, Error, TEXT("RotateComponent not found in OnZClicked"));
-		RotateComponent = NewObject<UMyRotateActorComponent>(Owner);
-		if (RotateComponent)
-		{
-			Owner->AddInstanceComponent(RotateComponent); // 컴포넌트를 액터에 추가
-			RotateComponent->RegisterComponent(); // 컴포넌트 등록
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to create RotateComponent in OnZClicked"));
-			return; // 컴포넌트 생성에 실패한 경우, 더 진행하지 않음
-		}
-	}
-
-	// RotatorComponent가 있다면 회전 방향만 바꿈
-	if (RotateComponent)
-	{
-		RotateComponent->RotateDirection = FRotator(0.0f, 0.0f, 1.0f);
-		UE_LOG(LogTemp, Log, TEXT("Z-axis rotation direction set."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("RotateComponent is still null after creation attempt in OnZClicked"));
-	}
+    if (SelectedActor)
+    {
+        SetRotationDirection(FRotator(0.0f, 0.0f, 1.0f));
+    }
 }
 
-
-// ui 뒤로가기
 void URotationWidget::OnRotateBackClicked()
 {
-	RemoveFromParent();
-
-	if (ActionChoice)
-	{
-		UUserWidget* BackRotateWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
-		if (BackRotateWidget)
-		{
-			BackRotateWidget->AddToViewport();
-		}
-	}
+    RemoveFromParent();
+    if (ActionChoice)
+    {
+        UUserWidget* BackMoveWidget = CreateWidget<UUserWidget>(GetWorld(), ActionChoice);
+        if (BackMoveWidget)
+        {
+            BackMoveWidget->AddToViewport();
+        }
+    }
 }
-// 회전 시작
+
+void URotationWidget::SetRotationDirection(FRotator NewDirection)
+{
+    if (SelectedActor)
+    {
+        if (UMyRotateActorComponent* SelectedRotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>())
+        {
+            RotateDirectionMap.FindOrAdd(SelectedRotateComponent) = NewDirection;
+            UE_LOG(LogTemp, Warning, TEXT("SetRotateDirection called with direction: %s"), *NewDirection.ToString());
+        }
+    }
+}
+
 void URotationWidget::OnRotateStartClicked()
 {
-	if (SelectedActor)
-	{
-		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
-		if (RotateComponent)
-		{
-			RotateComponent->StartRolling();
-			UE_LOG(LogTemp, Warning, TEXT("Rotation started."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("RotateComponent not found."));
-		}
-	}
-}
-// 회전 초기화
-void URotationWidget::OnRotateOriginClicked()
-{
-	if (SelectedActor)
-	{
-		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
-		if (RotateComponent)
-		{
-			RotateComponent->OriginRolling();
-		}
-	}
+    if (ControlledRotateComponents.Num() > 0)
+    {
+        for (UMyRotateActorComponent* RotateComponent : ControlledRotateComponents)
+        {
+            if (RotateComponent)
+            {
+                RotateComponent->RotateDirection = RotateDirectionMap.Contains(RotateComponent) ? RotateDirectionMap[RotateComponent] : FRotator(1.0f, 0.0f, 0.0f);
+                RotateComponent->RotateSpeed = RotateSpeedMap.Contains(RotateComponent) ? RotateSpeedMap[RotateComponent] : 100.0f;
+
+                UE_LOG(LogTemp, Warning, TEXT("Starting rotation for %s with speed: %f and direction: %s"),
+                    *RotateComponent->GetOwner()->GetName(),
+                    RotateComponent->RotateSpeed,
+                    *RotateComponent->RotateDirection.ToString());
+                RotateComponent->StartRolling();
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("No direction or speed set for %s; rotation skipped"), *RotateComponent->GetOwner()->GetName());
+            }
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No ControlledRotateComponents found."));
+    }
 }
 
 void URotationWidget::OnRotateStopClicked()
 {
-	if (SelectedActor)
-	{
-		UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
-		if (RotateComponent)
-		{
-			RotateComponent->StopRolling();
-		}
-	}
+    if (SelectedActor)
+    {
+        if (UMyRotateActorComponent* SelectedRotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>())
+        {
+            SelectedRotateComponent->StopRolling();
+            UE_LOG(LogTemp, Warning, TEXT("Stopped rolling for component %s"), *SelectedRotateComponent->GetOwner()->GetName());
+        }
+    }
 }
 
-void URotationWidget::UpdateSpeedTextUI(const FText& Text, ETextCommit::Type CommitMethod)
+void URotationWidget::OnRotateOriginClicked()
 {
-	if (CommitMethod == ETextCommit::OnEnter)
-	{
-		// 입력된 속도 값을 처리
-		FString SpeedString = Text.ToString();
-		float SpeedValue = FCString::Atof(*SpeedString);
-
-		if (AActor* Owner = GetOwnerFromComponent())
-		{
-			UMyRotateActorComponent* RotateComponent = Owner->FindComponentByClass<UMyRotateActorComponent>();
-			if (RotateComponent)
-			{
-				RotateComponent->RotateSpeed = SpeedValue;
-				// UI에 값 업데이트
-				UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), SpeedValue);
-			}
-		}
-	}
+    for (UMyRotateActorComponent* RotateComponent : ControlledRotateComponents)
+    {
+        if (RotateComponent)
+        {
+            RotateComponent->OriginRolling();
+        }
+    }
 }
 
-AActor* ControlledActor = nullptr;
-
-AActor* URotationWidget::GetOwnerFromComponent()
+void URotationWidget::OnRotateSpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
-	if (ControlledActor && ControlledActor->IsValidLowLevel())  // Null 검사를 추가하여 안정성 확보
-	{
-		UE_LOG(LogTemp, Log, TEXT("ControlledActor already set: %s"), *ControlledActor->GetName());
-		return ControlledActor;
-	}
+    if (CommitMethod == ETextCommit::OnEnter && SelectedActor)
+    {
+        float SpeedValue = FCString::Atof(*Text.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("SpeedValue from EditableTextBox: %f"), SpeedValue);
 
-	UE_LOG(LogTemp, Warning, TEXT("No ControlledActor, searching for BP_FunctionObject"));
+        if (UMyRotateActorComponent* SelectedRotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>())
+        {
+            RotateSpeedMap.FindOrAdd(SelectedRotateComponent) = SpeedValue;
+            UE_LOG(LogTemp, Warning, TEXT("Rotation speed set to: %f for component %s"), SpeedValue, *SelectedRotateComponent->GetOwner()->GetName());
+            
+            UpdateRotateSpeedMap();  // RotateSpeedMap 갱신 시 호출
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("SelectedRotateComponent is null, cannot set speed"));
+        }
+    }
+}
 
-	// 블루프린트 액터 찾아오기
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
-	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
-
-	if (!BP_FunctionObjectClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load BP_FunctionObject class"));
-		return nullptr;
-	}
-
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
-
-	if (FoundActors.Num() > 0)
-	{
-		ControlledActor = FoundActors[0];
-		if (ControlledActor && ControlledActor->IsValidLowLevel()) // 추가적인 유효성 확인
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *ControlledActor->GetName());
-		}
-		return ControlledActor;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BP_FunctionObject not found, attempting to spawn"));
-
-		// 없으면 새로 스폰
-		ControlledActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
-		if (ControlledActor && ControlledActor->IsValidLowLevel())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Spawned new BP_FunctionObject: %s"), *ControlledActor->GetName());
-			return ControlledActor;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to spawn BP_FunctionObject"));
-			ControlledActor = nullptr;
-			return nullptr;
-		}
-	}
+void URotationWidget::OnLoopModeCheckChanged(bool bIsChecked)
+{
+    if (SelectedActor)
+    {
+        if (UMyRotateActorComponent* SelectedRotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>())
+        {
+            SelectedRotateComponent->bLoopMode = bIsChecked;
+            UE_LOG(LogTemp, Warning, TEXT("Loop mode set to: %s for component %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"), *SelectedRotateComponent->GetOwner()->GetName());
+        }
+    }
 }
 
 void URotationWidget::InitializeFunctionObjects()
 {
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
-	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+    if (ControlledRotateComponents.Num() > 0)
+    {
+        return;
+    }
 
-	if (BP_FunctionObjectClass && GetWorld())
-	{
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+    FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
+    UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
-		// 콤보박스에 이름 추가
-		if (RotateBoxList)
-		{
-			for (AActor* FunctionObject : AllFunctionObject)
-			{
-				if (FunctionObject)
-				{
-					RotateBoxList->AddOption(FunctionObject->GetName());
-				}
-			}
-			RotateBoxList->OnSelectionChanged.AddDynamic(this, &URotationWidget::OnFunctionObjectSelected);
-		}
-		if (AllFunctionObject.Num() > 0)
-		{
-			SelectedActor = AllFunctionObject[0];
-		}
-	}
+    if (BP_FunctionObjectClass && GetWorld())
+    {
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+        if (RotateBoxList)
+        {
+            for (AActor* FunctionObject : AllFunctionObject)
+            {
+                if (FunctionObject)
+                {
+                    RotateBoxList->AddOption(FunctionObject->GetName());
+                    if (UMyRotateActorComponent* RotateComponent = FunctionObject->FindComponentByClass<UMyRotateActorComponent>())
+                    {
+                        AddControlledRotateComponent(RotateComponent);
+                    }
+                }
+            }
+            RotateBoxList->OnSelectionChanged.AddDynamic(this, &URotationWidget::OnFunctionObjectSelected);
+        }
+        if (AllFunctionObject.Num() > 0)
+        {
+            SelectedActor = AllFunctionObject[0];
+        }
+    }
 }
 
 void URotationWidget::AddObjectToComboBox(AActor* NewObject)
 {
-	if (NewObject && RotateBoxList)
-	{
-		FString DisplayName = NewObject->GetActorLabel();
-		RotateBoxList->AddOption(DisplayName);
-		AllFunctionObject.Add(NewObject);
-	}
+    if (NewObject && RotateBoxList)
+    {
+        FString DisplayName = NewObject->GetActorLabel();
+        RotateBoxList->AddOption(DisplayName);
+        AllFunctionObject.Add(NewObject);
+        UE_LOG(LogTemp, Warning, TEXT("Added new object to ComboBox: %s"), *DisplayName);
+    }
 }
 
 void URotationWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	int32 SelectedIndex = RotateBoxList->FindOptionIndex(SelectedItem);
-	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
-	{
-		SelectedActor = AllFunctionObject[SelectedIndex];
-		UE_LOG(LogTemp, Warning, TEXT("Selected rotation object: %s"), *SelectedActor->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
-	}
+    int32 SelectedIndex = RotateBoxList->FindOptionIndex(SelectedItem);
+    if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+    {
+        SelectedActor = AllFunctionObject[SelectedIndex];
+        UMyRotateActorComponent* RotateComponent = SelectedActor->FindComponentByClass<UMyRotateActorComponent>();
+
+        if (RotateComponent)
+        {
+            if (RotateSpeedText)
+            {
+                float SpeedValue = RotateSpeedMap.Contains(RotateComponent) ? RotateSpeedMap[RotateComponent] : 0.f;
+                RotateSpeedText->SetText(FText::AsNumber(SpeedValue));
+            }
+
+            if (TimesRotateText)
+            {
+                int32 TimesValue = TimesRotateMap.Contains(RotateComponent) ? TimesRotateMap[RotateComponent] : 0;
+                TimesRotateText->SetText(FText::AsNumber(TimesValue));
+            }
+
+            if (RotateLoop)
+            {
+                bool bLoop = RotateComponent->bLoopMode;
+                RotateLoop->SetIsChecked(bLoop);
+            }
+        }
+    }
+}
+
+void URotationWidget::AddControlledRotateComponent(UMyRotateActorComponent* NewComponent)
+{
+    if (NewComponent && !ControlledRotateComponents.Contains(NewComponent))
+    {
+        ControlledRotateComponents.Add(NewComponent);
+        UE_LOG(LogTemp, Warning, TEXT("Added RotateComponent of %s to ControlledRotateComponents"), *NewComponent->GetOwner()->GetName());
+    }
+}
+
+void URotationWidget::UpdateTimesTextUI(const FText& Text, ETextCommit::Type CommitMethod)
+{
+    if (CommitMethod == ETextCommit::OnEnter)
+    {
+        int32 TimesValue = FCString::Atoi(*Text.ToString());
+        for (UMyRotateActorComponent* RotateComponent : ControlledRotateComponents)
+        {
+            if (RotateComponent)
+            {
+                TimesRotateMap.FindOrAdd(RotateComponent) = TimesValue;
+                UE_LOG(LogTemp, Warning, TEXT("MaxRotate set to: %d for component %s"), TimesValue, *RotateComponent->GetOwner()->GetName());
+            }
+        }
+    }
+}
+
+void URotationWidget::UpdateComponentSettings(UMyRotateActorComponent* RotateComponent)
+{
+    if (!RotateComponent)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UpdateComponentSettings called with null RotateComponent."));
+        return;
+    }
+
+    if (!RotateSpeedText || !TimesRotateText)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UpdateComponentSettings called with null RotateSpeedText or TimesRotateText."));
+        return;
+    }
+
+    float SpeedValue = FCString::Atof(*RotateSpeedText->GetText().ToString());
+    int32 TimesValue = FCString::Atoi(*TimesRotateText->GetText().ToString());
+
+    RotateComponent->RotateSpeed = SpeedValue;
+    RotateComponent->MaxRotate = TimesValue;
+
+    UE_LOG(LogTemp, Warning, TEXT("Updated component settings: Speed=%f, MaxRotate=%d for component %s"), SpeedValue, TimesValue, *RotateComponent->GetOwner()->GetName());
+}
+
+void URotationWidget::StartRotation()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Starting rotation for all controlled components."));
+
+    for (auto& Entry : RotateDirectionMap)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("DirectionMap Entry - Component: %s, Direction: %s"), *Entry.Key->GetOwner()->GetName(), *Entry.Value.ToString());
+    }
+
+    for (auto& Entry : RotateSpeedMap)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("SpeedMap Entry - Component: %s, Speed: %f"), *Entry.Key->GetOwner()->GetName(), Entry.Value);
+    }
+
+    for (UMyRotateActorComponent* RotateComponent : ControlledRotateComponents)
+    {
+        if (RotateComponent && RotateDirectionMap.Contains(RotateComponent) && RotateSpeedMap.Contains(RotateComponent))
+        {
+            RotateComponent->RotateDirection = RotateDirectionMap[RotateComponent];
+            RotateComponent->RotateSpeed = RotateSpeedMap[RotateComponent];
+
+            UE_LOG(LogTemp, Warning, TEXT("Starting rotation for %s with speed: %f and direction: %s"),
+                *RotateComponent->GetOwner()->GetName(),
+                RotateComponent->RotateSpeed,
+                *RotateComponent->RotateDirection.ToString());
+
+            RotateComponent->StartRolling();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("No direction or speed set for %s; rotation skipped"), *RotateComponent->GetOwner()->GetName());
+        }
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Rotation started for all components."));
+}
+
+void URotationWidget::RetryInitialization()
+{
+    if (RotateSpeedText)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("RotateSpeedText initialized on delayed attempt"));
+        GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Retrying RotateSpeedText initialization..."));
+    }
+}
+
+AActor* URotationWidget::GetOwnerFromComponent()
+{
+    if (SelectedActor)
+    {
+        return SelectedActor;
+    }
+
+    FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
+    UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+    if (BP_FunctionObjectClass)
+    {
+        TArray<AActor*> FoundActors;
+        UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
+
+        if (FoundActors.Num() > 0)
+        {
+            SelectedActor = FoundActors[0];
+            return SelectedActor;
+        }
+        else
+        {
+            SelectedActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+            return SelectedActor;
+        }
+    }
+    return nullptr;
+}
+
+void URotationWidget::UpdateRotateSpeedMap()
+{
+    OnRotateSpeedMapUpdated.Broadcast();
+    UE_LOG(LogTemp, Warning, TEXT("RotateSpeedMap updated and event broadcasted."));
 }
