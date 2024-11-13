@@ -14,6 +14,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/ScrollBoxSlot.h"
 #include "Styling/SlateColor.h"
+#include "PSH/PSH_Actor/PSH_SpawnBot.h"
+#include "../FinalProject.h"
 
 void UPSH_ObjectWidget::NativeConstruct()
 {
@@ -22,8 +24,7 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Btr_Back->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedBack);
 	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
 	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
-	Btr_Spawn->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSpawn);
-	Btr_CallBot->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedCallBot);
+
 
 	// Nomal UI 버튼
 	Btr_NormalRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnNormalScrollRightClicked);
@@ -94,6 +95,10 @@ void UPSH_ObjectWidget::AddNomalBlock()
 		hover.SetResourceObject(dataAraay[i]->icon);
 		hover.ImageSize = FVector2D(300, 300);
 		hover.TintColor = FSlateColor(FLinearColor(0.8f,0.8f,0.8f,1.0f));
+		hover.DrawAs = ESlateBrushDrawType::RoundedBox;
+		hover.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+		hover.OutlineSettings.Width = 5;
+		hover.OutlineSettings.Color = FSlateColor(FLinearColor::Red);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
 		pressed.ImageSize = FVector2D(300, 300);
@@ -129,10 +134,15 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 		normal.SetResourceObject(dataAraay[i]->icon);
 		normal.ImageSize = FVector2D(300, 300);
 		normal.TintColor = FSlateColor(FLinearColor::White);
+		
 
 		hover.SetResourceObject(dataAraay[i]->icon);
 		hover.ImageSize = FVector2D(300, 300);
 		hover.TintColor = FSlateColor(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f));
+		hover.DrawAs = ESlateBrushDrawType::RoundedBox;
+		hover.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+		hover.OutlineSettings.Width = 5;
+		hover.OutlineSettings.Color = FSlateColor(FLinearColor::Red);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
 		pressed.ImageSize = FVector2D(300, 300);
@@ -160,7 +170,8 @@ void UPSH_ObjectWidget::OnClickedBack()
 	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
 
 	if (player == nullptr ) return;
-	player->previewMeshComp->SetVisibility(false);
+	player->ToggleARmLength();
+	player->SRPC_SpawnbotIdel();
 	SetVisibility(ESlateVisibility::Hidden);
 }
 void UPSH_ObjectWidget::OnClickedSave()
@@ -181,33 +192,27 @@ void UPSH_ObjectWidget::OnClickedLoad()
 	player->pc->ObjectLoad();
 
 }
-void UPSH_ObjectWidget::OnClickedSpawn()
-{
-	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
-	if(player == nullptr) return;
 
-	if(!player->previewMeshComp->IsVisible()) return;
-	player->SRPC_SpawnBlock();
-}
-void UPSH_ObjectWidget::OnClickedCallBot()
-{
-	APSH_GarbageBot * bot = Cast<APSH_GarbageBot>(UGameplayStatics::GetActorOfClass(GetWorld(),APSH_GarbageBot::StaticClass()));
-	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+// void UPSH_ObjectWidget::OnClickedCallBot()
+// {
+// 	APSH_GarbageBot * bot = Cast<APSH_GarbageBot>(UGameplayStatics::GetActorOfClass(GetWorld(),APSH_GarbageBot::StaticClass()));
+// 	APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+// 
+// 	if (bot && player)
+// 	{
+// 		FVector playerLoc = player->GetActorLocation();
+// 		// 곱하기 10 해놓고 갈게유!
+// 		bot->SetActorLocation(player->GetActorLocation() + (player->GetActorForwardVector() * 500) );
+// 		bot->InitializeMovePoint();
+// 	}
+//}
 
-	if (bot && player)
-	{
-		FVector playerLoc = player->GetActorLocation();
-		// 곱하기 10 해놓고 갈게유!
-		bot->SetActorLocation(player->GetActorLocation() + (player->GetActorForwardVector() * 500) );
-		bot->InitializeMovePoint();
-	}
-}
 void UPSH_ObjectWidget::OnNormalScrollRightClicked()
 {
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y;
+	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y - 10;
 	CurrentIndex = (CurrentIndex + 1) % NumChildren;
 	nomalScrollOffset = CurrentIndex * WidgetHeight;
 	bIsNomalScrolling = true;  // 스크롤 시작

@@ -22,3 +22,11 @@ void UPSH_PlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 	direction = FVector::DotProduct(rightVector, velocity);
 
 }
+void UPSH_PlayerAnim::PlayAnimPickUp()
+{
+	Montage_Play(pick);
+}
+void UPSH_PlayerAnim::PlayAnimDrop()
+{
+	Montage_Play(drop);
+}

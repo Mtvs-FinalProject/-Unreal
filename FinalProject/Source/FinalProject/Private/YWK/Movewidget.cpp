@@ -5,12 +5,22 @@
 #include "Components/Button.h"
 #include "YWK/ActionChoice.h"
 #include "YWK/MyMoveActorComponent.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/EditableText.h"
+#include "Components/ComboBoxString.h"
+#include "Components/CheckBox.h"
 
 void UMovewidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// 게임모드에서 오브젝트 생성 이벤트를 바인딩
+	APSH_GameModeBase* GameMode = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+	if (GameMode)
+	{
+		GameMode->OnObjectCreated.AddDynamic(this, &UMovewidget::AddObjectToComboBox);
+	}
 
 	// 뒤로가기 버튼
 	if (Btn_MoveBack)
@@ -71,74 +81,42 @@ void UMovewidget::NativeConstruct()
 		DistMoveText->OnTextCommitted.AddDynamic(this, &UMovewidget::OnDistanceTextCommitted);
 	}
 
+	InitializeFunctionObjects();
+
+	// 왕복 모드 체크박스와 횟수 입력 필드 이벤트 바인딩
+	if (Chk_LoopMode)
+	{
+		Chk_LoopMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnLoopModeCheckChanged);
+	}
+
+	if (Chk_SingleDirectionMode)
+	{
+		Chk_SingleDirectionMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnSingleDirectionCheckChanged);
+	}
 }
 
 // 앞으로 가기
 void UMovewidget::OnFrontClicked()
 {
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
-		if (MoveComponent)
-		{
-			StoredMoveDirection = Owner->GetActorForwardVector();
-
-			// 로그 추가: 앞으로 이동 방향 설정 로그
-			UE_LOG(LogTemp, Warning, TEXT("Moving forward. New direction: %s"), *MoveComponent->MoveDirection.ToString());
-		}
-	}
+	SetMoveDirection(FVector(1.0f, 0.0f, 0.0f));  // 전방 벡터
 }
 
 // 뒤로 가기
 void UMovewidget::OnBackClicked()
 {
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
-		if (MoveComponent)
-		{
-			StoredMoveDirection = Owner->GetActorForwardVector() * -1;
-
-			// 로그 추가: 뒤로 이동 방향 설정 로그
-			UE_LOG(LogTemp, Warning, TEXT("Moving Backward. New direction: %s"), *MoveComponent->MoveDirection.ToString());
-		}
-	}
+	SetMoveDirection(FVector(-1.0f, 0.0f, 0.0f));  // 후방 벡터
 }
 
 // 오른쪽으로 가기
 void UMovewidget::OnRightClicked()
 {
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
-		if (MoveComponent)
-		{
-			StoredMoveDirection = Owner->GetActorRightVector();
-
-			// 로그 추가: 오른쪽으로 이동 방향 설정 로그
-			UE_LOG(LogTemp, Warning, TEXT("Moving Right. New direction: %s"), *MoveComponent->MoveDirection.ToString());
-		}
-	}
+	SetMoveDirection(FVector(0.0f, 1.0f, 0.0f));  // 오른쪽 벡터
 }
 
 // 왼쪽으로 가기
 void UMovewidget::OnLeftClicked()
 {
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
-		if (MoveComponent)
-		{
-			StoredMoveDirection = Owner->GetActorRightVector() * -1;
-
-			// 로그 추가: 왼쪽으로 이동 방향 설정 로그
-			UE_LOG(LogTemp, Warning, TEXT("Moving Left. New direction: %s"), *MoveComponent->MoveDirection.ToString());
-		}
-	}
+	SetMoveDirection(FVector(0.0f, -1.0f, 0.0f));  // 왼쪽 벡터
 }
 
 // 현재 띄운 ui 지우고 뒤에 ui 열기
@@ -156,45 +134,69 @@ void UMovewidget::OnMoveBackClicked()
 	}
 }
 
-// 이 버튼 눌러야 움직이는거 시작됨
+// 기능 시작 버튼
 void UMovewidget::OnStartButtonClicked()
 {
-	//RemoveFromParent();
-
-	if (AActor* Owner = GetOwnerFromComponent())
+	// Start 버튼을 누를 때 미리보기 오브젝트가 사라지도록 설정
+	if (PreviewActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		PreviewActor->SetActorHiddenInGame(true);
+		PreviewActor = nullptr;
+	}
+	// 단일 SelectedActor 처리
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			// 저장된 방향으로 지정
-			MoveComponent->MoveDirection = StoredMoveDirection;
-
-			// 이동 시작 
+			MoveComponent->MoveDirection = MoveDirectionMap.Contains(MoveComponent) ? MoveDirectionMap[MoveComponent] : StoredMoveDirection;
+			MoveComponent->MoveSpeed = MoveSpeedMap.Contains(MoveComponent) ? MoveSpeedMap[MoveComponent] : MoveComponent->MoveSpeed;
 			MoveComponent->StartMoving();
+			UE_LOG(LogTemp, Warning, TEXT("Starting movement for %s with direction: %s and speed: %f"),
+				*SelectedActor->GetName(),
+				*MoveComponent->MoveDirection.ToString(),
+				MoveComponent->MoveSpeed);
+		}
+	}
 
-			// 이동시작 로그 
-			UE_LOG(LogTemp, Warning, TEXT("Starting move direction : %s"), *MoveComponent->MoveDirection.ToString());
+	// 다중 컴포넌트 처리
+	for (UMyMoveActorComponent* MoveComponent : ControlledMoveComponents)
+	{
+		if (MoveComponent)
+		{
+			FVector Direction = MoveDirectionMap.Contains(MoveComponent) ? MoveDirectionMap[MoveComponent] : FVector(1.0f, 0.0f, 0.0f);
+			float Speed = MoveSpeedMap.Contains(MoveComponent) ? MoveSpeedMap[MoveComponent] : 100.0f;
+
+			MoveComponent->MoveDirection = Direction;
+			MoveComponent->MoveSpeed = Speed;
+			MoveComponent->StartMoving();
+			UE_LOG(LogTemp, Warning, TEXT("Started movement for component: %s with direction: %s and speed: %f"),
+				*MoveComponent->GetOwner()->GetName(),
+				*Direction.ToString(),
+				Speed);
 		}
 	}
 }
 
+
+
 // 이 버튼 누르면 멈춤
 void UMovewidget::OnStopButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Stop button clicked"));
-
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
 			MoveComponent->StopMoving();
-			UE_LOG(LogTemp, Warning, TEXT("Stop button clicked: calling StopMoving()"));
 		}
-		else
+	}
+
+	for (UMyMoveActorComponent* MoveComponent : ControlledMoveComponents)
+	{
+		if (MoveComponent)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("MoveComponent not found"));
+			MoveComponent->StopMoving();
 		}
 	}
 }
@@ -202,23 +204,24 @@ void UMovewidget::OnStopButtonClicked()
 // 최초 자리로 돌아가기
 void UMovewidget::OnOriginButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Origin button clicked"));
-
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
 			MoveComponent->OriginMove();
-			UE_LOG(LogTemp, Warning, TEXT("Origin button clicked: calling OriginMove()"));
 		}
-		else
+	}
+
+	for (UMyMoveActorComponent* MoveComponent : ControlledMoveComponents)
+	{
+		if (MoveComponent)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("MoveComponent not found"));
+			MoveComponent->OriginMove();
 		}
 	}
 }
+
 
 
 // 속도와 거리 값 set text
@@ -241,24 +244,24 @@ void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue
 // 속도나 거리 값 넣는 함수
 void UMovewidget::ApplyMovementValues()
 {
-	// 컴포넌트 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			// 속도값 설정
+			// 속도 값 넣는 부분
 			FString SpeedString = SpeedMoveText->GetText().ToString();
-			float SpeedValue = FCString::Atof(*SpeedString); // 문자열 float로 바꾸기
-			MoveComponent->MoveSpeed = SpeedValue;
+			float SpeedValue = FCString::Atof(*SpeedString);
+			MoveSpeedMap.FindOrAdd(MoveComponent) = SpeedValue;
 
-			// 거리값 설정
-			FString DistnaceString = DistMoveText->GetText().ToString();
-			float DistanceValue = FCString::Atof(*DistnaceString); // 이것도 float으로 바꾸기
+			// 거리 값 넣는 부분
+			FString DistanceString = DistMoveText->GetText().ToString();
+			float DistanceValue = FCString::Atof(*DistanceString);
 			MoveComponent->MaxDistance = DistanceValue;
 
-			// UI에 값 업데이트
-			UpdateMovementValuesInUI(MoveComponent->MoveSpeed, MoveComponent->MoveDistance);
+			UpdateMovementValuesInUI(SpeedValue, DistanceValue);
+			UE_LOG(LogTemp, Warning, TEXT("Movement values applied for %s with speed: %f, distance: %f"),
+				*MoveComponent->GetOwner()->GetName(), SpeedValue, DistanceValue);
 		}
 	}
 }
@@ -268,8 +271,7 @@ void UMovewidget::ApplyMovementValues()
 void UMovewidget::OnSpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter)
-	{
-		// 입력된 속도 값을 처리
+	{	//  속도 입력 값 처리
 		FString SpeedString = Text.ToString();
 		float SpeedValue = FCString::Atof(*SpeedString);
 
@@ -278,8 +280,7 @@ void UMovewidget::OnSpeedTextCommitted(const FText& Text, ETextCommit::Type Comm
 			UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
 			if (MoveComponent)
 			{
-				MoveComponent->MoveSpeed = SpeedValue;
-				// UI에 값 업데이트
+				MoveSpeedMap.FindOrAdd(MoveComponent) = SpeedValue;
 				UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), SpeedValue);
 			}
 		}
@@ -290,18 +291,18 @@ void UMovewidget::OnDistanceTextCommitted(const FText& Text, ETextCommit::Type C
 {
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
-		// 입력된 거리 값을 처리
-		FString DirectString = Text.ToString();
-		float DistValues = FCString::Atof(*DirectString);
+		// 입력된 거리 값 처리
+		FString DistanceString = Text.ToString();
+		float DistanceValue = FCString::Atof(*DistanceString);
+		UpdatePreviewLocation(StoredMoveDirection, DistanceValue);
 
 		if (AActor* Owner = GetOwnerFromComponent())
 		{
 			UMyMoveActorComponent* MoveComponent = Owner->FindComponentByClass<UMyMoveActorComponent>();
 			if (MoveComponent)
 			{
-				MoveComponent->MaxDistance = DistValues;
-				// UI에 값 업데이트
-				UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), DistValues);
+				MoveComponent->MaxDistance = DistanceValue;
+				UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), DistanceValue);
 			}
 		}
 	}
@@ -309,10 +310,13 @@ void UMovewidget::OnDistanceTextCommitted(const FText& Text, ETextCommit::Type C
 
 AActor* UMovewidget::GetOwnerFromComponent()
 {
-	// 블루프린트 액터 찾아오기..
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	// SelectedActor가 설정되어 있으면 바로 반환
+	if (SelectedActor)
+	{
+		return SelectedActor;
+	}
 
-	// 블루프린트 클래스 로드
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass)
@@ -322,12 +326,183 @@ AActor* UMovewidget::GetOwnerFromComponent()
 
 		if (FoundActors.Num() > 0)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
-			// 이미 존재하는 BP_FunctionObject 반환
-			return FoundActors[0];
+			// 첫 번째 발견된 액터를 기본으로 설정
+			SelectedActor = FoundActors[0];
+			return SelectedActor;
 		}
-		// 없으면 새로 스폰
-		return GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+		// 없으면 새로 생성
+		SelectedActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+		return SelectedActor;
 	}
 	return nullptr;
+}
+
+
+// 기능 오브젝트 초기화
+void UMovewidget::InitializeFunctionObjects()
+{
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+	if (BP_FunctionObjectClass && GetWorld())
+	{
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+		// ComboBox에 초기 오브젝트 추가
+		if (MoveBoxList)
+		{
+			for (AActor* FunctionObject : AllFunctionObject)
+			{
+				if (FunctionObject)
+				{
+					MoveBoxList->AddOption(FunctionObject->GetName());
+				}
+			}
+			// 콤보박스 선택 변경 시 이벤트 바인딩
+			MoveBoxList->OnSelectionChanged.AddDynamic(this, &UMovewidget::OnFunctionObjectSelected);
+		}
+		// 배열의 첫 번째 오브젝트를 기본 선택
+		if (AllFunctionObject.Num() > 0)
+		{
+			SelectedActor = AllFunctionObject[0];
+		}
+	}
+}
+
+void UMovewidget::AddObjectToComboBox(AActor* NewObject)
+{
+	if (NewObject && MoveBoxList)
+	{
+		// ComboBox에 오브젝트 이름 추가
+		FString DisplayName = NewObject->GetActorLabel(); // 에디터에서 설정한 이름
+		MoveBoxList->AddOption(DisplayName);
+
+		// AllFunctionObject 배열에 오브젝트 참조 추가하여 ComboBox와 인덱스를 맞추기
+		AllFunctionObject.Add(NewObject);
+	}
+}
+
+void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	int32 SelectedIndex = MoveBoxList->FindOptionIndex(SelectedItem);
+	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+	{
+		SelectedActor = AllFunctionObject[SelectedIndex];
+		UE_LOG(LogTemp, Warning, TEXT("Selected function object: %s"), *SelectedActor->GetName());
+
+		if (UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>())
+		{
+			// UI에 선택된 MoveComponent의 값을 업데이트
+			UpdateMovementValuesInUI(MoveComponent->MoveSpeed, MoveComponent->MaxDistance);
+			Chk_LoopMode->SetIsChecked(MoveComponent->bLoopMode);
+			Chk_SingleDirectionMode->SetIsChecked(MoveComponent->bSingleDirection);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
+	}
+}
+
+
+void UMovewidget::OnLoopModeCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
+		if (MoveComponent)
+		{
+			MoveComponent->bLoopMode = bIsChecked;
+
+			// Disable single direction if loop mode is enabled
+			if (bIsChecked && Chk_SingleDirectionMode)
+			{
+				Chk_SingleDirectionMode->SetIsChecked(false);
+				MoveComponent->bSingleDirection = false;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Loop mode set to: %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"));
+		}
+	}
+}
+
+void UMovewidget::OnSingleDirectionCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
+		if (MoveComponent)
+		{
+			MoveComponent->bSingleDirection = bIsChecked;
+
+			// Disable loop mode if single direction is enabled
+			if (bIsChecked && Chk_LoopMode)
+			{
+				Chk_LoopMode->SetIsChecked(false);
+				MoveComponent->bLoopMode = false;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Single Direction mode set to: %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"));
+		}
+	}
+}
+
+// 다중 MoveComponent 추가 함수
+void UMovewidget::AddControlledMoveComponent(UMyMoveActorComponent* MoveComponent)
+{
+	if (MoveComponent && !ControlledMoveComponents.Contains(MoveComponent))
+	{
+		ControlledMoveComponents.Add(MoveComponent);
+	}
+}
+
+// 방향정하기
+void UMovewidget::SetMoveDirection(FVector Direction)
+{
+	StoredMoveDirection = Direction;
+	UpdatePreviewLocation(Direction, FCString::Atof(*DistMoveText->GetText().ToString()));
+	if (SelectedActor)
+	{
+		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
+		if (MoveComponent)
+		{
+			MoveDirectionMap.FindOrAdd(MoveComponent) = Direction;
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("StoredMoveDirection updated to: %s"), *StoredMoveDirection.ToString());
+}
+
+void UMovewidget::SpawnPreviewActor()
+{
+	if (!PreviewActor)
+	{
+		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
+
+		if (PreviewActorClass)
+		{
+			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+			if (PreviewActor)
+			{
+				PreviewActor->SetActorHiddenInGame(false);
+			}
+		}
+	}
+}
+
+void UMovewidget::UpdatePreviewLocation(FVector Direction, float Distance)
+{
+	if (PreviewActor)
+	{
+		PreviewActor->Destroy();
+		PreviewActor = nullptr;
+	}
+
+	if (SelectedActor)
+	{
+		FVector TargetLocation = SelectedActor->GetActorLocation() + (Direction * Distance);
+		SpawnPreviewActor();
+		if (PreviewActor)
+		{
+			PreviewActor->SetActorLocation(TargetLocation);
+		}
+	}
 }

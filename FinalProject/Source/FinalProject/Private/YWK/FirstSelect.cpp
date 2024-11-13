@@ -8,6 +8,10 @@
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
+#include "PSH/PSH_Player/PSH_Player.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "PSH/PSH_Actor/PSH_SpawnBot.h"
 
 void UFirstSelect::NativeConstruct()
 {
@@ -95,24 +99,15 @@ void UFirstSelect::OnCraftClicked()
     if (PSH_ObjectWidget)
     {
         // 위젯 주인 가져오기
-        APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-
-        if (PlayerController)
+        APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController());
+        APSH_Player * player = Cast<APSH_Player>(PlayerController->GetPawn());
+        if (PlayerController && player)
         {
             UE_LOG(LogTemp, Warning, TEXT("PlayerController is valid"));
+           
+            player->ToggleARmLength();
+            player->SRPC_SpawnBotMoveTo();
 
-            // 위젯 생성
-            UUserWidget* NewObjectWidget = CreateWidget<UUserWidget>(PlayerController, PSH_ObjectWidget);
-            if (NewObjectWidget)
-            {
-                // 새 위젯 Viewport에 추가
-                NewObjectWidget->AddToViewport();
-                UE_LOG(LogTemp, Warning, TEXT("NewWidget added to viewport"));
-            }
-            else
-            {
-                UE_LOG(LogTemp, Log, TEXT("Failed to create NewWidget"));
-            }
         }
         else
         {

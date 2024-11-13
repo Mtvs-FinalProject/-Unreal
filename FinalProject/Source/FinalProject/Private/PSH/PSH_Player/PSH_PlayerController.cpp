@@ -11,6 +11,8 @@
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "Blueprint/UserWidget.h"
 #include "CSR/UI/CSR_Proto_StartUI.h"
+#include "PSH/PSH_UI/PSH_ObjectWidget.h"
+#include "../FinalProject.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
@@ -35,17 +37,15 @@ void APSH_PlayerController::PlayerTick(float DeltaTime)
 void APSH_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
 		SetShowMouseCursor(true);
 		bEnableClickEvents = true;
 		bEnableMouseOverEvents = true;
-		curPlayer = Cast<APSH_Player>(GetPawn());
-		curPlayer->SetActorHiddenInGame(true);
-		this->SetInputMode(FInputModeUIOnly());
-		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
-		StartUI->AddToViewport();
-
-		//SetInputMode(FInputModeGameAndUI());
+		//curPlayer = Cast<APSH_Player>(GetPawn());
+		//curPlayer->SetActorHiddenInGame(true);
+		//this->SetInputMode(FInputModeUIOnly());
+// 		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
+// 		StartUI->AddToViewport();
+		SetInputMode(FInputModeGameAndUI());
 
 }
 void APSH_PlayerController::LookMouseCursor()
@@ -198,4 +198,12 @@ void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 	//	MyChoiceActionWidget = nullptr;
 	//	UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget removed from viewport"));
 	//}
+}
+void APSH_PlayerController::CRPC_ShowObjectWidget_Implementation()
+{
+	if(objectWidget == nullptr ) return;
+
+	PRINTLOG(TEXT("Show objectWidget"));
+	/*if(IsLocalController())*/
+	objectWidget->SetVisibility(ESlateVisibility::Visible);
 }

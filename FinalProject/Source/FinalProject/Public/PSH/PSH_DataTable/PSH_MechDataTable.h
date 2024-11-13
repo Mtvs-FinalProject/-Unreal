@@ -16,9 +16,8 @@ struct FPSH_ChildData // 자식 데이터 베이스 저장할 공간.
 
 	UPROPERTY(EditAnywhere)
 	FTransform actorTransfrom; // 블럭의 위치
-
-
 };
+
 USTRUCT(Atomic, BlueprintType)
 struct  FPSH_Childdats
 {
@@ -39,7 +38,6 @@ struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 	UPROPERTY(EditAnywhere)
 	FTransform actorTransfrom; // 블럭의 위치
 
-	
 	UPROPERTY(EditAnywhere)
 	TArray<FPSH_Childdats> childsData; // 자식 블럭의 정보들
 	// 개별 이름

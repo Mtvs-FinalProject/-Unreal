@@ -27,7 +27,17 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* Btr_Idle;
 
+	UPROPERTY(meta = (BindWidget))
+	class UButton* Btr_Bot;
 
+	UPROPERTY(meta = (BindWidgetAnim),Transient)
+	class UWidgetAnimation * ButtonHoverVisibleAnim;
+	UPROPERTY(meta = (BindWidgetAnim),Transient)
+	class UWidgetAnimation * ButtonHoverHiddenAnim;
+
+	class APSH_Player * player;
+
+	//Button
 	UFUNCTION()
 	void OnClickMove();
 	UFUNCTION()
@@ -35,7 +45,22 @@ public:
 	UFUNCTION()
 	void OnClickIdle();
 
-	void SetOwner(class APSH_GarbageBot * owner);
+	//BackGround
+	UFUNCTION()
+	void OnClickBackGround();
+
+	FWidgetAnimationDynamicEvent endDelegate;
+
+	// Bot
+	UFUNCTION()
+	void OnClickBot();
+	UFUNCTION()
+	void OnHoveredBot();
+
+
+	bool bHoverdBot = false;
+
+	void SetModeButtonUI(bool chek);
 
 	class APSH_GarbageBot * bot;
 };

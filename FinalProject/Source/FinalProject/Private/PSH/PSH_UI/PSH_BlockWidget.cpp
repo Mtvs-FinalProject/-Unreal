@@ -20,7 +20,6 @@ void UPSH_BlockWidget::SpawnBlock()
 	if(player == nullptr) return;
 	FActorSpawnParameters parm;
 
-	player->SetPreviewMesh(spawnMesh, spawnActor);
-
-	//player->SRPC_SpawnBlock(spawnActor); // 청사진 소환
+	player->SRPC_SpawnBlock(spawnActor); // 청사진 소환
+	//player->SetPreviewMesh(spawnMesh, spawnActor);
 }

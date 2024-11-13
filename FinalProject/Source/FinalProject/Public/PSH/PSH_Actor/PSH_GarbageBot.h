@@ -67,10 +67,14 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UStaticMeshComponent * compMesh;
 
+	UPROPERTY(Replicated)
 	float sumScale = 0.25;
 
+	UPROPERTY(Replicated)
 	FVector scale = FVector(1.f);
-	FVector minScale = FVector(0.25f);
+
+	UFUNCTION(NetMulticast,Unreliable)
+	void MRPC_SetScale(FVector DeltaTimescale);
 
 	UPROPERTY(EditAnywhere)
 	EState state = EState::IDLE;
@@ -81,7 +85,7 @@ public:
 
 	void SetState(EState nextState);
 
-	
+	void SetPlayer(class APSH_Player * playerclass);
 
 	float moveDist = 750;
 
@@ -109,7 +113,8 @@ public:
 
 	void InitializeNavigationNodes();
 
-	void MoveToLocation(const class APSH_Player& owner,const FVector& TargetLocation);
+	UFUNCTION(Server,Reliable)
+	void SRPC_MoveToLocation(const FVector& TargetLocation);
 
 	void InitializeMovePoint();
 	

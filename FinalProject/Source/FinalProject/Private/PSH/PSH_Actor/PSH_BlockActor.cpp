@@ -19,12 +19,20 @@ APSH_BlockActor::APSH_BlockActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	meshComp->SetIsReplicated(true);
+
 	SetRootComponent(meshComp);
 
 	
 	bReplicates = true;
 	SetReplicateMovement(true);
 
+	ConstructorHelpers::FObjectFinder<UMaterial> tempOutLine(TEXT("/Script/Engine.Material'/Game/YWK/Effect/Mt_Outline.Mt_Outline'"));
+
+	if (tempOutLine.Succeeded())
+	{
+		outLineMat = tempOutLine.Object;
+	}
 	// 기능 컴포넌트들
 	//MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
 	//MyFlyActorComponent = CreateDefaultSubobject<UMyFlyActorComponent>(TEXT("FlyComponent"));
@@ -41,7 +49,7 @@ void APSH_BlockActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);
+	/*meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);*/
 
 	//if (MyMoveActorComponent && MyMoveActorComponent->IsComponentTickEnabled())
 	//{
@@ -69,49 +77,19 @@ void APSH_BlockActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-// 	if (bGrab) // true 일떄
-// 	{
-// 		FVector worldLoc; // 마우스의 월드 포지션
-// 		FVector worldDir; // 카메라 포지션과 마우스 클릭 장소간의 방향
-// 
-// 		APlayerController* pc = Cast<APlayerController>(GetOwner());
-// 		UE_LOG(LogTemp, Warning, TEXT("%s"), *GetOwner()->GetName());
-// 
-// 		if (pc == nullptr) return;
-// 		pc->DeprojectMousePositionToWorld(worldLoc, worldDir);
-// 
-// 		/*UE_LOG(LogTemp, Warning, TEXT("X : %f Y : %f Z : %f"), worldLoc.X, worldLoc.Y, worldLoc.Z);*/
-// 		FVector TargetLocation = worldLoc + (worldDir * 200.0f); // 약간 앞쪽으로 이동
-// 
-// 		playerHandle->SetTargetLocation(TargetLocation);
-// 	}
+
+	//PRINTLOG(TEXT("%f,%f,%f"),GetActorRotation(),)
 }
 
 void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
 {
+	if (handle == nullptr) return;
+
 	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
-\
-}
-
-void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
-{
-	if (handle == nullptr) return;
-	
-;
-	if (handle == nullptr) return;
-
-	
-	// 부모와의 연결 제거
-	Remove();
-
-	pickedUp = true;
-
-	// 블록 잡기
-	MRPC_PickUp(handle);
-
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
+	meshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	for (auto* actor : childsActors)
 	{
@@ -119,54 +97,76 @@ void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 	}
 }
 
+void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
+{
+	if (handle == nullptr) return;
+	// 블록 잡기
+	MRPC_Remove(); // 항상 서버라서
+
+	pickedUp = true;
+	MRPC_PickUp(handle);
+
+}
+
+// srpc
 void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
+{
+	MRPC_Drop(physicshandle);
+}
+
+void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* physicshandle)
 {
 	if (physicshandle != nullptr)
 	{
 		physicshandle->ReleaseComponent();
 	}
-	
-	SetOwner(nullptr);
+	else
+	{
+		return;
+	}
+
 
 	pickedUp = false;
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	meshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	meshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	for (auto* actor : childsActors)
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
 	}
+	SetMaster(nullptr);
 }
-
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
-	SRPC_Place(attachActor,worldTransform);
+	MRPC_Place(attachActor,worldTransform);
 }
 
-void APSH_BlockActor::SRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
+void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Pickup Dev")));
-
-
 	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
-
-	FAttachmentTransformRules rule = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, true);
-	// 부모 브럵에 붙이기
-	this->AttachToActor(attachActor, rule);
 
 	meshComp->SetSimulatePhysics(false);
 	parent = attachActor;
 
 	// 자식 블록의 위치와 방향을 변경
+	FAttachmentTransformRules rule = FAttachmentTransformRules(
+		EAttachmentRule::KeepWorld,
+		EAttachmentRule::SnapToTarget,
+		EAttachmentRule::KeepWorld,
+		true
+	);
+	// 부모 블럭에 붙이기
+	AttachToActor(attachActor, rule);
+
 	SetActorRelativeLocation(worldTransform.GetLocation());
 	SetActorRotation(worldTransform.GetRotation());
 
-	MyLocation = worldTransform;
 	// 부모블록에 나의 자식 블록들 전송
 	attachActor->TransferChildren(childsActors);
+
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
@@ -185,7 +185,7 @@ void APSH_BlockActor::Remove()
 	SRPC_Remove();
 }
 
-void APSH_BlockActor::SRPC_Remove_Implementation()
+void APSH_BlockActor::MRPC_Remove_Implementation()
 {
 	if (parent == nullptr) return;
 
@@ -203,6 +203,10 @@ void APSH_BlockActor::SRPC_Remove_Implementation()
 	Tags.Add(FName("owner"));
 
 	parent = nullptr;
+}
+void APSH_BlockActor::SRPC_Remove_Implementation()
+{
+	MRPC_Remove();
 }
 void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 {
@@ -230,7 +234,7 @@ void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
 void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // 자식 콜리전 업데이트
 {
 	meshComp->SetCollisionEnabled(NewType);
-
+	
 	ECollisionResponse newResponse = ECR_Ignore;
 
 	switch (NewType)
@@ -399,6 +403,7 @@ bool APSH_BlockActor::OvelapChek()
 void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
 {
 	//자신에게 자식을 추가
+	
 	if (!childsActors.Contains(childActor)) // 중복 추가 방지
 	{
 		childsActors.Add(childActor);
@@ -409,6 +414,7 @@ void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
 
 void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
 {
+	PRINTLOG(TEXT("AddChild?"));
 	for (auto* actor : childActor)
 	{
 		if (Cast<APSH_BlockActor>(actor))
@@ -421,7 +427,7 @@ void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
 void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
 {
 		// 물리 컴포넌트를 깨우기 (Wake Rigid Body)
-		SleepingComponent->WakeRigidBody(BoneName);
+	SleepingComponent->WakeRigidBody(BoneName);
 
 }
 
@@ -482,7 +488,6 @@ FPSH_Childdats  APSH_BlockActor::SaveBlock()
 
 void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 {
-	
 	SetActorTransform(Data.actorTransfrom);
 
 	// 자식 블럭들 생성 및 불러오기
@@ -532,3 +537,50 @@ void APSH_BlockActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 }
 
+void APSH_BlockActor::SetMaster(class APSH_Player* owner)
+{
+	master = owner;
+}
+
+APSH_Player * APSH_BlockActor::GetMaster()
+{
+	return master;
+}
+void APSH_BlockActor::SRPC_BlockScale_Implementation(float axis)
+{
+	if (axis > 0)
+	{
+		if (blockScale >= 4) return;
+
+		blockScale += GetWorld()->GetDeltaSeconds() * 10;
+	}
+	else
+	{
+		if (blockScale <= 0.5f) return;
+
+		blockScale -= GetWorld()->GetDeltaSeconds() * 10;
+	}
+	MRPC_BlockScale(scale * blockScale);
+}
+
+void APSH_BlockActor::MRPC_BlockScale_Implementation(FVector scaleVec)
+{
+	SetActorScale3D(scaleVec);
+}
+void APSH_BlockActor::SetOutLine(bool chek)
+{
+	MRPC_SetOutLine(chek);
+}
+void APSH_BlockActor::MRPC_SetOutLine_Implementation(bool chek)
+{
+	if (chek)
+	{
+		if (outLineMat == nullptr) return;
+		meshComp->SetOverlayMaterial(outLineMat);
+	}
+	else
+	{
+		meshComp->SetOverlayMaterial(nullptr);
+	}
+}
+	

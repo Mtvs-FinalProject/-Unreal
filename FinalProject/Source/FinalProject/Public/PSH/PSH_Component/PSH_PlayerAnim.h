@@ -21,4 +21,16 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float direction;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montage)
+	class UAnimMontage * pick;
+	UPROPERTY(EditDefaultsOnly, Category = Montage)
+	class UAnimMontage * drop;
+
+	UFUNCTION()
+	void PlayAnimPickUp();
+
+	UFUNCTION()
+	void PlayAnimDrop();
+
 };

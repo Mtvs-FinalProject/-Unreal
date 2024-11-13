@@ -7,6 +7,8 @@
 #include "Components/EditableText.h"
 #include "Kismet/GameplayStatics.h"
 #include "YWK/MyFlyActorComponent.h"
+#include "Components/ComboBoxString.h"
+#include "Components/CheckBox.h"
 
 void UFlyWidget::NativeConstruct()
 {
@@ -49,63 +51,71 @@ void UFlyWidget::NativeConstruct()
 	{
 		FlyHightText->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnFlyDistanceTextCommitted);
 	}
+	// Initialize function objects in ComboBox
+	InitializeFunctionObjects();
+
+	// 왕복모드 체크 박스
+	if (Chk_LoopMode)
+	{
+		Chk_LoopMode->OnCheckStateChanged.AddDynamic(this, &UFlyWidget::OnLoopModeCheckChanged);
+	}
+
+	// 일방모드 체크 박스
+	if (Chk_SingleDirectionMode)
+	{
+		Chk_SingleDirectionMode->OnCheckStateChanged.AddDynamic(this, &UFlyWidget::OnSingleDirectionCheckChanged);
+	}
+
+	// 왕복 텍스트 박스
+	if (Txt_LoopCount)
+	{
+		Txt_LoopCount->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnLoopCountCommitted);
+	}
 }
 
 // 위로 올라가기 버튼
 void UFlyWidget::OnUpButtonClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-		if (FlyComponent)
-		{
-			StoredFlyDirection = Owner->GetActorUpVector();
-			UE_LOG(LogTemp, Warning, TEXT("Moving Up. New direction: %s"), *FlyComponent->FlyDirection.ToString());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("FlyComponent not found!"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Owner not found in OnUpButtonClicked!"));
-	}
+	StoredFlyDirection = FVector(0.0f, 0.0f, 1.0f);
+	UpdatePreviewLocation(StoredFlyDirection, FCString::Atof(*FlyHightText->GetText().ToString()));
+	UE_LOG(LogTemp, Warning, TEXT("Fly direction set to Up."));
 }
 
 // 아래로 내려가기 버튼
 void UFlyWidget::OnDownButtonClicked()
 {
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
-	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-		if (FlyComponent)
-		{
-			StoredFlyDirection = Owner->GetActorUpVector() * -1;
-
-			// 로그 추가: 앞으로 이동 방향 설정 로그
-			UE_LOG(LogTemp, Warning, TEXT("Moving Down. New direction: %s"), *FlyComponent->FlyDirection.ToString());
-		}
-	}
+	StoredFlyDirection = FVector(0.0f, 0.0f, -1.0f);
+	UpdatePreviewLocation(StoredFlyDirection, FCString::Atof(*FlyHightText->GetText().ToString()));
+	UE_LOG(LogTemp, Warning, TEXT("Fly direction set to Down."));
 }
 
 // 날기 시작
 void UFlyWidget::OnStartButtonClicked()
 {
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (PreviewActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		PreviewActor->SetActorHiddenInGame(true);
+		PreviewActor = nullptr;
+	}
+
+	if (SelectedActor)
+	{
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
-			// 저장된 방향으로 지정
-			FlyComponent->FlyDirection = StoredFlyDirection;
-
-			// 이동 시작 
+			FlyComponent->FlyDirection = StoredFlyDirection.IsNearlyZero() ? FVector(0.0f, 0.0f, 1.0f) : StoredFlyDirection;
 			FlyComponent->StartFly();
+			UE_LOG(LogTemp, Warning, TEXT("Started flight for %s with direction: %s"), *SelectedActor->GetName(), *FlyComponent->FlyDirection.ToString());
+		}
+	}
 
-			// 이동시작 로그 
-			UE_LOG(LogTemp, Warning, TEXT("Starting Fly direction : %s"), *FlyComponent->FlyDirection.ToString());
+	for (UMyFlyActorComponent* FlyComponent : ControlledFlyComponents)
+	{
+		if (FlyComponent)
+		{
+			FlyComponent->FlyDirection = StoredFlyDirection.IsNearlyZero() ? FVector(0.0f, 0.0f, 1.0f) : StoredFlyDirection;
+			FlyComponent->StartFly();
+			UE_LOG(LogTemp, Warning, TEXT("Started flight for component: %s with direction: %s"), *FlyComponent->GetOwner()->GetName(), *FlyComponent->FlyDirection.ToString());
 		}
 	}
 }
@@ -113,20 +123,20 @@ void UFlyWidget::OnStartButtonClicked()
 // 날기 멈춤
 void UFlyWidget::OnStopButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Stop button clicked"));
-
-	// 컴포넌트 오너 가져오기
-	if (AActor* Owner = GetOwnerFromComponent())
+	if (SelectedActor)
 	{
-		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
 			FlyComponent->StopFly();
-			UE_LOG(LogTemp, Warning, TEXT("Stop button clicked: calling StopFly()"));
 		}
-		else
+	}
+
+	for (UMyFlyActorComponent* FlyComponent : ControlledFlyComponents)
+	{
+		if (FlyComponent)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("FlyComponent not found"));
+			FlyComponent->StopFly();
 		}
 	}
 }
@@ -168,21 +178,22 @@ void UFlyWidget::OnBackButtonClicked()
 }
 
 // 속도와 높이 값 set
-void UFlyWidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue)
+void UFlyWidget::UpdateMovementValuesInUI(float SpeedValue = -1.0f, float DistanceValue = -1.0f)
 {
 	// 속도 값을 UI의 EditableText에 설정
 	if (FlySpeedText)
 	{
-		FText SpeedText = FText::AsNumber(SpeedValue); // 숫자를 FText로 변환
-		FlySpeedText->SetText(SpeedText);
+		// SpeedValue가 음수(-1.0f)일 경우 비워두고, 그렇지 않으면 값 설정
+		FlySpeedText->SetText(SpeedValue < 0.0f ? FText::GetEmpty() : FText::AsNumber(SpeedValue));
 	}
 	// 거리 값을 UI의 EditableText에 설정
 	if (FlyHightText)
 	{
-		FText DistText = FText::AsNumber(DistanceValue);
-		FlyHightText->SetText(DistText);
+		// DistanceValue가 음수(-1.0f)일 경우 비워두고, 그렇지 않으면 값 설정
+		FlyHightText->SetText(DistanceValue < 0.0f ? FText::GetEmpty() : FText::AsNumber(DistanceValue));
 	}
 }
+
 
 // 속도나 거리 값 넣는 함수
 void UFlyWidget::ApplyMovementValues()
@@ -237,8 +248,7 @@ void UFlyWidget::OnFlyDistanceTextCommitted(const FText& Text, ETextCommit::Type
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
 		// 입력된 거리 값을 처리
-		FString DirectString = Text.ToString();
-		float DistValues = FCString::Atof(*DirectString);
+		float DistValues = FCString::Atof(*Text.ToString());
 
 		if (AActor* Owner = GetOwnerFromComponent())
 		{
@@ -246,8 +256,8 @@ void UFlyWidget::OnFlyDistanceTextCommitted(const FText& Text, ETextCommit::Type
 			if (FlyComponent)
 			{
 				FlyComponent->MaxFlyDistance = DistValues;
-				// UI에 값 업데이트
 				UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), DistValues);
+				UpdatePreviewLocation(StoredFlyDirection, DistValues); // 미리보기 위치 업데이트 추가
 			}
 		}
 	}
@@ -255,14 +265,16 @@ void UFlyWidget::OnFlyDistanceTextCommitted(const FText& Text, ETextCommit::Type
 
 AActor* UFlyWidget::GetOwnerFromComponent()
 {
-	// 블루프린트 액터 찾아오기..
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	if (SelectedActor)
+	{
+		return SelectedActor; // 선택한 액터가 있으면 바로 반환
+	}
 
-	// 블루프린트 클래스 로드
+	// 선택한 액터가 없을 경우, BP_FunctionObject 클래스에서 찾음
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
-	if (BP_FunctionObjectClass) 
-
+	if (BP_FunctionObjectClass)
 	{
 		TArray<AActor*> FoundActors;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, FoundActors);
@@ -270,13 +282,182 @@ AActor* UFlyWidget::GetOwnerFromComponent()
 		if (FoundActors.Num() > 0)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
-			// 이미 존재하는 BP_FunctionObject 반환
-			return FoundActors[0];
+			SelectedActor = FoundActors[0]; // 첫 번째 액터를 선택된 액터로 설정
+			return SelectedActor;
 		}
+
 		// 없으면 새로 스폰
-		return GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+		SelectedActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
+		return SelectedActor;
 	}
 	return nullptr;
-	
+}
+
+
+void UFlyWidget::InitializeFunctionObjects()
+{
+	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
+
+	if (BP_FunctionObjectClass && GetWorld())
+	{
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
+
+		if (FlyBoxList)
+		{
+			for (AActor* FunctionObject : AllFunctionObject)
+			{
+				if (FunctionObject)
+				{
+					FlyBoxList->AddOption(FunctionObject->GetName());
+				}
+			}
+			FlyBoxList->OnSelectionChanged.AddDynamic(this, &UFlyWidget::OnFunctionObjectSelected);
+		}
+
+		if (AllFunctionObject.Num() > 0)
+		{
+			SelectedActor = AllFunctionObject[0];
+		}
+	}
+}
+
+void UFlyWidget::AddObjectToComboBox(AActor* NewObject)
+{
+	if (NewObject && FlyBoxList)
+	{
+		//Display name을 추가할 때 Object의 Label을 사용
+		FString DisplayName = NewObject->GetActorLabel();
+		FlyBoxList->AddOption(DisplayName);
+
+		//AllFunctionObject 배열에 추가하여 나중에 참조 가능하게 
+		AllFunctionObject.Add(NewObject);
+		UE_LOG(LogTemp, Warning, TEXT("Added new object to ComboBox: %s"), *DisplayName);
+	}
+}
+
+// 선택한 오브젝트에 따라 개별 FlyComponent를 설정
+void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	int32 SelectedIndex = FlyBoxList->FindOptionIndex(SelectedItem);
+	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
+	{
+		SelectedActor = AllFunctionObject[SelectedIndex];
+		UE_LOG(LogTemp, Warning, TEXT("Selected fly function object: %s"), *SelectedActor->GetName());
+
+		// 선택된 오브젝트의 FlyComponent 설정
+		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
+		{
+			// UI 요소와 FlyComponent 값 동기화 대신 초기 상태로 비움
+			UpdateMovementValuesInUI(); // 파라미터 전달하지 않음으로써 기본값 설정
+			Chk_LoopMode->SetIsChecked(FlyComponent->bLoopMode);
+			Chk_SingleDirectionMode->SetIsChecked(FlyComponent->bSingleDirection);
+
+			// 왕복 횟수 업데이트
+			if (Txt_LoopCount)
+			{
+				Txt_LoopCount->SetText(FText::AsNumber(FlyComponent->LoopCount));
+			}
+		}
+	}
+}
+
+// 왕복 모드 체크박스 상태 변경
+void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
+		if (FlyComponent)
+		{
+			FlyComponent->bLoopMode = bIsChecked;
+			if (bIsChecked && Chk_SingleDirectionMode)
+			{
+				Chk_SingleDirectionMode->SetIsChecked(false);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Loop mode set to: %s for %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"), *SelectedActor->GetName());
+		}
+	}
+}
+
+// 단순 이동 모드 체크박스 상태 변경
+void UFlyWidget::OnSingleDirectionCheckChanged(bool bIsChecked)
+{
+	if (SelectedActor)
+	{
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
+		if (FlyComponent)
+		{
+			FlyComponent->bSingleDirection = bIsChecked;
+			if (bIsChecked && Chk_LoopMode)
+			{
+				Chk_LoopMode->SetIsChecked(false);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Single Direction mode set to: %s for %s"), bIsChecked ? TEXT("Enabled") : TEXT("Disabled"), *SelectedActor->GetName());
+		}
+	}
+}
+
+// 왕복 횟수 입력 필드에서 엔터를 쳤을 때
+void UFlyWidget::OnLoopCountCommitted(const FText& Text, ETextCommit::Type CommitMethod)
+{
+	if (CommitMethod == ETextCommit::OnEnter && SelectedActor)
+	{
+		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
+		{
+			int32 LoopValue = FCString::Atoi(*Text.ToString());
+			FlyComponent->LoopCount = LoopValue;
+			FlyComponent->CurrentLoop = 0;  // 새로운 루프 설정 시 루프 초기화
+			UE_LOG(LogTemp, Warning, TEXT("Loop count set to: %d for %s"), LoopValue, *SelectedActor->GetName());
+		}
+	}
+}
+
+// 다중 FlyComponent 추가 함수
+void UFlyWidget::AddControlledFlyComponent(UMyFlyActorComponent* NewFlyComponent)
+{
+	if (NewFlyComponent && !ControlledFlyComponents.Contains(NewFlyComponent))
+	{
+		ControlledFlyComponents.Add(NewFlyComponent);
+	}
+}
+
+// 프리뷰 액터 스폰 함수
+void UFlyWidget::SpawnPreviewActor()
+{
+	if (!PreviewActor)
+	{
+		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
+
+		if (PreviewActorClass)
+		{
+			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+			if (PreviewActor)
+			{
+				PreviewActor->SetActorHiddenInGame(false);
+			}
+		}
+	}
+}
+
+// 프리뷰 위치 업데이트 함수
+void UFlyWidget::UpdatePreviewLocation(FVector Direction, float Distance)
+{
+	if (PreviewActor)
+	{
+		PreviewActor->Destroy();
+		PreviewActor = nullptr;
+	}
+
+	if (SelectedActor)
+	{
+		FVector TargetLocation = SelectedActor->GetActorLocation() + (Direction * Distance);
+		SpawnPreviewActor();
+		if (PreviewActor)
+		{
+			PreviewActor->SetActorLocation(TargetLocation);
+		}
+	}
 }
 

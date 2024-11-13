@@ -38,8 +38,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MaxDistance;	
 
-	// 방향 반전 여부 플레그
+	// 왕복 방향 반전 플래그
 	bool bReverseDirection;
+
+	// 무한 왕복 모드(check box 사용 시 true)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	bool bLoopMode;
+
+	// 왕복 횟수 설정(체크박스가 비활성화된 경우 사용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	int32 LoopCount;
+
+	// 단순 이동 모드
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    bool bSingleDirection;
+
+	int32 CurrentLoop;
 
 protected:
 	// Called when the game starts
@@ -60,4 +74,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void OriginMove();
+
+	
 };
