@@ -32,6 +32,7 @@
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -67,6 +68,16 @@ APSH_Player::APSH_Player()
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 
+
+	movementComp = GetCharacterMovement();
+
+	if (movementComp)
+	{
+		movementComp->GetNavAgentPropertiesRef().bCanCrouch = true;
+		movementComp->MaxFlySpeed = 500.0f;  // 비행 최대 속도 설정
+		movementComp->BrakingDecelerationFlying = 2000.0f;  // 감속도 설정
+	}
+
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -100,9 +111,12 @@ void APSH_Player::BeginPlay()
 	if (IsLocallyControlled())
 	{
 		pc = Cast<APSH_PlayerController>(GetController());
+		SRPC_CheckMode();
+		SRPC_Delegate();
 		InitPcUi();
 	}
-		anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
+	
+	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
 
 }
 
@@ -111,6 +125,16 @@ void APSH_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	// 목표 길이를 설정 (300 또는 500)
+
+	if (bFlyTimer)
+	{
+		curTime += DeltaTime;
+		if (curTime > flyTime)
+		{
+			bFlyTimer = false;
+			curTime = 0;
+		}
+	}
 
 	float TargetLength = bShouldExtend ? 500.0f : 300.0f;
 
@@ -131,6 +155,7 @@ void APSH_Player::Tick(float DeltaTime)
 		// 잡은애 블럭이 있다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
+			PRINTLOG(TEXT("TickPick"));
 			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
 			SRPC_PickEffect(EffectEndLoc);
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
@@ -175,6 +200,12 @@ void APSH_Player::InterpToRotation(const float & DeltaTime)
 	FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
 	// 부드럽게 회전하도록 InterpTo 적용
 	FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
+
+	if (bFly)
+	{
+		NewRotation.Pitch = 0;
+	}
+
 	// 화면 회전: ControlRotation의 Yaw를 대상 회전의 Yaw에 맞추어 부드럽게 회전
 	SetActorRotation(NewRotation);
 
@@ -273,6 +304,59 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 		}
 	}
 }
+void APSH_Player::SaveTest()
+{
+	TArray<AActor*> blackArray;
+
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blackArray);
+
+	for (auto* arrayActor : blackArray)
+	{
+		APSH_BlockActor* actor = Cast<APSH_BlockActor>(arrayActor);
+
+		if (actor)
+		{
+			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
+			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
+			dataTable->AddRow(rowName, BlockData);
+		}
+
+	}
+}
+void APSH_Player::DelegateTest()
+{
+	SRPC_DelegateTest();
+}
+void APSH_Player::SRPC_DelegateTest_Implementation()
+{
+	APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+
+	if (GM)
+	{
+		GM->MRPC_StartBlcok();
+	}
+}
+void APSH_Player::SRPC_Delegate_Implementation()
+{
+	APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+
+	if (GM)
+	{
+		GM->onStartBlock.AddDynamic(this, &APSH_Player::Delegatebool);
+		PRINTLOG(TEXT("SRPC_Delegate_Implementation"));
+	}
+}
+void APSH_Player::Delegatebool(bool createMode)
+{
+	if (createMode)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Received True from GameMode!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Received False from GameMode!"));
+	}	
+}
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -298,8 +382,15 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[0], ETriggerEvent::Triggered, this, &APSH_Player::Move);
 		EnhancedInputComponent->BindAction(inputActions[1], ETriggerEvent::Triggered, this, &APSH_Player::Look);
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
+
 		EnhancedInputComponent->BindAction(inputActions[3], ETriggerEvent::Started, this, &APSH_Player::PlayerJump);
+
+		EnhancedInputComponent->BindAction(inputActions[4], ETriggerEvent::Started, this, &APSH_Player::PlayerCrouch);
+		EnhancedInputComponent->BindAction(inputActions[4], ETriggerEvent::Completed, this, &APSH_Player::PlayerUnCrouch);
+
+		EnhancedInputComponent->BindAction(inputActions[5], ETriggerEvent::Triggered, this, &APSH_Player::PlayerFly);
 		// 쪼그려 앉기
+		// \
 		// 달리기 / 걷기
 		
 		// 인터페이스 관련
@@ -318,11 +409,14 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// bot 모드와 이동 관리
 		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
 
-		// 데이터 테이블 스폰 블럭
-		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
-
 		// 블럭 크기 조정
-		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::OnBlockScale);
+		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::OnBlockScale);
+
+		// 데이터 테이블 스폰 블럭
+		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
+		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
+
+		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
 		
 	}
 }
@@ -339,6 +433,8 @@ void APSH_Player::InitPcUi()
 			pc->SetMouseCursorWidget(EMouseCursor::Default, pc->mouseWidget);
 		}
 	}
+
+	if(!bCreatingMode) return;
 
 	if (pc->garbageBotWidgetFac)
 	{
@@ -363,10 +459,14 @@ void APSH_Player::InitPcUi()
 
 void APSH_Player::Move(const FInputActionValue& value)
 {
+	if (bFly) return; // 비행 모드일 때만 작동
+	
 	FVector2D input2D = value.Get<FVector2D>();
 
 	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
+
+	UE_LOG(LogTemp, Warning, TEXT("Move Input: Value= X : %f Y : %f "), input2D.X, input2D.Y);
 
 	AddMovementInput(forwardVec, input2D.X);
 	AddMovementInput(rightVec, input2D.Y);
@@ -378,9 +478,87 @@ void APSH_Player::Look(const FInputActionValue& value)
 	AddControllerPitchInput(input2D.Y);
 	AddControllerYawInput(input2D.X);
 }
+
 void APSH_Player::PlayerJump()
 {
-	Jump();
+	if (!bCreatingMode)
+	{
+		Jump();
+	}
+	else
+	{
+		if (bFly)
+		{
+			if (bFlyTimer)
+			{
+				bFly = false;
+				movementComp->SetMovementMode(MOVE_Walking);
+			}
+			else
+			{
+				bFlyTimer = true;
+			}
+		}
+		else
+		{
+			if (bFlyTimer)
+			{
+				bFly = true;
+				movementComp->SetMovementMode(MOVE_Flying);
+			}
+			else
+			{
+				Jump();
+				bFlyTimer = true;
+			}
+		}
+	}
+}
+
+void APSH_Player::PlayerFly(const FInputActionValue& value)
+{
+	if(!bFly) return;
+	FVector Value = value.Get<FVector>();
+
+	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
+	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
+	FVector UpVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Z); // 상승력 증가
+
+	UE_LOG(LogTemp, Warning, TEXT("PlayerFly"));
+
+	AddMovementInput(forwardVec, Value.X);
+	AddMovementInput(rightVec, Value.Y);
+	AddMovementInput(UpVector, Value.Z);
+	
+}
+
+void APSH_Player::SRPC_CheckMode_Implementation()
+{
+	APSH_GameModeBase * gm = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+
+	if (gm)
+	{
+		MRPC_CheckMode(gm->GetCreateingCheck());
+	}
+}
+
+void APSH_Player::MRPC_CheckMode_Implementation(bool check)
+{
+	bCreatingMode = check;
+}
+
+void APSH_Player::PlayerCrouch(const FInputActionValue& value)
+{
+	if (bFly) return;
+
+	Crouch();
+}
+
+void APSH_Player::PlayerUnCrouch(const FInputActionValue& value)
+{
+	if (bFly) return;
+
+	UnCrouch();
 }
 
 void APSH_Player::Grab()
@@ -532,7 +710,10 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 {
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
-	snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
+	if (Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().IsEmpty() == false)
+	{
+		snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
+	}
 
 	// 매 프레임마다 업데이트된 목표 위치 계산
 	FVector targetLoc;
@@ -569,24 +750,49 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 		if (heldActor == nullptr) return;
 
-		snapPoints = heldActor->GetSnapPoints();
+		if (heldActor->GetSnapPoints().IsEmpty() == false)
+		{
+			snapPoints = heldActor->GetSnapPoints();
+		}
 
 		if (!andBool)
 		{
-			targetLoc = localLocation + (heldActor->GetActorLocation() -
-				UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
-			targetRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
+			if (snapPoints.IsEmpty()) // 비었다면
+			{
+				targetLoc = localLocation + (heldActor->GetActorLocation() - heldActor->GetActorTransform().GetLocation());
+				targetRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
+			}
+			else
+			{
+				targetLoc = localLocation + (heldActor->GetActorLocation() -
+					UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
+				targetRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
+			}
 		}
 		else
 		{
-			targetLoc = UKismetMathLibrary::TransformLocation(hitActorTransform, closestPoint) +
-				(heldActor->GetActorLocation() - UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), snapPoints[snapPointIndex]));
-			targetRot = UKismetMathLibrary::TransformRotation(hitActorTransform, snapDirection[ClosestSnapPointIndex]);
+			if (snapPoints.IsEmpty()) // 비었다면
+			{
+				targetLoc = hitActorTransform.GetLocation() + heldActor->GetActorTransform().GetLocation();
+				targetRot = hitActorTransform.GetRotation().Rotator();
+			}
+			else
+			{
+				targetLoc = UKismetMathLibrary::TransformLocation(hitActorTransform, closestPoint) +
+					(heldActor->GetActorLocation() - UKismetMathLibrary::TransformLocation(heldActor->GetActorTransform(), 
+					snapPoints[snapPointIndex]));
+				targetRot = UKismetMathLibrary::TransformRotation(hitActorTransform, snapDirection[ClosestSnapPointIndex]);
+
+			}
 		}
 
 		rotationHelper->SetWorldLocation(targetLoc);
 		rotationHelper->SetWorldRotation(targetRot);
-		rotationHelper->AddLocalRotation(WorldHelperRotationOffset());
+
+		if (Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections().IsEmpty() == false)
+		{
+			rotationHelper->AddLocalRotation(WorldHelperRotationOffset());
+		}
 
 		FRotator A = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetRightVector(targetRot), rotationOffset.Pitch);
 		FRotator B = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetUpVector(targetRot), rotationOffset.Yaw);
@@ -607,10 +813,10 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 	MRPC_HandleBlock(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
 }
 
-FRotator APSH_Player::WorldHelperRotationOffset()
+FRotator APSH_Player::WorldHelperRotationOffset() // 추가보정
 {
+	
 	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
-
 	return UKismetMathLibrary::ComposeRotators(UKismetMathLibrary::NegateRotator(snapDir[snapPointIndex]), FRotator(180, 180, 0));
 
 }
@@ -878,31 +1084,56 @@ void APSH_Player::BotMoveAndModeChange()
 void APSH_Player::LoadTest()
 {
 	
-	FName Rowname = FName(*FString::FormatAsNumber(4));
-	FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
-	float sum = 200.0f;
-	APSH_BlockActor * sapwnPartent = nullptr;
+// 	FName Rowname = FName(*FString::FormatAsNumber(4));
+// 	FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
+// 	float sum = 200.0f;
+// 	APSH_BlockActor * sapwnPartent = nullptr;
+// 
+// 	if (data && data->actor != nullptr)
+// 	{
+// 		// 루트 블럭 소환
+// 		TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
+// 		if (SpawnActor)
+// 		{
+// 			FActorSpawnParameters Params;
+// 			APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, GetActorForwardVector() * sum, GetActorRotation(), Params);
+// 
+// 			// 블럭 계층 구조 불러오기
+// 			if (SpawnedBlock)
+// 			{
+// 				SpawnedBlock->LoadBlockHierarchy(*data);
+// 			}
+// 		}
+// 	}
 
-	if (data && data->actor != nullptr)
+	TArray<FPSH_ObjectData*> dataAraay;
+	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
+
+	for (int i = 0; i < dataAraay.Num(); i++)
 	{
-		// 루트 블럭 소환
-		TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
-		if (SpawnActor)
+		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
 		{
-			FActorSpawnParameters Params;
-			APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, GetActorForwardVector() * sum, GetActorRotation(), Params);
-
-			// 블럭 계층 구조 불러오기
-			if (SpawnedBlock)
+			// 루트 블럭 소환
+			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
+			if (SpawnActor)
 			{
-				SpawnedBlock->LoadBlockHierarchy(*data);
+				FActorSpawnParameters Params;
+				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
+
+				// 블럭 계층 구조 불러오기
+				if (SpawnedBlock)
+				{
+					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+				}
 			}
 		}
+
 	}
 }
 
 void APSH_Player::ShowInterface()
 {
+	if(!bCreatingMode) return;
 	// UI가 이미 열려있다면 닫기
 	if (CurrentObjectWidget)
 	{

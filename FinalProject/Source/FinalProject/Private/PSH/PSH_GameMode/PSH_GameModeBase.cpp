@@ -2,6 +2,7 @@
 
 
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+#include "../FinalProject.h"
 
 AActor* APSH_GameModeBase::SpawnFunctionObject()
 {	
@@ -21,4 +22,45 @@ AActor* APSH_GameModeBase::SpawnFunctionObject()
 		return NewObject;
 	}
 	return nullptr;
+}
+void APSH_GameModeBase::SetMode(ECreateMode changeMode)
+{
+	switch (mode)
+	{
+	case ECreateMode::PLAY:
+		bCreateMode  = false;
+		break;
+	case ECreateMode::CREATE:
+		bCreateMode  = true;
+		break;
+	}
+}
+
+ECreateMode APSH_GameModeBase::GetMode()
+{
+	return mode;
+
+}
+
+void APSH_GameModeBase::SetCreateingCheck(bool check)
+{
+	bCreateMode = check;
+	MRPC_StartBlcok();
+}
+
+void APSH_GameModeBase::MRPC_StartBlcok_Implementation()
+{
+	if (onStartBlock.IsBound())
+	{
+		PRINTLOG(TEXT("Broadcast"));
+		onStartBlock.Broadcast(true); // 델리게이트 호출
+	}
+}
+void APSH_GameModeBase::StartBlcok()
+{
+
+}
+bool APSH_GameModeBase::GetCreateingCheck()
+{
+	return bCreateMode;
 }

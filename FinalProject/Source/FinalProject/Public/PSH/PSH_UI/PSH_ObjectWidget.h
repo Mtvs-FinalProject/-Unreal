@@ -27,6 +27,9 @@ public:
 	class UScrollBox * Scroll_FunctionBlcok;
 
 	UPROPERTY(meta = (BindWidget))
+	class UScrollBox * Scroll_MapBlcok;
+
+	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_NormalLeft;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_NormalRight;
@@ -37,18 +40,25 @@ public:
 	class UButton * Btr_FunctionRight;
 
 	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_MapLeft;
+	
+	UPROPERTY(meta = (BindWidget))
+	class UButton * Btr_MapRight;
+
+	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Back;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Save;
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Load;
-// 	UPROPERTY(meta = (BindWidget))
-// 	class UButton * Btr_CallBot;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * nomalObjectData;
+
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * functionObjectData;
+	UPROPERTY(EditDefaultsOnly , Category = "Data")
+	class UDataTable * mapObjectData;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	TSubclassOf<class UPSH_BlockWidget> blockWidgetFac;
@@ -58,6 +68,8 @@ public:
 	void AddNomalBlock();
 
 	void AddFunctionBlock();
+
+	void AddMapBlock();
 
 	UFUNCTION()
 	void OnClickedBack();
@@ -82,6 +94,9 @@ public:
 	float functionScrollOffset = 0.0f;
 	bool bIsFunctionScrolling = false;
 
+	float mapScrollOffset = 0.0f;
+	bool bIsmapScrolling = false;
+
 	UFUNCTION()
 	void OnNormalScrollRightClicked();
 
@@ -93,4 +108,10 @@ public:
 
 	UFUNCTION()
 	void OnFunctionScrollRightClicked();
+
+	UFUNCTION()
+	void OnMapScrollRightClicked();
+
+	UFUNCTION()
+	void OnMapScrollLeftClicked();
 };
