@@ -2,6 +2,7 @@
 
 
 #include "YWK/MyFlyActorComponent.h"
+#include "PSH/PSH_Actor/PSH_BlockActor.h"
 
 // Sets default values for this component's properties
 UMyFlyActorComponent::UMyFlyActorComponent()
@@ -31,11 +32,18 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 	CurrentLoop = 0;
 }
 
-
 // Called when the game starts
 void UMyFlyActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+
+	if (block)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bind"));
+		block->componentCreateBoolDelegate.AddUObject(this,&UMyFlyActorComponent::GetDelegateBool);
+	}
 
 	// 초기 위치 저장
     StartLocation = GetOwner()->GetActorLocation();
@@ -130,4 +138,16 @@ void UMyFlyActorComponent::OriginFly()
 		UE_LOG(LogTemp, Warning, TEXT("Moved back to start location: %s"), *StartLocation.ToString());
 	}
 }
+void UMyFlyActorComponent::GetDelegateBool(bool delegatebool)
+{
+	bStart = delegatebool;
 
+	if (bStart)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("true"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("fasle"));
+	}
+}

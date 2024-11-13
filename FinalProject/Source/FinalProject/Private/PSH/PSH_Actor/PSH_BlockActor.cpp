@@ -11,6 +11,7 @@
 #include "YWK/MyMoveActorComponent.h"
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyRotateActorComponent.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -55,6 +56,17 @@ void APSH_BlockActor::BeginPlay()
 	else
 	{
 		meshComp->SetSimulatePhysics(true);
+	}
+
+	if (HasAuthority())
+	{
+		APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+
+		if (GM)
+		{
+			GM->onStartBlock.AddDynamic(this, &APSH_BlockActor::StartBlockDelgate);
+			PRINTLOG(TEXT("StartBlockDelgate"));
+		}
 	}
 	/*meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);*/
 
@@ -605,5 +617,12 @@ void APSH_BlockActor::MRPC_SetOutLine_Implementation(bool chek)
 
 void APSH_BlockActor::StartBlockDelgate(bool createMode)
 {
-
+	MROC_StartBlockDelgate(createMode);
+}
+void APSH_BlockActor::MROC_StartBlockDelgate_Implementation(bool createMode)
+{
+	if (componentCreateBoolDelegate.IsBound())
+	{
+		componentCreateBoolDelegate.Broadcast(createMode);
+	}
 }
