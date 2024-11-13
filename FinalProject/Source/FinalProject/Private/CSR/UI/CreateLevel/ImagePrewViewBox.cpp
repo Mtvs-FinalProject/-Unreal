@@ -4,15 +4,12 @@
 #include "CSR/UI/CreateLevel/ImagePrewViewBox.h"
 #include "IDesktopPlatform.h"
 #include "DesktopPlatformModule.h"
-#include "Components/VerticalBox.h"
-#include "Components/Button.h"
-#include "Engine/Texture2D.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "ImageUtils.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "Modules/ModuleManager.h"
 #include "Misc/MessageDialog.h"
-#include "Styling/SlateBrush.h"
 
 void UImagePrewViewBox::NativeConstruct()
 {
@@ -20,7 +17,12 @@ void UImagePrewViewBox::NativeConstruct()
 
     if (AddImageButton)
     {
-        AddImageButton->OnClicked.AddDynamic(this, &UImagePrewViewBox::OnAddImageButtonClicked);
+		AddImageButton->OnClicked.AddDynamic(this, &UImagePrewViewBox::OnAddImageButtonClicked);
+    }
+
+    if (ThumbnailScrollBox)
+    {
+        ThumbnailScrollBox->OnThumbnailReorderedEvents.AddDynamic(this, &UImagePrewViewBox::OnThumbnailOrderChanged);
     }
 }
 
@@ -29,23 +31,49 @@ void UImagePrewViewBox::OnAddImageButtonClicked()
     OpenImageFileDialog();
 }
 
+void UImagePrewViewBox::OpenImageFileDialog()
+{
+    IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+    if (!DesktopPlatform) return;
+
+    TArray<FString> OutFilenames;
+    const FString ExtensionStr = TEXT("PNG Files (*.png)|*.png");
+    const void* ParentWindowHandle = FSlateApplication::Get().GetActiveTopLevelWindow()->GetNativeWindow()->GetOSWindowHandle();
+
+    if (DesktopPlatform->OpenFileDialog(
+        ParentWindowHandle,
+        TEXT("PNG 이미지 선택"),
+        FPaths::GetPath(FPaths::ProjectContentDir()),
+        TEXT(""),
+        ExtensionStr,
+        EFileDialogFlags::None,
+        OutFilenames))
+    {
+        if (OutFilenames.Num() > 0 && IsValidPNGFile(OutFilenames[0]))
+        {
+            AddImageToPreview(OutFilenames[0]);
+        }
+    }
+}
+
 bool UImagePrewViewBox::IsValidPNGFile(const FString& FilePath)
 {
-    // 파일 확장자 검사
     if (!FilePath.EndsWith(TEXT(".png"), ESearchCase::IgnoreCase))
     {
         FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("PNG 파일만 선택할 수 있습니다.")));
         return false;
     }
 
-    // PNG 시그니처 검사
     TArray<uint8> FileHeader;
     if (FFileHelper::LoadFileToArray(FileHeader, *FilePath))
     {
         const uint8 PNGSignature[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
         if (FileHeader.Num() >= 8)
         {
-            return FMemory::Memcmp(FileHeader.GetData(), PNGSignature, 8) == 0;
+            if (FMemory::Memcmp(FileHeader.GetData(), PNGSignature, 8) == 0)
+            {
+                return true;
+            }
         }
     }
 
@@ -53,71 +81,28 @@ bool UImagePrewViewBox::IsValidPNGFile(const FString& FilePath)
     return false;
 }
 
-void UImagePrewViewBox::OpenImageFileDialog()
-{
-    IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-    if (DesktopPlatform)
-    {
-        TArray<FString> OutFilenames;
-        // PNG 파일만 필터링
-        FString ExtensionStr = TEXT("PNG Files (*.png)|*.png");
-
-        const void* ParentWindowHandle = FSlateApplication::Get().GetActiveTopLevelWindow()->GetNativeWindow()->GetOSWindowHandle();
-
-        if (DesktopPlatform->OpenFileDialog(
-            ParentWindowHandle,
-            TEXT("PNG 이미지 선택"),
-            FPaths::GetPath(FPaths::ProjectContentDir()),
-            TEXT(""),
-            ExtensionStr,
-            EFileDialogFlags::None,
-            OutFilenames
-        ))
-        {
-            if (OutFilenames.Num() > 0 && IsValidPNGFile(OutFilenames[0]))
-            {
-                AddImageToPreview(OutFilenames[0]);
-            }
-        }
-    }
-}
-
 UTexture2D* UImagePrewViewBox::LoadTextureFromFile(const FString& FilePath)
 {
-    // 파일 데이터 로드
     TArray<uint8> RawFileData;
     if (!FFileHelper::LoadFileToArray(RawFileData, *FilePath))
     {
-        FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("파일을 읽을 수 없습니다.")));
         return nullptr;
     }
 
-    // 이미지 래퍼 모듈 로드
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
 
-    if (!ImageWrapper.IsValid())
+    if (!ImageWrapper.IsValid() || !ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
     {
-        FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("이미지 래퍼를 생성할 수 없습니다.")));
         return nullptr;
     }
 
-    // 이미지 압축 데이터 설정
-    if (!ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
-    {
-        FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("이미지 데이터가 유효하지 않습니다.")));
-        return nullptr;
-    }
-
-    // BGRA 포맷으로 압축 해제
     TArray<uint8> UncompressedBGRA;
     if (!ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
     {
-        FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("이미지 압축을 해제할 수 없습니다.")));
         return nullptr;
     }
 
-    // 텍스처 생성
     UTexture2D* NewTexture = UTexture2D::CreateTransient(
         ImageWrapper->GetWidth(),
         ImageWrapper->GetHeight(),
@@ -126,81 +111,75 @@ UTexture2D* UImagePrewViewBox::LoadTextureFromFile(const FString& FilePath)
 
     if (!NewTexture)
     {
-        FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("텍스처를 생성할 수 없습니다.")));
         return nullptr;
     }
 
-    // 텍스처 데이터 설정
-    FTexturePlatformData* PlatformData = NewTexture->GetPlatformData();
-    if (PlatformData)
-    {
-        void* TextureData = PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-        FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
-        PlatformData->Mips[0].BulkData.Unlock();
+    void* TextureData = NewTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+    FMemory::Memcpy(TextureData, UncompressedBGRA.GetData(), UncompressedBGRA.Num());
+    NewTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+    NewTexture->UpdateResource();
 
-        // 텍스처 설정
-        NewTexture->AddToRoot();  // GC 방지
-        NewTexture->UpdateResource();
-
-        // 이미지 경로 저장
-        LoadedImagePaths.Add(FilePath);
-
-        return NewTexture;
-    }
-
-    FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("텍스처 데이터를 설정할 수 없습니다.")));
-    return nullptr;
+    return NewTexture;
 }
 
 void UImagePrewViewBox::AddImageToPreview(const FString& ImagePath)
 {
     UTexture2D* NewTexture = LoadTextureFromFile(ImagePath);
-    if (NewTexture)
+    if (!NewTexture) return;
+
+    // 썸네일 데이터 생성
+    UThumbnailData* ThumbnailData = NewObject<UThumbnailData>(this);
+    ThumbnailData->Initialize(NewTexture, ImagePath);
+    ThumbnailData->ThumbnailIndex = ThumbnailDataArray.Num();
+
+    // 썸네일 버튼 생성
+    float ScrollBoxHeight = ThumbnailScrollBox->GetCachedGeometry().GetLocalSize().Y;
+    UButton* ThumbnailButton = ThumbnailData->CreateThumbnailButton(this, ScrollBoxHeight * 0.8f);
+
+    if (!ThumbnailButton) return;
+
+    // 버튼 클릭 이벤트 바인딩
+    FScriptDelegate ButtonDelegate;
+    ButtonDelegate.BindUFunction(this, "OnThumbnailButtonClicked");
+    ThumbnailButton->OnClicked.Add(ButtonDelegate);
+
+    // 데이터 저장
+    ThumbnailDataArray.Add(ThumbnailData);
+    CurrentSelectedData = ThumbnailData;
+    CurrentSelectedButton = ThumbnailButton;
+
+    // 스크롤박스에 추가
+    ThumbnailScrollBox->AddChild(ThumbnailButton);
+
+    // 메인 이미지 업데이트
+    UpdateMainImage(NewTexture);
+}
+
+void UImagePrewViewBox::OnThumbnailButtonClicked()
+{
+    if (UButton* ClickedButton = Cast<UButton>(CurrentSelectedButton))
     {
-        // 썸네일 이미지 생성
-        UImage* ThumbnailImage = NewObject<UImage>(this);
-        ThumbnailImage->SetBrushFromTexture(NewTexture);
-
-        // 썸네일 크기 설정 - 스크롤박스의 높이에 맞춤
-        float ScrollBoxHeight = ThumbnailScrollBox->GetCachedGeometry().GetLocalSize().Y;
-        ThumbnailImage->SetDesiredSizeOverride(FVector2D(ScrollBoxHeight * 1.5f, ScrollBoxHeight));
-
-        // 썸네일 버튼 생성
-        UButton* ThumbnailButton = NewObject<UButton>(this);
-        ThumbnailButton->AddChild(ThumbnailImage);
-
-        // 클릭 이벤트 바인딩
-        FScriptDelegate ClickDelegate;
-        ClickDelegate.BindUFunction(this, "OnThumbnailClicked");
-        ThumbnailButton->OnClicked.Add(ClickDelegate);
-
-        // 버튼 배열에 추가
-        ThumbnailButtons.Add(ThumbnailButton);
-
-        // 스크롤 박스에 썸네일 추가
-        ThumbnailScrollBox->AddChild(ThumbnailButton);
-
-        // 첫 이미지인 경우 메인 이미지로 설정
-        if (LoadedImagePaths.Num() == 0)
+        if (UThumbnailData* ThumbnailData = FindThumbnailDataByButton(ClickedButton))
         {
-            UpdateMainImage(NewTexture);
+            CurrentSelectedData = ThumbnailData;
+            UpdateMainImage(ThumbnailData->Texture);
         }
-
-        LoadedImagePaths.Add(ImagePath);
     }
 }
 
-void UImagePrewViewBox::OnThumbnailClicked(UButton* ClickedButton)
+void UImagePrewViewBox::OnThumbnailOrderChanged(int32 OldIndex, int32 NewIndex)
 {
-    if (ClickedButton)
+    if (ThumbnailDataArray.IsValidIndex(OldIndex) && ThumbnailDataArray.IsValidIndex(NewIndex))
     {
-        UImage* ClickedImage = Cast<UImage>(ClickedButton->GetChildAt(0));
-        if (ClickedImage)
+        // 데이터 배열 순서 변경
+        ThumbnailDataArray.Swap(OldIndex, NewIndex);
+
+        // 인덱스 업데이트
+        for (int32 i = 0; i < ThumbnailDataArray.Num(); ++i)
         {
-            UTexture2D* ClickedTexture = Cast<UTexture2D>(ClickedImage->Brush.GetResourceObject());
-            if (ClickedTexture)
+            if (ThumbnailDataArray[i])
             {
-                UpdateMainImage(ClickedTexture);
+                ThumbnailDataArray[i]->ThumbnailIndex = i;
             }
         }
     }
@@ -208,8 +187,23 @@ void UImagePrewViewBox::OnThumbnailClicked(UButton* ClickedButton)
 
 void UImagePrewViewBox::UpdateMainImage(UTexture2D* NewTexture)
 {
-    if (MainImageWidget && NewTexture)
+    if (MainImageWidget && NewTexture && IsValid(MainImageWidget))
     {
         MainImageWidget->SetBrushFromTexture(NewTexture);
     }
+}
+
+UThumbnailData* UImagePrewViewBox::FindThumbnailDataByButton(const UButton* Button) const
+{
+    if (!Button) return nullptr;
+
+    for (UThumbnailData* Data : ThumbnailDataArray)
+    {
+        if (Data && Data->ThumbnailButton == Button)
+        {
+            return Data;
+        }
+    }
+
+    return nullptr;
 }

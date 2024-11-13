@@ -5,8 +5,9 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
-#include "Components/ScrollBox.h"
+#include "DraggableThumbnailBox.h"
 #include "Components/Button.h"
+#include "ThumbnailData.h"
 #include "ImagePrewViewBox.generated.h"
 
 /**
@@ -18,24 +19,26 @@ class FINALPROJECT_API UImagePrewViewBox : public UUserWidget
 {
 	GENERATED_BODY()
 
-
 protected:
     virtual void NativeConstruct() override;
 
-    UPROPERTY(meta = (BindWidget))
-    class UImage* MainImageWidget;
+    UPROPERTY(Meta = (BindWidget))
+    UImage* MainImageWidget;
 
-    UPROPERTY(meta = (BindWidget))
-    class UScrollBox* ThumbnailScrollBox;
+    UPROPERTY(Meta = (BindWidget))
+    UDraggableThumbnailBox* ThumbnailScrollBox;
 
-    UPROPERTY(meta = (BindWidget))
-    class UButton* AddImageButton;
+    UPROPERTY(Meta = (BindWidget))
+    UButton* AddImageButton;
 
     UFUNCTION()
     void OnAddImageButtonClicked();
 
     UFUNCTION()
-    void OnThumbnailClicked(UButton* ClickedButton);
+    void OnThumbnailButtonClicked();
+
+    UFUNCTION()
+    void OnThumbnailOrderChanged(int32 OldIndex, int32 NewIndex);
 
 private:
     void OpenImageFileDialog();
@@ -44,10 +47,14 @@ private:
     bool IsValidPNGFile(const FString& FilePath);
     
     UPROPERTY()
-    TArray<FString> LoadedImagePaths;
-    
+    TArray<UThumbnailData*> ThumbnailDataArray;
+
     UPROPERTY()
-    TArray<UButton*> ThumbnailButtons;
-    
+    UButton* CurrentSelectedButton;
+
+    UPROPERTY()
+    UThumbnailData* CurrentSelectedData;
+
     UTexture2D* LoadTextureFromFile(const FString& FilePath);
+    UThumbnailData* FindThumbnailDataByButton(const UButton* Button) const;
 };
