@@ -6,10 +6,33 @@
 #include "Engine/DataTable.h"
 #include "PSH_MechDataTable.generated.h"
 
+
+USTRUCT(Atomic, BlueprintType)
+struct FPSH_FunctionBlockData // 자식 데이터 베이스 저장할 공간.
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere)
+	TArray<int32> intArray;
+
+	UPROPERTY(EditAnywhere)
+	TArray<float> floatArray;
+
+	UPROPERTY(EditAnywhere)
+	TArray<FVector> fvectorArray;
+
+	UPROPERTY(EditAnywhere)
+	TArray<bool> boolArray;
+
+};
+
 USTRUCT(Atomic, BlueprintType)
 struct FPSH_ChildData // 자식 데이터 베이스 저장할 공간.
 {
 	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere)
+	FPSH_FunctionBlockData funcitonData; // funciton 블럭에 저장된 변수들
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
@@ -31,6 +54,9 @@ USTRUCT(Atomic, BlueprintType)
 struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 {
 	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere)
+	FPSH_FunctionBlockData funcitonData; // funciton 블럭에 저장된 변수들
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형

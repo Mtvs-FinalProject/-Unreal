@@ -20,10 +20,9 @@ APSH_BlockActor::APSH_BlockActor()
 
 	meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	meshComp->SetIsReplicated(true);
-
+	
 	SetRootComponent(meshComp);
 
-	
 	bReplicates = true;
 	SetReplicateMovement(true);
 
@@ -49,6 +48,14 @@ void APSH_BlockActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (mapBlock)
+	{
+		meshComp->SetSimulatePhysics(false);
+	}
+	else
+	{
+		meshComp->SetSimulatePhysics(true);
+	}
 	/*meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);*/
 
 	//if (MyMoveActorComponent && MyMoveActorComponent->IsComponentTickEnabled())
@@ -83,6 +90,11 @@ void APSH_BlockActor::Tick(float DeltaTime)
 
 void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
 {
+	if (mapBlock)
+	{
+		meshComp->SetSimulatePhysics(true);
+	}
+
 	if (handle == nullptr) return;
 
 	handle->GrabComponentAtLocationWithRotation(meshComp, NAME_None, GetActorLocation(), GetActorRotation());
@@ -124,8 +136,13 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 	{
 		return;
 	}
+	
+	if (mapBlock)
+	{
+		meshComp->SetSimulatePhysics(false);	
+	}
 
-
+	SetMaster(nullptr);
 	pickedUp = false;
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
@@ -137,7 +154,6 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
 	}
-	SetMaster(nullptr);
 }
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
@@ -185,6 +201,11 @@ void APSH_BlockActor::Remove()
 	SRPC_Remove();
 }
 
+void APSH_BlockActor::SRPC_Remove_Implementation()
+{
+	MRPC_Remove();
+}
+
 void APSH_BlockActor::MRPC_Remove_Implementation()
 {
 	if (parent == nullptr) return;
@@ -194,8 +215,9 @@ void APSH_BlockActor::MRPC_Remove_Implementation()
 	DetachFromActor(rule);
 
 	// 시물레이션 활성화
-	meshComp->SetSimulatePhysics(true);
 
+	meshComp->SetSimulatePhysics(true);
+	
 	// 부모에서 자식 제거
 	parent->RemoveChild(this);
 	parent->RemoveChildren(childsActors);
@@ -204,10 +226,7 @@ void APSH_BlockActor::MRPC_Remove_Implementation()
 
 	parent = nullptr;
 }
-void APSH_BlockActor::SRPC_Remove_Implementation()
-{
-	MRPC_Remove();
-}
+
 void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 {
 	if (actor == nullptr) return;
@@ -583,4 +602,8 @@ void APSH_BlockActor::MRPC_SetOutLine_Implementation(bool chek)
 		meshComp->SetOverlayMaterial(nullptr);
 	}
 }
-	
+
+void APSH_BlockActor::StartBlockDelgate(bool createMode)
+{
+
+}

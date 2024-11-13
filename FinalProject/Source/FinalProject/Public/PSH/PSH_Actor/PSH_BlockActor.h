@@ -146,6 +146,13 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_SetOutLine(bool chek);
 
+	UPROPERTY(EditDefaultsOnly)
+	bool mapBlock = false;
+
+// 	UFUNCTION(Server,Reliable)
+// 	void SRPC_
+
+	void StartBlockDelgate(bool createMode);
 private:
 	class APSH_Player * master = nullptr;
 

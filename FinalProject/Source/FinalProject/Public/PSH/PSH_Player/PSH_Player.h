@@ -52,6 +52,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	class USceneComponent * rotationHelper; // 회전 도우미
+
+	UPROPERTY()
+	class UCharacterMovementComponent* movementComp;
 	
 	//PC
 	class APSH_PlayerController* pc;
@@ -64,7 +67,28 @@ public:
 	void Look(const FInputActionValue& value);
 
 	// 플레이어 행동
+	bool bCreatingMode;
+
 	void PlayerJump();
+	void PlayerFly(const FInputActionValue& value);
+
+	bool bFlyTimer;
+	bool bFly = false;
+	float flyTime = 0.3f;
+	float curTime = 0;
+
+	UFUNCTION(Server, Reliable)
+	void SRPC_CheckMode();
+	UFUNCTION(NetMulticast, Reliable)
+	void MRPC_CheckMode(bool check);
+
+	UPROPERTY(EditAnywhere)
+	float flayFower = 500.0f;
+	
+	void PlayerCrouch(const FInputActionValue& value);
+	void PlayerUnCrouch(const FInputActionValue& value);
+
+	void PlayerDownFly(const FInputActionValue& value);
 	
 	UPROPERTY(EditAnywhere)
 	class UDataTable * dataTable;
@@ -240,4 +264,16 @@ public:
 	// 마우스 이동 제한 영역 설정
 	const float MarginPercent = 0.05f; // 5% 여백
 	
+	void SaveTest();
+	int32 RowNum = 0;
+
+	void DelegateTest();
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_DelegateTest();
+	UFUNCTION(Server,Reliable)
+	void SRPC_Delegate();
+
+	UFUNCTION()
+	void Delegatebool(bool createMode);
 };
