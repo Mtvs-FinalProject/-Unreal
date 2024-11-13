@@ -67,6 +67,7 @@ public:
 	void Look(const FInputActionValue& value);
 
 	// 플레이어 행동
+	UPROPERTY(Replicated)
 	bool bCreatingMode;
 
 	void PlayerJump();
@@ -269,8 +270,9 @@ public:
 
 	void DelegateTest();
 
-	UFUNCTION(Server,Reliable)
-	void SRPC_DelegateTest();
+	// 델리게이트 실행 함수
+	UFUNCTION(Server,Reliable,BlueprintCallable)
+	void SRPC_ModeChangeDelegate();
 	UFUNCTION(Server,Reliable)
 	void SRPC_Delegate();
 

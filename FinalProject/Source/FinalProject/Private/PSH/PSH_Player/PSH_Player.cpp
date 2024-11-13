@@ -155,7 +155,6 @@ void APSH_Player::Tick(float DeltaTime)
 		// 잡은애 블럭이 있다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
-			PRINTLOG(TEXT("TickPick"));
 			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
 			SRPC_PickEffect(EffectEndLoc);
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
@@ -325,9 +324,10 @@ void APSH_Player::SaveTest()
 }
 void APSH_Player::DelegateTest()
 {
-	SRPC_DelegateTest();
+	SRPC_ModeChangeDelegate();
 }
-void APSH_Player::SRPC_DelegateTest_Implementation()
+
+void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 {
 	APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
 
@@ -343,19 +343,12 @@ void APSH_Player::SRPC_Delegate_Implementation()
 	if (GM)
 	{
 		GM->onStartBlock.AddDynamic(this, &APSH_Player::Delegatebool);
-		PRINTLOG(TEXT("SRPC_Delegate_Implementation"));
 	}
 }
 void APSH_Player::Delegatebool(bool createMode)
 {
-	if (createMode)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Received True from GameMode!"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Received False from GameMode!"));
-	}	
+	PRINTLOG(TEXT("Delegatebool"));
+	 bCreatingMode = createMode;
 }
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -416,6 +409,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
 		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
 
+		// 모드 변경
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
 		
 	}
@@ -465,8 +459,6 @@ void APSH_Player::Move(const FInputActionValue& value)
 
 	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
-
-	UE_LOG(LogTemp, Warning, TEXT("Move Input: Value= X : %f Y : %f "), input2D.X, input2D.Y);
 
 	AddMovementInput(forwardVec, input2D.X);
 	AddMovementInput(rightVec, input2D.Y);
@@ -524,12 +516,9 @@ void APSH_Player::PlayerFly(const FInputActionValue& value)
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
 	FVector UpVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Z); // 상승력 증가
 
-	UE_LOG(LogTemp, Warning, TEXT("PlayerFly"));
-
 	AddMovementInput(forwardVec, Value.X);
 	AddMovementInput(rightVec, Value.Y);
 	AddMovementInput(UpVector, Value.Z);
-	
 }
 
 void APSH_Player::SRPC_CheckMode_Implementation()
@@ -1221,6 +1210,7 @@ void APSH_Player::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(APSH_Player, bCreatingMode);
 	
 }
 

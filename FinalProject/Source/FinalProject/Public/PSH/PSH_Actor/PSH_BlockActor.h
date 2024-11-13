@@ -7,6 +7,8 @@
 #include "../PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH_BlockActor.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FComponentCreateBoolDelegate, bool);
+
 UCLASS()
 class FINALPROJECT_API APSH_BlockActor : public AActor
 {
@@ -24,6 +26,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	//델리게이트 등록
+	FComponentCreateBoolDelegate componentCreateBoolDelegate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UStaticMeshComponent * meshComp;
@@ -151,8 +155,15 @@ public:
 
 // 	UFUNCTION(Server,Reliable)
 // 	void SRPC_
+	
+	
+	void ComponentDelegate();
 
+	UFUNCTION()
 	void StartBlockDelgate(bool createMode);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MROC_StartBlockDelgate(bool createMode);
 private:
 	class APSH_Player * master = nullptr;
 
