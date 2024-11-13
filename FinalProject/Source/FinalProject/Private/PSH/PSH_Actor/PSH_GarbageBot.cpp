@@ -26,7 +26,7 @@ APSH_GarbageBot::APSH_GarbageBot()
     compMesh->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
     compMesh->SetRelativeScale3D(FVector(0.25f));
     compMesh->SetCollisionProfileName(FName("GarBageBot"));
-    compMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    compMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
    
 
     ConstructorHelpers::FObjectFinder<UStaticMesh> tempMesh(TEXT("/Script/Engine.StaticMesh'/Game/YWK/BP/Bot/robotpat.robotpat'"));
@@ -178,7 +178,15 @@ void APSH_GarbageBot::DestroyState()
 void APSH_GarbageBot::SetState(EState nextState)
 {
     state = nextState;
-    PRINTLOG(TEXT("State"));
+    if (state == EState::Destroy)
+    {
+        compMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+    else
+    {
+        compMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
 }
 
 void APSH_GarbageBot::SRPC_MoveToLocation_Implementation(const FVector& TargetLocation)

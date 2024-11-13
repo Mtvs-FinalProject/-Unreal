@@ -245,13 +245,13 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 			}
 
 			// 디버그 표시 (개발 중에만 사용)
-// 			if (GEngine)
-// 			{
-// 				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow,
-// 					FString::Printf(TEXT("Mouse Position: X=%.1f, Y=%.1f"), MouseX, MouseY));
-// 				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green,
-// 					FString::Printf(TEXT("Bottom Margin: %.1f"), BottomMargin));
-// 			}
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow,
+					FString::Printf(TEXT("Mouse Position: X=%.1f, Y=%.1f"), MouseX, MouseY));
+				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green,
+					FString::Printf(TEXT("Bottom Margin: %.1f"), BottomMargin));
+			}
 		}
 		else // GetMousePosition 실패 시
 		{

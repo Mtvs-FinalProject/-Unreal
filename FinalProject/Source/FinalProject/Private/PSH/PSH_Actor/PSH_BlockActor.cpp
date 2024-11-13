@@ -159,11 +159,14 @@ void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachAct
 		true
 	);
 	// 부모 블럭에 붙이기
-	//AttachToActor(attachActor, rule);
-	AttachToComponent(parent->RootComponent,rule);
+	AttachToActor(attachActor, rule);
+
+	SetActorRelativeLocation(worldTransform.GetLocation());
+	SetActorRotation(worldTransform.GetRotation());
 
 	// 부모블록에 나의 자식 블록들 전송
-	attachActor->TransferChildren(childsActors); // 여기가 문제인가? 클라이언트랑 서버와 동기화가 안되어있다?
+	attachActor->TransferChildren(childsActors);
+
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
