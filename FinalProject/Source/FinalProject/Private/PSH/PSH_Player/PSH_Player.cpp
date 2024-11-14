@@ -155,7 +155,6 @@ void APSH_Player::Tick(float DeltaTime)
 		// 잡은애 블럭이 있다면
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
-			PRINTLOG(TEXT("TickPick"));
 			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
 			SRPC_PickEffect(EffectEndLoc);
 			auto* snap = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner());
@@ -325,9 +324,11 @@ void APSH_Player::SaveTest()
 }
 void APSH_Player::DelegateTest()
 {
-	SRPC_DelegateTest();
+	SRPC_ModeChangeDelegate();
 }
-void APSH_Player::SRPC_DelegateTest_Implementation()
+
+// 델리게이트 요청
+void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 {
 	APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
 
@@ -336,6 +337,8 @@ void APSH_Player::SRPC_DelegateTest_Implementation()
 		GM->MRPC_StartBlcok();
 	}
 }
+
+// 델리게이트 등록
 void APSH_Player::SRPC_Delegate_Implementation()
 {
 	APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -343,19 +346,19 @@ void APSH_Player::SRPC_Delegate_Implementation()
 	if (GM)
 	{
 		GM->onStartBlock.AddDynamic(this, &APSH_Player::Delegatebool);
-		PRINTLOG(TEXT("SRPC_Delegate_Implementation"));
 	}
 }
+
+// 델리게이트 등록 함수
 void APSH_Player::Delegatebool(bool createMode)
 {
-	if (createMode)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Received True from GameMode!"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Received False from GameMode!"));
-	}	
+	 bCreatingMode = createMode;
+
+	 if (createMode == false)
+	 {
+		 bFly = false;
+		 GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	 }
 }
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -416,6 +419,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
 		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
 
+		// 모드 변경
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
 		
 	}
@@ -466,8 +470,6 @@ void APSH_Player::Move(const FInputActionValue& value)
 	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
 
-	UE_LOG(LogTemp, Warning, TEXT("Move Input: Value= X : %f Y : %f "), input2D.X, input2D.Y);
-
 	AddMovementInput(forwardVec, input2D.X);
 	AddMovementInput(rightVec, input2D.Y);
 }
@@ -492,7 +494,9 @@ void APSH_Player::PlayerJump()
 			if (bFlyTimer)
 			{
 				bFly = false;
-				movementComp->SetMovementMode(MOVE_Walking);
+				PRINTLOG(TEXT("MOVE_Walking"));
+				SRPC_SetMovementMode(MOVE_Walking);
+				/*GetCharacterMovement()->SetMovementMode(MOVE_Walking);*/
 			}
 			else
 			{
@@ -504,7 +508,9 @@ void APSH_Player::PlayerJump()
 			if (bFlyTimer)
 			{
 				bFly = true;
-				movementComp->SetMovementMode(MOVE_Flying);
+				PRINTLOG(TEXT("MOVE_Flying"));
+				SRPC_SetMovementMode(MOVE_Flying);
+				//GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 			}
 			else
 			{
@@ -524,14 +530,15 @@ void APSH_Player::PlayerFly(const FInputActionValue& value)
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
 	FVector UpVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Z); // 상승력 증가
 
-	UE_LOG(LogTemp, Warning, TEXT("PlayerFly"));
-
 	AddMovementInput(forwardVec, Value.X);
 	AddMovementInput(rightVec, Value.Y);
 	AddMovementInput(UpVector, Value.Z);
-	
 }
 
+void APSH_Player::SRPC_SetMovementMode_Implementation(EMovementMode mode)
+{
+	GetCharacterMovement()->SetMovementMode(mode);
+}
 void APSH_Player::SRPC_CheckMode_Implementation()
 {
 	APSH_GameModeBase * gm = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -1021,12 +1028,14 @@ void APSH_Player::SRPC_GabageBotMovePoint_Implementation(const FVector& Moveloca
 }
 void APSH_Player::SRPC_GarbageBotInitPoint_Implementation()
 {
-	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint"));
 	if (garbagebot == nullptr) return;
 
-	garbagebot->InitializeMovePoint();
+	if (garbagebot->compMesh->IsVisible() == false)
+	{
+		garbagebot->compMesh->SetVisibility(true);
+	}
 
-	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint_Implementation"));
+	garbagebot->InitializeMovePoint();
 }
 
 void APSH_Player::SRPC_GarbageBotSetState_Implementation(EState state)
@@ -1221,6 +1230,9 @@ void APSH_Player::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(APSH_Player, bCreatingMode);
+	DOREPLIFETIME(APSH_Player, bFly);
+	DOREPLIFETIME(APSH_Player, bFlyTimer);
 	
 }
 

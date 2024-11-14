@@ -48,7 +48,6 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_StartBlcok();
 
-	void StartBlcok();
 
 private:
 	bool bCreateMode = true;

@@ -70,4 +70,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Fly")
 	void OriginFly();
+
+	UFUNCTION()
+	void GetDelegateBool(bool delegatebool);
+
+	bool bStart;
 };

@@ -67,12 +67,18 @@ public:
 	void Look(const FInputActionValue& value);
 
 	// 플레이어 행동
-	bool bCreatingMode;
+	UPROPERTY(Replicated)
+	bool bCreatingMode = true;
 
 	void PlayerJump();
 	void PlayerFly(const FInputActionValue& value);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetMovementMode(EMovementMode mode);
+
+	UPROPERTY(Replicated)
 	bool bFlyTimer;
+	UPROPERTY(Replicated)
 	bool bFly = false;
 	float flyTime = 0.3f;
 	float curTime = 0;
@@ -269,8 +275,9 @@ public:
 
 	void DelegateTest();
 
-	UFUNCTION(Server,Reliable)
-	void SRPC_DelegateTest();
+	// 델리게이트 실행 함수
+	UFUNCTION(Server,Reliable,BlueprintCallable)
+	void SRPC_ModeChangeDelegate();
 	UFUNCTION(Server,Reliable)
 	void SRPC_Delegate();
 
