@@ -52,7 +52,7 @@ void APSH_GameModeBase::MRPC_StartBlcok_Implementation()
 {
 	if (onStartBlock.IsBound())
 	{
-		PRINTLOG(TEXT("Broadcast"));
+		bCreateMode = !bCreateMode;
 		onStartBlock.Broadcast(bCreateMode); // 델리게이트 호출
 	}
 }

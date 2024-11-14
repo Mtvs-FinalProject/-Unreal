@@ -17,17 +17,18 @@ APSH_GarbageBot::APSH_GarbageBot()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 // 
-//     boxCol = CreateDefaultSubobject<UBoxComponent>(TEXT("boxCol"));
-//     SetRootComponent(boxCol);
-//     boxCol->SetRelativeScale3D(FVector(0.25f));
+    sceneComp = CreateDefaultSubobject<USceneComponent>(TEXT("sceneComp"));
+    sceneComp->SetRelativeScale3D(FVector(0.25f));
+    SetRootComponent(sceneComp);
 // 
 	compMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	compMesh->SetupAttachment(RootComponent);
+    compMesh->SetupAttachment(RootComponent);
     compMesh->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
-    compMesh->SetRelativeScale3D(FVector(0.25f));
+    compMesh->SetRelativeScale3D(FVector(1.f));
     compMesh->SetCollisionProfileName(FName("GarBageBot"));
     compMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-   
+    compMesh->SetVisibility(false);
+	
 
     ConstructorHelpers::FObjectFinder<UStaticMesh> tempMesh(TEXT("/Script/Engine.StaticMesh'/Game/YWK/BP/Bot/robotpat.robotpat'"));
 
@@ -68,6 +69,7 @@ void APSH_GarbageBot::Tick(float DeltaTime)
 
         // 부드러운 회전
         FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, NewRotation, DeltaTime, 5.0f); // 5.0f는 회전 속도
+        SmoothedRotation.Pitch = 0;
 
         SetActorRotation(SmoothedRotation);
     }

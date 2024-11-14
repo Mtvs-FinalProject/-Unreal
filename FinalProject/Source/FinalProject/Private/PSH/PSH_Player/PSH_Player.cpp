@@ -327,6 +327,7 @@ void APSH_Player::DelegateTest()
 	SRPC_ModeChangeDelegate();
 }
 
+// 델리게이트 요청
 void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 {
 	APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -336,6 +337,8 @@ void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 		GM->MRPC_StartBlcok();
 	}
 }
+
+// 델리게이트 등록
 void APSH_Player::SRPC_Delegate_Implementation()
 {
 	APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -345,10 +348,17 @@ void APSH_Player::SRPC_Delegate_Implementation()
 		GM->onStartBlock.AddDynamic(this, &APSH_Player::Delegatebool);
 	}
 }
+
+// 델리게이트 등록 함수
 void APSH_Player::Delegatebool(bool createMode)
 {
-	PRINTLOG(TEXT("Delegatebool"));
 	 bCreatingMode = createMode;
+
+	 if (createMode == false)
+	 {
+		 bFly = false;
+		 movementComp->SetMovementMode(MOVE_Walking);
+	 }
 }
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -1010,12 +1020,14 @@ void APSH_Player::SRPC_GabageBotMovePoint_Implementation(const FVector& Moveloca
 }
 void APSH_Player::SRPC_GarbageBotInitPoint_Implementation()
 {
-	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint"));
 	if (garbagebot == nullptr) return;
 
-	garbagebot->InitializeMovePoint();
+	if (garbagebot->compMesh->IsVisible() == false)
+	{
+		garbagebot->compMesh->SetVisibility(true);
+	}
 
-	PRINTLOG(TEXT("SRPC_GarbageBotInitPoint_Implementation"));
+	garbagebot->InitializeMovePoint();
 }
 
 void APSH_Player::SRPC_GarbageBotSetState_Implementation(EState state)
