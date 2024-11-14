@@ -12,6 +12,8 @@
 
 void UFlyWidget::NativeConstruct()
 {
+	Super::NativeConstruct();
+
 	if (Btn_UP)
 	{
 		Btn_UP->OnClicked.AddDynamic(this, &UFlyWidget::OnUpButtonClicked);
