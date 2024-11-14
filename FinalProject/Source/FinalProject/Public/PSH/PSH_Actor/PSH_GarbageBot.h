@@ -63,7 +63,7 @@ public:
 	class APSH_Player * player;
 
 	UPROPERTY(EditAnywhere)
-	class UBoxComponent * boxCol;
+	class USceneComponent * sceneComp;
 	UPROPERTY(EditAnywhere)
 	class UStaticMeshComponent * compMesh;
 
