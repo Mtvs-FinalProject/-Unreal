@@ -112,8 +112,8 @@ void APSH_Player::BeginPlay()
 	{
 		pc = Cast<APSH_PlayerController>(GetController());
 		SRPC_CheckMode();
-		SRPC_Delegate();
 		InitPcUi();
+		SRPC_Delegate();
 	}
 	
 	anim = Cast<UPSH_PlayerAnim>(GetMesh()->GetAnimInstance());
@@ -354,12 +354,40 @@ void APSH_Player::Delegatebool(bool createMode)
 {
 	 bCreatingMode = createMode;
 
-	 if (createMode == false)
+	 if (bCreatingMode == false) // 플레이모드
 	 {
 		 bFly = false;
+
 		 GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		 NRPC_SetUiVisible(bCreatingMode);
+	 }
+	 else
+	 {
+		 NRPC_SetUiVisible(bCreatingMode);
 	 }
 }
+
+void APSH_Player::NRPC_SetUiVisible_Implementation(bool check)
+{
+	if (pc == nullptr) return;
+	
+	if (check)
+	{
+		if (pc->garbageBotWidget && pc->garbageBotWidget->IsVisible())
+		{
+			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+	else
+	{
+		if (pc->garbageBotWidget && pc->garbageBotWidget->IsVisible() == false)
+		{
+			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+		
+}
+
 // Called to bind functionality to input
 void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -438,14 +466,16 @@ void APSH_Player::InitPcUi()
 		}
 	}
 
-	if(!bCreatingMode) return;
-
 	if (pc->garbageBotWidgetFac)
 	{
 		pc->garbageBotWidget = Cast<UPSH_GarbageBotWidget>(CreateWidget(GetWorld(), pc->garbageBotWidgetFac));
 		if (pc->garbageBotWidget)
 		{
 			pc->garbageBotWidget->AddToViewport();
+			if (!bCreatingMode)
+			{
+				pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
+			}
 		}
 	}
 

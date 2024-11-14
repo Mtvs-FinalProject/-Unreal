@@ -76,6 +76,9 @@ public:
 	UFUNCTION(Server,Reliable)
 	void SRPC_SetMovementMode(EMovementMode mode);
 
+	UFUNCTION(NetMulticast,Reliable)
+	void NRPC_SetUiVisible(bool check);
+
 	UPROPERTY(Replicated)
 	bool bFlyTimer;
 	UPROPERTY(Replicated)
