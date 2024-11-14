@@ -50,6 +50,7 @@ public:
 
 	bool validPlacement;
 
+	UPROPERTY(BlueprintReadOnly)
 	bool pickedUp;
 
 
