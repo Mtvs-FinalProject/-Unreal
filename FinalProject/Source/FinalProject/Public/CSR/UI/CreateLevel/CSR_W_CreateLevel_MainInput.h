@@ -18,6 +18,9 @@ class FINALPROJECT_API UCSR_W_CreateLevel_MainInput : public UUserWidget
 public:
     virtual void NativeConstruct() override;
 
+    UFUNCTION()
+    FText GetMainText() const;
+
 protected:
     // Bind the Editable Text Box and Hint Text in C++
     UPROPERTY(meta = (BindWidget))

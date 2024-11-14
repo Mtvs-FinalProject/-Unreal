@@ -93,3 +93,8 @@ void UCSR_W_CreateLevel_MainInput::OnTextCommitted(const FText& Text, ETextCommi
     }
     CreateLevel_MainInput_Border->SetVisibility(ESlateVisibility::Visible);
 }
+
+FText UCSR_W_CreateLevel_MainInput::GetMainText() const
+{
+    return (this->CreateLevel_MainInput_EText->GetText());
+}
