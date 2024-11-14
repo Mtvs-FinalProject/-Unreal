@@ -63,6 +63,21 @@ public:
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	TSubclassOf<class UPSH_BlockWidget> blockWidgetFac;
 
+	UPROPERTY(meta = (BindWidgetAnim),Transient)
+	class UWidgetAnimation * Spawn;
+	UPROPERTY(meta = (BindWidgetAnim),Transient)
+	class UWidgetAnimation * Close;
+
+	FWidgetAnimationDynamicEvent endDelegate;
+
+	UFUNCTION()
+	void AnimEnd();
+
+	UFUNCTION()
+	void StartSpawnAnim();
+	UFUNCTION() 
+	void EndSpawnAnim();
+
 	void AddchildBlock();
 
 	void AddNomalBlock();
@@ -85,8 +100,6 @@ public:
 
 	
 	int32 CurrentIndex = 0;
-
-	float ScrollBoxHeight;
 
 	float nomalScrollOffset = 0.0f;
 	bool bIsNomalScrolling = false;

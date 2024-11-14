@@ -35,6 +35,12 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Btr_MapLeft->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnMapScrollLeftClicked);
 	Btr_MapRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnMapScrollRightClicked);
 
+
+	//애니메이션 끝났을때
+	endDelegate.BindDynamic(this,&UPSH_ObjectWidget::AnimEnd);
+
+	BindToAnimationFinished(Close, endDelegate);
+	//BindToAnimationStarted(Close,endDelegate);
 	AddchildBlock();
 }
 void UPSH_ObjectWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -47,11 +53,10 @@ void UPSH_ObjectWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 		float NewOffset = FMath::FInterpTo(CurrentOffset, nomalScrollOffset, InDeltaTime, 10.0f);  // 보간 속도 10.0f 조절 가능
 		Scroll_NomarlBlcok->SetScrollOffset(NewOffset);
 
-		// 목표 오프셋에 거의 도달하면 스크롤 완료
 		if (FMath::IsNearlyEqual(NewOffset, nomalScrollOffset, 0.5f))
 		{
 			bIsNomalScrolling = false;
-			Scroll_NomarlBlcok->SetScrollOffset(nomalScrollOffset);  // 정확히 맞춰 줌
+			Scroll_NomarlBlcok->SetScrollOffset(nomalScrollOffset);  // 정확히 맞춤
 		}
 	}
 
@@ -83,6 +88,19 @@ void UPSH_ObjectWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 		}
 	}
 }
+void UPSH_ObjectWidget::AnimEnd()
+{
+	SetVisibility(ESlateVisibility::Hidden);
+	UE_LOG(LogTemp,Warning,TEXT("AnimEnd"));
+}
+void UPSH_ObjectWidget::StartSpawnAnim()
+{
+	PlayAnimationForward(Spawn);
+}
+void UPSH_ObjectWidget::EndSpawnAnim()
+{
+	PlayAnimationReverse(Close);
+}
 void UPSH_ObjectWidget::AddchildBlock() // 데이터 파싱해서 블럭 조정
 {
 	AddNomalBlock();
@@ -94,23 +112,21 @@ void UPSH_ObjectWidget::AddNomalBlock()
 	TArray<FPSH_UiBlockData*> dataAraay;
 	nomalObjectData->GetAllRows<FPSH_UiBlockData>(TEXT("non"), dataAraay);
 
-	ScrollBoxHeight = Scroll_NomarlBlcok->GetDesiredSize().Y;
-
 	for (int i = 0; i < dataAraay.Num(); i++)
 	{
 		auto* blockWidget = CreateWidget<UPSH_BlockWidget>(GetWorld(), blockWidgetFac);
 	
-		blockWidget->SetDesiredSizeInViewport(FVector2D(ScrollBoxHeight, ScrollBoxHeight));
+		blockWidget->SetDesiredSizeInViewport(FVector2D(208, 208));
 
 		FButtonStyle btrStyle;
 		FSlateBrush normal , hover , pressed;
 
 		normal.SetResourceObject(dataAraay[i]->icon);
-		normal.ImageSize = FVector2D(300, 300);
+		normal.ImageSize = FVector2D(300, 200);
 		normal.TintColor = FSlateColor(FLinearColor::White);
 
 		hover.SetResourceObject(dataAraay[i]->icon);
-		hover.ImageSize = FVector2D(300, 300);
+		hover.ImageSize = FVector2D(300, 200);
 		hover.TintColor = FSlateColor(FLinearColor(0.8f,0.8f,0.8f,1.0f));
 		hover.DrawAs = ESlateBrushDrawType::RoundedBox;
 		hover.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
@@ -118,7 +134,7 @@ void UPSH_ObjectWidget::AddNomalBlock()
 		hover.OutlineSettings.Color = FSlateColor(FLinearColor::Red);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
-		pressed.ImageSize = FVector2D(300, 300);
+		pressed.ImageSize = FVector2D(300, 200);
 		pressed.TintColor = FSlateColor(FLinearColor(0.4f,0.4f,0.4f,1.0f));
 
 		btrStyle.SetNormal(normal);
@@ -131,10 +147,6 @@ void UPSH_ObjectWidget::AddNomalBlock()
 		
 		Scroll_NomarlBlcok->AddChild(blockWidget);
 
-		if (UScrollBoxSlot* ScrollSlot = Cast<UScrollBoxSlot>(blockWidget->Slot))
-		{
-			ScrollSlot->SetPadding(FMargin(5, 0, 5, 0));
-		}
 	}
 }
 void UPSH_ObjectWidget::AddFunctionBlock()
@@ -142,24 +154,22 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 	TArray<FPSH_UiBlockData*> dataAraay;
 	functionObjectData->GetAllRows<FPSH_UiBlockData>(TEXT("non"), dataAraay);
 
-	ScrollBoxHeight = Scroll_NomarlBlcok->GetDesiredSize().Y;
-
 	for (int i = 0; i < dataAraay.Num(); i++)
 	{
 		auto* blockWidget = CreateWidget<UPSH_BlockWidget>(GetWorld(), blockWidgetFac);
 
-		blockWidget->SetDesiredSizeInViewport(FVector2D(ScrollBoxHeight, ScrollBoxHeight));
+		blockWidget->SetDesiredSizeInViewport(FVector2D(208, 208));
 
 		FButtonStyle btrStyle;
 		FSlateBrush normal, hover, pressed;
 
 		normal.SetResourceObject(dataAraay[i]->icon);
-		normal.ImageSize = FVector2D(300, 300);
+		normal.ImageSize = FVector2D(300, 200);
 		normal.TintColor = FSlateColor(FLinearColor::White);
 		
 
 		hover.SetResourceObject(dataAraay[i]->icon);
-		hover.ImageSize = FVector2D(300, 300);
+		hover.ImageSize = FVector2D(300, 200);
 		hover.TintColor = FSlateColor(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f));
 		hover.DrawAs = ESlateBrushDrawType::RoundedBox;
 		hover.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
@@ -167,7 +177,7 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 		hover.OutlineSettings.Color = FSlateColor(FLinearColor::Red);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
-		pressed.ImageSize = FVector2D(300, 300);
+		pressed.ImageSize = FVector2D(300, 200);
 		pressed.TintColor = FSlateColor(FLinearColor(0.4f, 0.4f, 0.4f, 1.0f));
 
 		btrStyle.SetNormal(normal);
@@ -180,11 +190,6 @@ void UPSH_ObjectWidget::AddFunctionBlock()
 
 		Scroll_FunctionBlcok->AddChild(blockWidget);
 
-		if (UScrollBoxSlot* ScrollSlot = Cast<UScrollBoxSlot>(blockWidget->Slot))
-		{
-			ScrollSlot->SetPadding(FMargin(5, 0, 5, 0));
-		}
-
 	}
 }
 void UPSH_ObjectWidget::AddMapBlock()
@@ -192,23 +197,21 @@ void UPSH_ObjectWidget::AddMapBlock()
 	TArray<FPSH_UiBlockData*> dataAraay;
 	mapObjectData->GetAllRows<FPSH_UiBlockData>(TEXT("non"), dataAraay);
 
-	ScrollBoxHeight = Scroll_NomarlBlcok->GetDesiredSize().Y;
-
 	for (int i = 0; i < dataAraay.Num(); i++)
 	{
 		auto* blockWidget = CreateWidget<UPSH_BlockWidget>(GetWorld(), blockWidgetFac);
 
-		blockWidget->SetDesiredSizeInViewport(FVector2D(ScrollBoxHeight, ScrollBoxHeight));
+		blockWidget->SetDesiredSizeInViewport(FVector2D(208, 208));
 
 		FButtonStyle btrStyle;
 		FSlateBrush normal, hover, pressed;
 
 		normal.SetResourceObject(dataAraay[i]->icon);
-		normal.ImageSize = FVector2D(300, 300);
+		normal.ImageSize = FVector2D(300, 200);
 		normal.TintColor = FSlateColor(FLinearColor::White);
 
 		hover.SetResourceObject(dataAraay[i]->icon);
-		hover.ImageSize = FVector2D(300, 300);
+		hover.ImageSize = FVector2D(300, 200);
 		hover.TintColor = FSlateColor(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f));
 		hover.DrawAs = ESlateBrushDrawType::RoundedBox;
 		hover.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
@@ -216,7 +219,7 @@ void UPSH_ObjectWidget::AddMapBlock()
 		hover.OutlineSettings.Color = FSlateColor(FLinearColor::Red);
 
 		pressed.SetResourceObject(dataAraay[i]->icon);
-		pressed.ImageSize = FVector2D(300, 300);
+		pressed.ImageSize = FVector2D(300, 200);
 		pressed.TintColor = FSlateColor(FLinearColor(0.4f, 0.4f, 0.4f, 1.0f));
 
 		btrStyle.SetNormal(normal);
@@ -229,10 +232,10 @@ void UPSH_ObjectWidget::AddMapBlock()
 
 		Scroll_MapBlcok->AddChild(blockWidget);
 
-		if (UScrollBoxSlot* ScrollSlot = Cast<UScrollBoxSlot>(blockWidget->Slot))
-		{
-			ScrollSlot->SetPadding(FMargin(5, 0, 5, 0));
-		}
+// 		if (UScrollBoxSlot* ScrollSlot = Cast<UScrollBoxSlot>(blockWidget->Slot))
+// 		{
+// 			ScrollSlot->SetPadding(FMargin(5, 0, 5, 0));
+// 		}
 	}
 }
 void UPSH_ObjectWidget::OnClickedBack()
@@ -242,7 +245,7 @@ void UPSH_ObjectWidget::OnClickedBack()
 	if (player == nullptr ) return;
 	player->ToggleARmLength();
 	player->SRPC_SpawnbotIdel();
-	SetVisibility(ESlateVisibility::Hidden);
+	/*SetVisibility(ESlateVisibility::Hidden);*/
 }
 void UPSH_ObjectWidget::OnClickedSave()
 {
@@ -268,58 +271,58 @@ void UPSH_ObjectWidget::OnNormalScrollRightClicked()
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y + 5;
+	// 현재 이미지의 너비를 직접 가져와서 계산
+	float WidgetWidth = Cast<UWidget>(Scroll_NomarlBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_NomarlBlcok->GetCachedGeometry().GetLocalSize().X;
+
+	// 다음 이미지의 중앙을 목표로 오프셋을 설정
 	CurrentIndex = (CurrentIndex + 1) % NumChildren;
-	nomalScrollOffset = CurrentIndex * WidgetHeight;
-	bIsNomalScrolling = true;  // 스크롤 시작
+	nomalScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsNomalScrolling = true;
 
 }
+
 void UPSH_ObjectWidget::OnNormalScrollLeftClicked()
 {
 	const int32 NumChildren = Scroll_NomarlBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_NomarlBlcok->GetDesiredSize().Y + 5;
+	// 현재 이미지의 너비를 직접 가져와서 계산
+	float WidgetWidth = Cast<UWidget>(Scroll_NomarlBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_NomarlBlcok->GetCachedGeometry().GetLocalSize().X;
+
+	// 이전 이미지의 중앙을 목표로 오프셋을 설정
 	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
-	nomalScrollOffset = CurrentIndex * WidgetHeight;
-	bIsNomalScrolling = true;  // 스크롤 시작
+	nomalScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsNomalScrolling = true;
 }
+
 void UPSH_ObjectWidget::OnFunctionScrollLeftClicked()
 {
 	const int32 NumChildren = Scroll_FunctionBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	UE_LOG(LogTemp,Warning,TEXT("Left"));
+	// 현재 이미지의 너비를 직접 가져와서 계산
+	float WidgetWidth = Cast<UWidget>(Scroll_FunctionBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_FunctionBlcok->GetCachedGeometry().GetLocalSize().X;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_FunctionBlcok->GetDesiredSize().Y;
+	// 이전 이미지의 중앙을 목표로 오프셋을 설정
 	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
-	functionScrollOffset = CurrentIndex * WidgetHeight;
-	bIsFunctionScrolling = true;  // 스크롤 시작
+	functionScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsFunctionScrolling = true;
 }
+
 void UPSH_ObjectWidget::OnFunctionScrollRightClicked()
 {
 	const int32 NumChildren = Scroll_FunctionBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Right"));
+	float WidgetWidth = Cast<UWidget>(Scroll_FunctionBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_FunctionBlcok->GetCachedGeometry().GetLocalSize().X;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_FunctionBlcok->GetDesiredSize().Y;
 	CurrentIndex = (CurrentIndex + 1) % NumChildren;
-	functionScrollOffset = CurrentIndex * WidgetHeight;
-	bIsFunctionScrolling = true;  // 스크롤 시작
-}
-
-void UPSH_ObjectWidget::OnMapScrollRightClicked()
-{
-	const int32 NumChildren = Scroll_MapBlcok->GetChildrenCount();
-	if (NumChildren == 0) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("Left"));
-
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_MapBlcok->GetDesiredSize().Y;
-	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
-	mapScrollOffset = CurrentIndex * WidgetHeight;
-	bIsmapScrolling = true;  // 스크롤 시작
+	functionScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsFunctionScrolling = true;
 }
 
 void UPSH_ObjectWidget::OnMapScrollLeftClicked()
@@ -327,10 +330,24 @@ void UPSH_ObjectWidget::OnMapScrollLeftClicked()
 	const int32 NumChildren = Scroll_MapBlcok->GetChildrenCount();
 	if (NumChildren == 0) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Right"));
+	// 현재 이미지의 너비를 직접 가져와서 계산
+	float WidgetWidth = Cast<UWidget>(Scroll_MapBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_MapBlcok->GetCachedGeometry().GetLocalSize().X;
 
-	float WidgetHeight = ScrollBoxHeight > 0 ? ScrollBoxHeight : Scroll_MapBlcok->GetDesiredSize().Y;
+	// 이전 이미지의 중앙을 목표로 오프셋을 설정
+	CurrentIndex = (CurrentIndex - 1 + NumChildren) % NumChildren;
+	mapScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsmapScrolling = true;
+}
+
+void UPSH_ObjectWidget::OnMapScrollRightClicked() 
+{
+	const int32 NumChildren = Scroll_MapBlcok->GetChildrenCount();
+	if (NumChildren == 0) return;
+
+	float WidgetWidth = Cast<UWidget>(Scroll_MapBlcok->GetChildAt(CurrentIndex))->GetCachedGeometry().GetLocalSize().X;
+	float ScrollBoxWidth = Scroll_MapBlcok->GetCachedGeometry().GetLocalSize().X;
 	CurrentIndex = (CurrentIndex + 1) % NumChildren;
-	mapScrollOffset = CurrentIndex * WidgetHeight;
-	bIsmapScrolling = true;  // 스크롤 시작
+	mapScrollOffset = (CurrentIndex * WidgetWidth) - (ScrollBoxWidth / 2 - WidgetWidth / 2);
+	bIsmapScrolling = true;
 }

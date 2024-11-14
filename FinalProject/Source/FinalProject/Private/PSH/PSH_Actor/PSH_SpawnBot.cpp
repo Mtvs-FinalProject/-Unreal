@@ -8,6 +8,7 @@
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
 #include "../FinalProject.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APSH_SpawnBot::APSH_SpawnBot()
@@ -52,7 +53,7 @@ APSH_SpawnBot::APSH_SpawnBot()
 	lightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LightMesh"));
 	lightMesh->SetupAttachment(compMesh);
 	lightMesh->SetRelativeLocation(FVector(0.f, 0.f, -270.f));
-	lightMesh->SetRelativeScale3D(FVector(6.f));
+	lightMesh->SetRelativeScale3D(FVector(0.f, 0.f, 6.f));
 	lightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	lightMesh->SetVisibility(false);
 
@@ -86,6 +87,20 @@ void APSH_SpawnBot::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if(player == nullptr) return;
+
+	if (bLightOn)
+	{
+		if (maxScale >= 6.f)
+		{
+			SetState(EspawnState::SPAWN);
+			PRINTLOG(TEXT("Spaawn"));
+			bLightOn = false;
+		}
+		maxScale += DeltaTime * 25;
+		lightMesh->SetRelativeScale3D(FVector(maxScale, maxScale, 6.f));
+	}
+
+	
 
 // 	const FString myState = UEnum::GetValueAsString(state);
 // 	DrawDebugString(GetWorld(), GetActorLocation(), myState, nullptr, FColor::Red, 0, true);
@@ -123,6 +138,7 @@ void APSH_SpawnBot::IdleState()
 	FVector targetLocation = playerLoc + (playerForward * 5000) + (playerUp * 7000);
 	SetActorHiddenInGame(true);
 	SetActorLocation(targetLocation);
+	SetActorRotation(FRotator(0.f));
 }
 
 void APSH_SpawnBot::SpawnMoveState(const float& deltaTime)
@@ -138,14 +154,14 @@ void APSH_SpawnBot::SpawnMoveState(const float& deltaTime)
 	if (FVector::Dist(myLoc, TagetLoc) <= 10.f) // 10.f는 허용 오차 범위
 	{
 		SetActorLocation(TagetLoc); // 정확한 위치에 도달하도록 설정
+		bLightOn = true; 
 		APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetOwner()->GetOwner());
 		if (PlayerController) // 위젯 보이기
 		{
+			PRINTLOG(TEXT("PlayerController"));
 			PlayerController->CRPC_ShowObjectWidget();
 		}
-		
 		MRPC_SetMat(1);
-		SetState(EspawnState::SPAWN);
 	}
 	else
 	{
@@ -157,34 +173,53 @@ void APSH_SpawnBot::SpawnMoveState(const float& deltaTime)
 
 	// 부드럽게 회전하도록 InterpTo 적용 
 	FRotator newRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, deltaTime, 3.0f);
-	SetActorRotation(newRotation);
+/*	SetActorRotation(newRotation);*/
 	
 }
 
 void APSH_SpawnBot::IdleMoveState(const float& deltaTime)
 {
-	FVector playerLoc = player->GetActorLocation();
-	FVector playerForward = player->GetActorForwardVector(); // 플레이어의 앞 방향
-	FVector playerUp = player->GetActorUpVector(); // 플레이어의 위 방향
-	FVector myLoc = GetActorLocation();
-	idleTime += deltaTime;
-	// 대각선 방향으로 5000 유닛 떨어진 위치 계산
-	TagetLoc = playerLoc + (playerForward * 3000) + (playerUp * 4000);
-	if (idleTime > 2) 
+	if (bLightOff)
 	{
-		SetState(EspawnState::IDLE);
-		idleTime = 0;
+		if (maxScale <= 0.f)
+		{
+			APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetOwner()->GetOwner());
+			if (PlayerController) // 위젯 보이기
+			{
+				PlayerController->CRPC_CloseObjectWidget();
+				bLightOff = false;
+				MRPC_SetVisible(false);
+			}
+			
+		}
+		maxScale -= deltaTime * 50;
+		lightMesh->SetRelativeScale3D(FVector(maxScale, maxScale, 6.f));
 	}
 	else
 	{
-		// VInterpTo를 이용한 부드러운 이동
-		SetActorLocation(myLoc + TagetLoc.GetSafeNormal() * 5000 * deltaTime);
-	}
-	FRotator TargetRotation = FRotationMatrix::MakeFromX(myLoc - TagetLoc).Rotator();
+		FVector playerLoc = player->GetActorLocation();
+		FVector playerForward = player->GetActorForwardVector(); // 플레이어의 앞 방향
+		FVector playerUp = player->GetActorUpVector(); // 플레이어의 위 방향
+		FVector myLoc = GetActorLocation();
+		idleTime += deltaTime;
+		// 대각선 방향으로 5000 유닛 떨어진 위치 계산
+		TagetLoc = playerLoc + (playerForward * 3000) + (playerUp * 4000);
+		if (idleTime > 1)
+		{
+			SetState(EspawnState::IDLE);
+			idleTime = 0;
+		}
+		else
+		{
+			// VInterpTo를 이용한 부드러운 이동
+			SetActorLocation(myLoc + TagetLoc.GetSafeNormal() * 5000 * deltaTime);
+		}
+		FRotator TargetRotation = FRotationMatrix::MakeFromX(myLoc - TagetLoc).Rotator();
 
-	// 부드럽게 회전하도록 InterpTo 적용 
-	FRotator newRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, deltaTime, 3.0f);
-	SetActorRotation(newRotation);
+		// 부드럽게 회전하도록 InterpTo 적용 
+		FRotator newRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, deltaTime, 3.0f);
+		SetActorRotation(newRotation);
+	}
 }
 void APSH_SpawnBot::SpawnState(const float& deltaTime)
 {
@@ -210,10 +245,19 @@ void APSH_SpawnBot::SetState(EspawnState State)
 {
 	state = State;
 
-	if(state == EspawnState::IDLEMOVE)
+	switch (state)
 	{
-		MRPC_SetVisible(false);
+	case EspawnState::IDLE:
+		break;
+	case EspawnState::SPAWNMOVE:
+		break;
+	case EspawnState::IDLEMOVE:
+		bLightOff = true;
+		break;
+	case EspawnState::SPAWN:
+		break;
 	}
+
 }
 
 void APSH_SpawnBot::MRPC_SetVisible_Implementation(bool chek)
@@ -229,7 +273,6 @@ void APSH_SpawnBot::MRPC_SetMat_Implementation(int32 arrayIndex)
 	if(lightMesh == nullptr) return;
 	
 	if(!lightMesh->IsVisible()) MRPC_SetVisible(true);
-
 	lightMesh->SetMaterial(0, matArray[arrayIndex]);
 
 }
@@ -274,4 +317,14 @@ void APSH_SpawnBot::LineChek()
 
 		player->bSpawn = true;
 	}
+}
+
+void APSH_SpawnBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APSH_SpawnBot, bLightOn);
+	DOREPLIFETIME(APSH_SpawnBot, bLightOff);
+	DOREPLIFETIME(APSH_SpawnBot, maxLocation_Z);
+	DOREPLIFETIME(APSH_SpawnBot, maxScale);
 }

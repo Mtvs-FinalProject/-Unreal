@@ -60,7 +60,16 @@ public:
 	void SetState(EspawnState State);
 
 	EspawnState state = EspawnState::IDLE;
-
+	
+	UPROPERTY(Replicated)
+	bool bLightOn = false; 
+	UPROPERTY(Replicated)
+	bool bLightOff = false; 
+	
+	UPROPERTY(Replicated)
+	float maxLocation_Z = - 40.f;
+	UPROPERTY(Replicated)
+	float maxScale = 0.f;
 
 	/*void SetIdleState();*/
 

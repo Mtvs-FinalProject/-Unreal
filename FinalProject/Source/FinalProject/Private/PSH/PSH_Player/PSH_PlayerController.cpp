@@ -204,6 +204,41 @@ void APSH_PlayerController::CRPC_ShowObjectWidget_Implementation()
 	if(objectWidget == nullptr ) return;
 
 	PRINTLOG(TEXT("Show objectWidget"));
-	/*if(IsLocalController())*/
-	objectWidget->SetVisibility(ESlateVisibility::Visible);
+
+	if (objectWidget->IsVisible() == false)
+	{
+		objectWidget->SetVisibility(ESlateVisibility::Visible);
+		objectWidget->StartSpawnAnim();
+	}
 }
+
+void APSH_PlayerController::CRPC_CloseObjectWidget_Implementation()
+{
+	if (objectWidget == nullptr) return;
+
+	if (objectWidget->IsVisible() )
+	{
+		objectWidget->EndSpawnAnim();
+		/*objectWidget->SetVisibility(ESlateVisibility::Hidden);*/
+	}
+}
+void APSH_PlayerController::CRPC_ObjectWidgetVisible_Implementation(bool check)
+{
+	if (objectWidget == nullptr) return;
+
+	if (check)
+	{
+		if (objectWidget->IsVisible() == false)
+		{
+			objectWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+	else
+	{
+		if (objectWidget->IsVisible())
+		{
+			objectWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+	
+}	

@@ -357,7 +357,7 @@ void APSH_Player::Delegatebool(bool createMode)
 	 if (createMode == false)
 	 {
 		 bFly = false;
-		 movementComp->SetMovementMode(MOVE_Walking);
+		 GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 	 }
 }
 // Called to bind functionality to input
@@ -494,7 +494,9 @@ void APSH_Player::PlayerJump()
 			if (bFlyTimer)
 			{
 				bFly = false;
-				movementComp->SetMovementMode(MOVE_Walking);
+				PRINTLOG(TEXT("MOVE_Walking"));
+				SRPC_SetMovementMode(MOVE_Walking);
+				/*GetCharacterMovement()->SetMovementMode(MOVE_Walking);*/
 			}
 			else
 			{
@@ -506,7 +508,9 @@ void APSH_Player::PlayerJump()
 			if (bFlyTimer)
 			{
 				bFly = true;
-				movementComp->SetMovementMode(MOVE_Flying);
+				PRINTLOG(TEXT("MOVE_Flying"));
+				SRPC_SetMovementMode(MOVE_Flying);
+				//GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 			}
 			else
 			{
@@ -531,6 +535,10 @@ void APSH_Player::PlayerFly(const FInputActionValue& value)
 	AddMovementInput(UpVector, Value.Z);
 }
 
+void APSH_Player::SRPC_SetMovementMode_Implementation(EMovementMode mode)
+{
+	GetCharacterMovement()->SetMovementMode(mode);
+}
 void APSH_Player::SRPC_CheckMode_Implementation()
 {
 	APSH_GameModeBase * gm = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -1223,6 +1231,8 @@ void APSH_Player::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APSH_Player, bCreatingMode);
+	DOREPLIFETIME(APSH_Player, bFly);
+	DOREPLIFETIME(APSH_Player, bFlyTimer);
 	
 }
 

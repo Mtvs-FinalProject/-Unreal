@@ -68,12 +68,17 @@ public:
 
 	// 플레이어 행동
 	UPROPERTY(Replicated)
-	bool bCreatingMode;
+	bool bCreatingMode = true;
 
 	void PlayerJump();
 	void PlayerFly(const FInputActionValue& value);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetMovementMode(EMovementMode mode);
+
+	UPROPERTY(Replicated)
 	bool bFlyTimer;
+	UPROPERTY(Replicated)
 	bool bFly = false;
 	float flyTime = 0.3f;
 	float curTime = 0;

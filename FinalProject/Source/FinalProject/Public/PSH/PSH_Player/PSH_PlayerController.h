@@ -56,6 +56,10 @@ public:
 
 	UFUNCTION(Client,Reliable)
 	void CRPC_ShowObjectWidget();
+	UFUNCTION(Client,Reliable)
+	void CRPC_CloseObjectWidget();
+	UFUNCTION(Client,Reliable)
+	void CRPC_ObjectWidgetVisible(bool check);
 
 	UPROPERTY()
 	class APSH_Player * curPlayer;
