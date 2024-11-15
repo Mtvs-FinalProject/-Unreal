@@ -50,6 +50,12 @@ void OnCraftClicked();
 UFUNCTION()
 void OnDestroyClicked();
 
+UFUNCTION()
+void OnBtn_SaveClicked();
+
+UFUNCTION(BlueprintImplementableEvent)
+void MapSave();
+
 // 행동으로 들어가기
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> ActionChoice;

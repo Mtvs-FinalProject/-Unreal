@@ -41,4 +41,7 @@ protected:
 
     UFUNCTION()
 	void HandleCancleButtonClicked();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SaveTheMapAlpha();
 };

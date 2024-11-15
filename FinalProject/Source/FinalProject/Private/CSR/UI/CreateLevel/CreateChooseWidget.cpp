@@ -20,7 +20,8 @@ void UCreateChooseWidget::NativeConstruct()
 void UCreateChooseWidget::HandleSaveButtonClicked()
 {
     UE_LOG(LogTemp, Warning, TEXT("UCreateChooseWidget::HandleSaveButtonClicked"));
-    SaveButtonClick.Broadcast();
+    //SaveButtonClick.Broadcast();
+    SaveTheMapAlpha();
 }
 
 void UCreateChooseWidget::HandleCancleButtonClicked()

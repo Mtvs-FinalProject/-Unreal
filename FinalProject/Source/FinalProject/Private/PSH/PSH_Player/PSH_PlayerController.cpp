@@ -104,7 +104,7 @@ void APSH_PlayerController::ObjectSave()
 		}
 
 	}
-	SaveTheGame();
+	//SaveTheGame();
 }
 void APSH_PlayerController::ObjectLoad()
 {

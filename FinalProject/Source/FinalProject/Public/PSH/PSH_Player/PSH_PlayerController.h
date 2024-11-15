@@ -31,7 +31,10 @@ public:
 	class UDataTable * dataTable;
 
 	//Widgets 
+	UFUNCTION(BlueprintCallable)
 	void ObjectSave();
+
+	UFUNCTION(BlueprintCallable)
 	void ObjectLoad();
 
 	// 선택된 오브젝트와 연동된 ui 연결 함수

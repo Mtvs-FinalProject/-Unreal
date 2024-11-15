@@ -40,7 +40,10 @@ void UFirstSelect::NativeConstruct()
     {
         Btn_Destroy->OnClicked.AddDynamic(this, &UFirstSelect::OnDestroyClicked);
     }
-
+    if (Btn_Save)
+    {
+        Btn_Save->OnClicked.AddDynamic(this, &UFirstSelect::OnBtn_SaveClicked);
+    }
     bIsEditMode = false;
 }
 
@@ -118,7 +121,6 @@ void UFirstSelect::OnCraftClicked()
     {
         UE_LOG(LogTemp, Log, TEXT("PSH_ObjectWidget is null"));
     }
-
 }
 
 // 액터 파괴시키기
@@ -165,5 +167,9 @@ void UFirstSelect::OnDestroyClicked()
     }
 }
 
+void UFirstSelect::OnBtn_SaveClicked()
+{
+    MapSave();
+}
 
 
