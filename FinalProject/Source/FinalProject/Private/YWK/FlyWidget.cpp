@@ -223,47 +223,64 @@ void UFlyWidget::ApplyMovementValues()
 }
 
 // 속도 입력 필드에서 엔터를 쳤을 때
-void UFlyWidget::OnFlySpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
-{
-	if (CommitMethod == ETextCommit::OnEnter)
-	{
-		// 입력된 속도 값을 처리
-		FString SpeedString = Text.ToString();
-		float SpeedValue = FCString::Atof(*SpeedString);
-
-		if (AActor* Owner = GetOwnerFromComponent())
-		{
-			UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-			if (FlyComponent)
-			{
-				FlyComponent->FlySpeed = SpeedValue;
-				// UI에 값 업데이트
-				UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), SpeedValue);
-			}
-		}
-	}
-}
-
-// 높이 입력 필드에서 엔터를 쳤을 때
 void UFlyWidget::OnFlyDistanceTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
-		// 입력된 거리 값을 처리
+		// 거리 값을 설정
 		float DistValues = FCString::Atof(*Text.ToString());
+		StoredMoveDistance = (DistValues > 0.0f) ? DistValues : 1000.0f;
 
-		if (AActor* Owner = GetOwnerFromComponent())
+		UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), StoredMoveDistance);
+
+		// 선택된 오브젝트에 거리 값 적용
+		if (SelectedActor)
 		{
-			UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-			if (FlyComponent)
+			if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 			{
-				FlyComponent->MaxFlyDistance = DistValues;
-				UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), DistValues);
-				UpdatePreviewLocation(StoredFlyDirection, DistValues); // 미리보기 위치 업데이트 추가
+				FlyComponent->FlyDistance = StoredMoveDistance;
+				UE_LOG(LogTemp, Warning, TEXT("Distance applied to actor: %f"), FlyComponent->FlyDistance);
 			}
+		}
+
+		// 프리뷰 위치 업데이트
+		UpdatePreviewLocation(StoredFlyDirection, StoredMoveDistance);
+	}
+}
+
+
+
+// 높이 입력 필드에서 엔터를 쳤을 때
+void UFlyWidget::OnFlySpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
+{
+	if (CommitMethod == ETextCommit::OnEnter)
+	{
+		// 속도 값을 설정
+		float SpeedValue = FCString::Atof(*Text.ToString());
+		StoredMoveSpeed = (SpeedValue > 0.0f) ? SpeedValue : 100.0f;
+
+		UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), StoredMoveSpeed);
+
+		// 선택된 오브젝트에 속도 값 적용
+		if (SelectedActor)
+		{
+			if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
+			{
+				FlyComponent->FlySpeed = StoredMoveSpeed;
+				UE_LOG(LogTemp, Warning, TEXT("Speed applied to actor: %f"), FlyComponent->FlySpeed);
+			}
+		}
+
+		// 속도 입력 후 프리뷰 움직임 시작
+		if (PreviewActor)
+		{
+			GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
+			UE_LOG(LogTemp, Warning, TEXT("Preview movement started."));
 		}
 	}
 }
+
+
 
 AActor* UFlyWidget::GetOwnerFromComponent()
 {
@@ -427,31 +444,106 @@ void UFlyWidget::AddControlledFlyComponent(UMyFlyActorComponent* NewFlyComponent
 // 프리뷰 액터 스폰 함수
 void UFlyWidget::SpawnPreviewActor()
 {
-	if (!PreviewActor)
+	if (!PreviewActor && SelectedActor)
 	{
-		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
-		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
-
-		if (PreviewActorClass)
+		// BP_PreviewDistance 액터 로드 및 스폰
+		UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+		if (PreviewClass)
 		{
-			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+			// 프리뷰 오브젝트를 항상 SelectedActor 위치에서 스폰
+			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass, SelectedActor->GetActorLocation(), FRotator::ZeroRotator);
 			if (PreviewActor)
 			{
 				PreviewActor->SetActorHiddenInGame(false);
+				bPreviewDirectionReversed = false; // 방향 초기화
+				UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at original location: %s"), *SelectedActor->GetActorLocation().ToString());
 			}
 		}
 	}
+
+	// UI에서 속도와 거리 값을 읽어 초기화
+	if (FlySpeedText)
+	{
+		FString SpeedString = FlySpeedText->GetText().ToString();
+		StoredMoveSpeed = FCString::Atof(*SpeedString);
+	}
+	if (FlyHightText)
+	{
+		FString DistanceString = FlyHightText->GetText().ToString();
+		StoredMoveDistance = FCString::Atof(*DistanceString);
+	}
+
+	// 기본값 설정
+	if (StoredMoveSpeed <= 0.0f)
+	{
+		StoredMoveSpeed = 100.0f; // 기본 속도
+	}
+	if (StoredMoveDistance <= 0.0f)
+	{
+		StoredMoveDistance = 1000.0f; // 기본 거리
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("StoredMoveSpeed: %f, StoredMoveDistance: %f"), StoredMoveSpeed, StoredMoveDistance);
+
+	// 타이머 시작
+	if (PreviewActor)
+	{
+		GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
+		UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
+	}
 }
+
+
+// 프리뷰 액터의 이동 업데이트
+void UFlyWidget::UpdatePreviewMovement()
+{
+	if (!PreviewActor || !SelectedActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PreviewActor or SelectedActor is missing."));
+		return;
+	}
+
+	// 원본 오브젝트 위치와 목표 지점 계산
+	FVector StartLocation = SelectedActor->GetActorLocation(); // 원본 오브젝트 위치
+	FVector TargetLocation = StartLocation + (StoredFlyDirection * StoredMoveDistance); // 목표 지점
+
+	FVector CurrentLocation = PreviewActor->GetActorLocation(); // 현재 위치
+	FVector Direction = bPreviewDirectionReversed ? -StoredFlyDirection : StoredFlyDirection; // 이동 방향
+
+	// 다음 위치 계산
+	FVector NextLocation = CurrentLocation + (Direction * StoredMoveSpeed * 0.05f);
+
+	UE_LOG(LogTemp, Warning, TEXT("Start: %s, Target: %s, Current: %s, Next: %s, Direction: %s"),
+		*StartLocation.ToString(), *TargetLocation.ToString(), *CurrentLocation.ToString(), *NextLocation.ToString(), *Direction.ToString());
+
+	// 목표 지점 도달 여부 확인
+	if (!bPreviewDirectionReversed && FVector::Dist(CurrentLocation, TargetLocation) <= 5.0f) // 목표 지점 도달
+	{
+		bPreviewDirectionReversed = true; // 방향 반전
+		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the target. Reversing direction to START."));
+	}
+	else if (bPreviewDirectionReversed && FVector::Dist(CurrentLocation, StartLocation) <= 5.0f) // 시작 지점 도달
+	{
+		bPreviewDirectionReversed = false; // 방향 초기화
+		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the start. Reversing direction to TARGET."));
+	}
+
+	// 프리뷰 액터 위치 업데이트
+	PreviewActor->SetActorLocation(NextLocation);
+}
+
 
 // 프리뷰 위치 업데이트 함수
 void UFlyWidget::UpdatePreviewLocation(FVector Direction, float Distance)
 {
+	// 기존 프리뷰 액터 삭제
 	if (PreviewActor)
 	{
 		PreviewActor->Destroy();
 		PreviewActor = nullptr;
 	}
 
+	// 새로운 위치 계산 후 프리뷰 액터 생성
 	if (SelectedActor)
 	{
 		FVector TargetLocation = SelectedActor->GetActorLocation() + (Direction * Distance);
@@ -462,4 +554,15 @@ void UFlyWidget::UpdatePreviewLocation(FVector Direction, float Distance)
 		}
 	}
 }
+
+void UFlyWidget::DestroyPreviewActor()
+{
+	if (PreviewActor)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(PreviewFlyTimer); // 타이머 제거
+		PreviewActor->Destroy(); // 액터 삭제
+		PreviewActor = nullptr;
+	}
+}
+
 
