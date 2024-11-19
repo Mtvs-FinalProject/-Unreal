@@ -470,39 +470,117 @@ void UMovewidget::SetMoveDirection(FVector Direction)
 	UE_LOG(LogTemp, Warning, TEXT("StoredMoveDirection updated to: %s"), *StoredMoveDirection.ToString());
 }
 
+//void UMovewidget::SpawnPreviewActor()
+//{
+//	if (!PreviewActor)
+//	{
+//		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+//		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
+//
+//		if (PreviewActorClass)
+//		{
+//			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+//			if (PreviewActor)
+//			{
+//				PreviewActor->SetActorHiddenInGame(false);
+//			}
+//		}
+//	}
+//}
+
 void UMovewidget::SpawnPreviewActor()
 {
 	if (!PreviewActor)
 	{
-		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
-		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
-
-		if (PreviewActorClass)
+		// BP_PreviewDistance 액터 로드 및 스폰
+		UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+		if (PreviewClass && SelectedActor)
 		{
-			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+			// PreviewActor를 SelectedActor의 위치에 스폰
+			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass);
 			if (PreviewActor)
 			{
-				PreviewActor->SetActorHiddenInGame(false);
+				PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // SelectedActor의 위치가 시작 위치
 			}
 		}
 	}
+
+	// 위젯 입력값에서 이동 속도와 거리 가져오기
+	if (SpeedMoveText)
+	{
+		FString SpeedString = SpeedMoveText->GetText().ToString();
+		StoredMoveSpeed = FCString::Atof(*SpeedString);
+	}
+
+	if (DistMoveText)
+	{
+		FString DistanceString = DistMoveText->GetText().ToString();
+		StoredMoveDistance = FCString::Atof(*DistanceString);
+	}
+
+	// 초기화: 방향 전환 상태 리셋
+	bPreviewDirectionReversed = false;
+
+	// 타이머 설정
+	if (PreviewActor)
+	{
+		GetWorld()->GetTimerManager().SetTimer(PreviewMoveTimer, this, &UMovewidget::UpdatePreviewMovement, 0.1f, true);
+	}
+}
+
+void UMovewidget::UpdatePreviewMovement()
+{
+	if (!PreviewActor || !SelectedActor)
+	{
+		return;
+	}
+
+	FVector StartLocation = SelectedActor->GetActorLocation(); // 시작 위치는 항상 SelectedActor의 위치
+	FVector TargetLocation = StartLocation + (StoredMoveDirection * StoredMoveDistance);
+
+	FVector CurrentLocation = PreviewActor->GetActorLocation();
+	FVector Direction = bPreviewDirectionReversed ? -StoredMoveDirection : StoredMoveDirection;
+
+	// 다음 위치 계산
+	FVector NextLocation = CurrentLocation + Direction * StoredMoveSpeed * 0.1f;
+
+	// 목표에 도달했을 경우 처리
+	if (!bPreviewDirectionReversed && FVector::Dist(CurrentLocation, TargetLocation) <= 10.0f)
+	{
+		// 목표지점에 도달하면 방향 반전
+		bPreviewDirectionReversed = true;
+	}
+	else if (bPreviewDirectionReversed && FVector::Dist(CurrentLocation, StartLocation) <= 10.0f)
+	{
+		// 시작지점에 도달하면 방향 초기화
+		bPreviewDirectionReversed = false;
+	}
+
+	// Preview Actor의 위치 업데이트
+	PreviewActor->SetActorLocation(NextLocation);
 }
 
 void UMovewidget::UpdatePreviewLocation(FVector Direction, float Distance)
 {
+	// 기존 Preview Actor 제거
+	DestroyPreviewActor();
+
+	// 새로운 설정 적용
+	StoredMoveDirection = Direction;
+	StoredMoveDistance = Distance;
+
+	// Preview Actor 생성
+	SpawnPreviewActor();
+}
+
+void UMovewidget::DestroyPreviewActor()
+{
 	if (PreviewActor)
 	{
+		GetWorld()->GetTimerManager().ClearTimer(PreviewMoveTimer); // 타이머 정리
 		PreviewActor->Destroy();
 		PreviewActor = nullptr;
 	}
-
-	if (SelectedActor)
-	{
-		FVector TargetLocation = SelectedActor->GetActorLocation() + (Direction * Distance);
-		SpawnPreviewActor();
-		if (PreviewActor)
-		{
-			PreviewActor->SetActorLocation(TargetLocation);
-		}
-	}
 }
+
+
