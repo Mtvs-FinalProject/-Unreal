@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "YWK/FirstSelect.h"
@@ -17,25 +17,25 @@ void UFirstSelect::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	// ¾×¼Ç¹öÆ° ´­·¶À» ¶§
+	// ì•¡ì…˜ë²„íŠ¼ ëˆŒë €ì„ ë•Œ
 	if (Btn_Action)
 	{
 		Btn_Action->OnClicked.AddDynamic(this, &UFirstSelect::OnActionClicked);
 	}
 
-	// end ¹öÆ° ´­·¶À» ¶§
+	// end ë²„íŠ¼ ëˆŒë €ì„ ë•Œ
 	if (Btn_end)
 	{
 		Btn_end->OnClicked.AddDynamic(this, &UFirstSelect::OnEndClicked);
 	}
 
-    // Craft ¹öÆ° ´­·¶À» ¶§
+    // Craft ë²„íŠ¼ ëˆŒë €ì„ ë•Œ
     if (Btn_Craft)
     {
         Btn_Craft->OnClicked.AddDynamic(this, &UFirstSelect::OnCraftClicked);
     }
 
-    // Destroy ¹öÆ° ´­·¶À» ¶§
+    // Destroy ë²„íŠ¼ ëˆŒë €ì„ ë•Œ
     if (Btn_Destroy)
     {
         Btn_Destroy->OnClicked.AddDynamic(this, &UFirstSelect::OnDestroyClicked);
@@ -50,24 +50,24 @@ void UFirstSelect::NativeConstruct()
 void UFirstSelect::OnActionClicked()
 {
     
-    // ÇöÀç À§Á¬ Á¦°Å
+    // í˜„ì¬ ìœ„ì ¯ ì œê±°
     RemoveFromParent();
     UE_LOG(LogTemp, Warning, TEXT("RemoveFromParent called"));
 
     if (ActionChoice)
     {
-        // À§Á¬ ÁÖÀÎ °¡Á®¿À±â
+        // ìœ„ì ¯ ì£¼ì¸ ê°€ì ¸ì˜¤ê¸°
         APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
         if (PlayerController)
         {
             UE_LOG(LogTemp, Warning, TEXT("PlayerController is valid"));
 
-            // À§Á¬ »ı¼º
+            // ìœ„ì ¯ ìƒì„±
             UUserWidget* NewWidget = CreateWidget<UUserWidget>(PlayerController, ActionChoice);
             if (NewWidget)
             {
-                // »õ À§Á¬ Viewport¿¡ Ãß°¡
+                // ìƒˆ ìœ„ì ¯ Viewportì— ì¶”ê°€
                 NewWidget->AddToViewport();
                 UE_LOG(LogTemp, Warning, TEXT("NewWidget added to viewport"));
             }
@@ -89,19 +89,19 @@ void UFirstSelect::OnActionClicked()
 
 void UFirstSelect::OnEndClicked()
 {
-	// ÇöÀç À§Á¬ Á¦°Å
+	// í˜„ì¬ ìœ„ì ¯ ì œê±°
 	RemoveFromParent();
 }
 
 void UFirstSelect::OnCraftClicked()
 {
-    // ÇöÀç À§Á¬ Á¦°Å
+    // í˜„ì¬ ìœ„ì ¯ ì œê±°
     RemoveFromParent();
 
-    // Object widget¿­±â
+    // Object widgetì—´ê¸°
     if (PSH_ObjectWidget)
     {
-        // À§Á¬ ÁÖÀÎ °¡Á®¿À±â
+        // ìœ„ì ¯ ì£¼ì¸ ê°€ì ¸ì˜¤ê¸°
         APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController());
         APSH_Player * player = Cast<APSH_Player>(PlayerController->GetPawn());
         if (PlayerController && player)
@@ -123,7 +123,7 @@ void UFirstSelect::OnCraftClicked()
     }
 }
 
-// ¾×ÅÍ ÆÄ±«½ÃÅ°±â
+// ì•¡í„° íŒŒê´´ì‹œí‚¤ê¸°
 void UFirstSelect::OnDestroyClicked()
 {
     UWorld* World = GetWorld();
@@ -133,8 +133,8 @@ void UFirstSelect::OnDestroyClicked()
         return;
     }
 
-    // »èÁ¦ÇÒ ºí·çÇÁ¸°Æ® Å¬·¡½º °æ·Î ¹è¿­
-    TArray<FStringClassReference> BlueprintClassPaths = {
+    // ì‚­ì œí•  ë¸”ë£¨í”„ë¦°íŠ¸ í´ë˜ìŠ¤ ê²½ë¡œ ë°°ì—´
+    TArray<FSoftClassPath> BlueprintClassPaths = {
         FStringClassReference(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C")),
         FStringClassReference(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C")),
         FStringClassReference(TEXT("/Game/PSH/PSH_BluePints/PSH_Actor/PSH_Block/BP_PSH_BlockActor.BP_PSH_BlockActor_C")),
@@ -142,8 +142,8 @@ void UFirstSelect::OnDestroyClicked()
         FStringClassReference(TEXT("/Game/PSH/PSH_BluePints/PSH_Actor/PSH_Block/BP_PSH_CylinderActor.BP_PSH_CylinderActor_C"))
     };
 
-    // °¢ °æ·Î¿¡ ÇØ´çÇÏ´Â ºí·çÇÁ¸°Æ® Å¬·¡½º ·Îµå ¹× ¾×ÅÍ »èÁ¦
-    for (const FStringClassReference& ClassPath : BlueprintClassPaths)
+    // ê° ê²½ë¡œì— í•´ë‹¹í•˜ëŠ” ë¸”ë£¨í”„ë¦°íŠ¸ í´ë˜ìŠ¤ ë¡œë“œ ë° ì•¡í„° ì‚­ì œ
+    for (const FSoftClassPath& ClassPath : BlueprintClassPaths)
     {
         UClass* TargetClass = ClassPath.TryLoadClass<AActor>();
         if (TargetClass)
