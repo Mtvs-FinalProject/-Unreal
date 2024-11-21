@@ -13,6 +13,7 @@
 #include "YWK/MyRotateActorComponent.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "GameFramework/RotatingMovementComponent.h"
+#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -22,6 +23,8 @@ APSH_BlockActor::APSH_BlockActor()
 
 	meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	meshComp->SetIsReplicated(true);
+	meshComp->SetNotifyRigidBodyCollision(true);
+
 	
 	SetRootComponent(meshComp);
 
@@ -33,6 +36,18 @@ APSH_BlockActor::APSH_BlockActor()
 	if (tempOutLine.Succeeded())
 	{
 		outLineMat = tempOutLine.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UNiagaraSystem> spawnNiagara(TEXT("/Script/Niagara.NiagaraSystem'/Game/YWK/Effect/MS_Spawn.MS_Spawn'"));
+	if (spawnNiagara.Succeeded())
+	{
+		spawnEffect = spawnNiagara.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UNiagaraSystem> placeNiagara(TEXT("/Script/Niagara.NiagaraSystem'/Game/YWK/Effect/MS_Star.MS_Star'"));
+	if (placeNiagara.Succeeded())
+	{
+		PlaceEffect = placeNiagara.Object;
 	}
 	// 기능 컴포넌트들
 	//MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
@@ -61,6 +76,7 @@ void APSH_BlockActor::BeginPlay()
 
 	if (HasAuthority())
 	{
+		meshComp->OnComponentHit.AddDynamic(this, &APSH_BlockActor::OnComponentHit);
 		APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
 
 		if (GM)
@@ -136,6 +152,7 @@ void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 // srpc
 void APSH_BlockActor::Drop(class UPhysicsHandleComponent* physicshandle)
 {
+	bHit = true;
 	MRPC_Drop(physicshandle);
 }
 
@@ -157,6 +174,7 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 
 	SetMaster(nullptr);
 	pickedUp = false;
+	
 
 	meshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
@@ -175,6 +193,12 @@ void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform world
 
 void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
+
+	if (PlaceEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PlaceEffect, GetActorLocation());
+	}
+
 	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
 
 	meshComp->SetSimulatePhysics(false);
@@ -601,7 +625,7 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 					ChildBlock->AttachToActor(this, rule);
 					AddChild(ChildBlock);
 
-					if (ChildData.funcitonData.IsEmpty() == false)
+					if (ChildBlock->functionObjectDataType == EFunctionObjectDataType::ROTATE)
 					{
 						ChildBlock->ComponentLoadData(ChildData.funcitonData);
 					}
@@ -744,4 +768,25 @@ void APSH_BlockActor::ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBl
 		PRINTLOG(TEXT("TypeNull"));
 		break;
 	}
+}
+
+void APSH_BlockActor::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if(HasAuthority() == false) return;
+
+	if(bHit == false || mapBlock) return;
+	APSH_BlockActor * mapObject = Cast<APSH_BlockActor>(OtherActor);
+
+	if (mapObject && mapObject->mapBlock && bHit)
+	{
+		PRINTLOG(TEXT("Hit"));
+		MRPC_SpawnEffect(Hit.ImpactPoint);
+		bHit = false;
+	}
+
+}
+void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoint)
+{
+	if(spawnEffect == nullptr) return;
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), spawnEffect, impactPoint);
 }

@@ -192,6 +192,17 @@ public:
 	class UMyMoveActorComponent * moveComp;
 	class UMyRotateActorComponent* rotationMovementComp;
 
+	class UNiagaraSystem* spawnEffect;
+	class UNiagaraSystem* PlaceEffect;
+
+	UFUNCTION()
+	void OnComponentHit( UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit );
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_SpawnEffect(const FVector& impactPoint);
+
+	bool bHit = true;
+
 private:
 	class APSH_Player * master = nullptr;
 

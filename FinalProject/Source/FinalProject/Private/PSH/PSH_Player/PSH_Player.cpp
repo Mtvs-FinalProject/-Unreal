@@ -78,6 +78,10 @@ APSH_Player::APSH_Player()
 		movementComp->BrakingDecelerationFlying = 2000.0f;  // 감속도 설정
 	}
 
+	
+
+
+
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -88,7 +92,7 @@ void APSH_Player::BeginPlay()
 	Super::BeginPlay();
 
 	if (HasAuthority())
-	{
+	{	
 		FActorSpawnParameters param;
 		garbagebot = GetWorld()->SpawnActor<APSH_GarbageBot>(param);
 		if (garbagebot)
@@ -738,6 +742,8 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 	// 매 프레임마다 업데이트된 목표 위치 계산
 	FVector targetLoc;
 	FRotator targetRot;
+	FTransform worldTransfrom;
+
 	if (hit)
 	{
 		FVector localLocation = hitinfo.Location;
@@ -756,26 +762,28 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		auto* heldActor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // 잡은 엑터
 		if (Cast<APSH_BlockActor>(hitActor)) // 범위 안에 있는 상태
 		{
-			if (hitActor->GetSnapPoints().IsEmpty()) return; // 비어있다면
-
+			if (hitActor->GetSnapPoints().IsEmpty() == false) 
+			{
+				
 			snapPoints = hitActor->GetSnapPoints();
 			ClosestPoint(snapPoints, localLocation, hitActorTransform, closestPoint, distance, ClosestSnapPointIndex);
 			snapDirection = hitActor->GetSnapDirections();
-			Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();
+				/*Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->OvelapChek();*/
+			}
 		}
 
-		bool bDist = snapDistance >= distance;
+		bool distBool = distance <= snapDistance;
 		bool bValidPoint = snapPoints.IsValidIndex(0);
-		bool andBool = bDist && bValidPoint && hit;
+		bool andChek = distBool && bValidPoint;
 
 		if (heldActor == nullptr) return;
-
+		
 		if (heldActor->GetSnapPoints().IsEmpty() == false)
 		{
 			snapPoints = heldActor->GetSnapPoints();
 		}
 
-		if (!andBool)
+		if (!andChek)
 		{
 			if (snapPoints.IsEmpty()) // 비었다면
 			{
@@ -818,6 +826,24 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		FRotator B = UKismetMathLibrary::RotatorFromAxisAndAngle(UKismetMathLibrary::GetUpVector(targetRot), rotationOffset.Yaw);
 
 		rotationHelper->AddWorldRotation(UKismetMathLibrary::ComposeRotators(A, B));
+
+// 		if (Cast<APSH_BlockActor>(hitActor))
+// 		{
+// 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
+// 				heldActor->GetActorTransform(), targetLoc),
+// 				rotationHelper->GetComponentRotation());
+// 
+// 			if (hitActor->connectionsize >= heldActor->connectionsize)
+// 			{
+// 				if (heldActor->OvelapChek())
+// 				{
+// 					heldActor->Place(hitActor, worldTransfrom);
+// 					DropBlcok();
+// 					snapPointIndex = 0;
+// 				}
+// 			}
+// 			return;
+// 		}
 	}
 	else
 	{
@@ -826,11 +852,12 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 		// 부드러운 보간으로 목표 회전으로 이동
 		FRotator newRot = FMath::RInterpTo(rotationHelper->GetComponentRotation(), rotationOffset, GetWorld()->DeltaTimeSeconds, 5.0f);
-		rotationHelper->SetWorldRotation(newRot);
-		
+		rotationHelper->SetWorldRotation(newRot);	
 	}
 
 	MRPC_HandleBlock(rotationHelper->GetComponentLocation(), rotationHelper->GetComponentRotation());
+
+
 }
 
 FRotator APSH_Player::WorldHelperRotationOffset() // 추가보정
@@ -915,14 +942,31 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 			FVector snapLocation;
 			if (!andChek)
 			{
-				snapLocation = location + (heldBlock->GetActorLocation() -
-					UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+				if (snapPoints.IsEmpty())
+				{
+					PRINTLOG(TEXT("snapPoints.IsEmpty()"));
+					snapLocation = location + (heldBlock->GetActorLocation() - heldBlock->GetActorTransform().GetLocation());
+				}
+				else
+				{
+					snapLocation = location + (heldBlock->GetActorLocation() -
+						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+				}
 			}
 			else
 			{
-				snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
-					(heldBlock->GetActorLocation() -
-						UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+				if (snapPoints.IsEmpty())
+				{
+					snapLocation = actor->GetActorTransform().GetLocation() + (heldBlock->GetActorLocation() -
+					heldBlock->GetActorTransform().GetLocation());
+				}
+				else
+				{
+
+					snapLocation = UKismetMathLibrary::TransformLocation(actor->GetActorTransform(), closestPoint) +
+						(heldBlock->GetActorLocation() -
+							UKismetMathLibrary::TransformLocation(heldBlock->GetActorTransform(), heldBlockPoints[snapPointIndex]));
+				}
 			}
 
 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
@@ -933,9 +977,25 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 			{
 				if (heldBlock->OvelapChek())
 				{
-					heldBlock->Place(actor, worldTransfrom);
-					DropBlcok();
-					snapPointIndex = 0;
+					if (heldBlock->mapBlock && actor->mapBlock) // 맵 오브젝트 와 맵 오브젝트
+					{
+						PRINTLOG(TEXT("heldBlock->mapBlock && actor->mapBlock"));
+						heldBlock->Place(actor, worldTransfrom);
+						DropBlcok();
+						snapPointIndex = 0;
+					}
+					else if(heldBlock->mapBlock || actor->mapBlock) // 맵 오브젝트가 아님 과 맵 오브젝트
+					{
+						DropBlcok();
+						snapPointIndex = 0;
+					}
+					else
+					{
+						heldBlock->Place(actor, worldTransfrom);
+						DropBlcok();
+						snapPointIndex = 0;
+					}
+					
 				}
 				else
 				{

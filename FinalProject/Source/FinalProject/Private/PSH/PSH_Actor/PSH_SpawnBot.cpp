@@ -56,6 +56,7 @@ APSH_SpawnBot::APSH_SpawnBot()
 	lightMesh->SetRelativeScale3D(FVector(0.f, 0.f, 6.f));
 	lightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	lightMesh->SetVisibility(false);
+	lightMesh->SetIsReplicated(true);
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> tmeplightMesh(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Cone.Cone'"));
 	if (tmeplightMesh.Succeeded())
@@ -158,7 +159,6 @@ void APSH_SpawnBot::SpawnMoveState(const float& deltaTime)
 		APSH_PlayerController* PlayerController = Cast<APSH_PlayerController>(GetOwner()->GetOwner());
 		if (PlayerController) // À§Á¬ º¸ÀÌ±â
 		{
-			PRINTLOG(TEXT("PlayerController"));
 			PlayerController->CRPC_ShowObjectWidget();
 		}
 		MRPC_SetMat(1);
@@ -266,13 +266,15 @@ void APSH_SpawnBot::MRPC_SetVisible_Implementation(bool chek)
 	
 	lightMesh->SetVisibility(chek);
 
-	/*if(chek == false) */
 }
 void APSH_SpawnBot::MRPC_SetMat_Implementation(int32 arrayIndex)
 {
 	if(lightMesh == nullptr) return;
 	
-	if(!lightMesh->IsVisible()) MRPC_SetVisible(true);
+	if(lightMesh->IsVisible() == false)
+	{
+		MRPC_SetVisible(true);
+	}
 	lightMesh->SetMaterial(0, matArray[arrayIndex]);
 
 }

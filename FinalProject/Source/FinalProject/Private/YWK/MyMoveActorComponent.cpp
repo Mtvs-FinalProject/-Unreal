@@ -72,47 +72,35 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
     FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
     float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
-    UE_LOG(LogTemp, Warning, TEXT("Current Location: %s, Distance Traveled: %f, Max Distance: %f"),
-        *NewLocation.ToString(), DistanceTraveled, MaxDistance);
-
     if (DistanceTraveled >= MaxDistance)
     {
         if (bSingleDirection)
         {
-            // If in single direction mode, stop movement once max distance is reached
             StopMoving();
-            UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping movement."));
         }
         else
         {
             // Loop mode: reverse direction and reset start location
-            if (bLoopMode || CurrentLoop < LoopCount)
+            if (bLoopMode)
             {
                 // Reverse direction
                 MoveDirection *= -1.0f;
                 StartLocation = Owner->GetActorLocation();
 
-                // Increment loop count if not in continuous loop mode
-                if (!bLoopMode)
-                {
-                    CurrentLoop++;
-                }
-                UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Reversing direction. New direction: %s"),
-                    CurrentLoop, LoopCount, *MoveDirection.ToString());
             }
             else
             {
                 // Stop moving if loop count limit has been reached
                 StopMoving();
-                UE_LOG(LogTemp, Warning, TEXT("Max loop count reached. Stopping movement."));
             }
         }
     }
     else
     {
+
+        SetOwnerLocation(NewLocation);
         // Move actor to new location
-        Owner->SetActorLocation(NewLocation);
-        UE_LOG(LogTemp, Warning, TEXT("Actor moving to: %s"), *NewLocation.ToString());
+      //  Owner->SetActorLocation(NewLocation);
     }
 }
 
@@ -120,7 +108,6 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
 void UMyMoveActorComponent::StartMoving()
 {
     StartLocation = GetOwner()->GetActorLocation();
-    CurrentLoop = 0;
 
     APSH_BlockActor * block = Cast<APSH_BlockActor>(GetOwner());
     if (block && block->ActorHasTag(FName("owner")))
@@ -193,4 +180,10 @@ void UMyMoveActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
         PRINTLOG(TEXT("MoveDirection: %s"), *MoveDirection.ToString());
         PRINTLOG(TEXT("LoopCount: %d"), LoopCount);
         PRINTLOG(TEXT("bLoopMode: %s"), bLoopMode ? TEXT("True") : TEXT("False"));
+}
+void UMyMoveActorComponent::SetOwnerLocation_Implementation(const FVector& newLocation)
+{
+    if(GetOwner() == nullptr) return;
+
+    GetOwner()->SetActorLocation(newLocation);
 }

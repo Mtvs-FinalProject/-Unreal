@@ -293,4 +293,9 @@ public:
 	UFUNCTION(Server,Reliable)
 	void SRPC_Load();
 
+	// Effect
+
+	
+
+
 };
