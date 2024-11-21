@@ -140,6 +140,19 @@ public:
 	AActor* PreviewActor = nullptr;           // 프리뷰 오브젝트
 	void SpawnPreviewActor();                 // 프리뷰 액터 스폰 함수
 	void UpdatePreviewLocation(FVector Direction, float Distance);  // 프리뷰 위치 업데이트
+	void UpdatePreviewMovement();
+	void DestroyPreviewActor();               // 프리뷰 액터 삭제
+	
+
+	FTimerHandle PreviewFlyTimer;  // 프리뷰 액터 이동 타이머
+	float StoredMoveSpeed;			// 이동 속도
+	float StoredMoveDistance;		// 이동 거리
+
+	// 방향 전환 여부 (이 변수 선언 추가 필요)
+	bool bPreviewDirectionReversed = false;   // 이동 방향 반전 여부
+
+	// BP_MoveandFly의 초기 위치 저장
+	FVector MoveAndFlyInitialLocation;
 
 	
 };

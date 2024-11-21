@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "YWK/FlyWidget.h"
@@ -42,13 +42,13 @@ void UFlyWidget::NativeConstruct()
 		Btn_Origin->OnClicked.AddDynamic(this, &UFlyWidget::OnOriginButtonClicked);
 	}
 	
-	// ¼Óµµ ÀÔ·Â ÇÊµå¿¡ OnTextCommitted ÀÌº¥Æ® ¹ÙÀÎµù
+	// ì†ë„ ì…ë ¥ í•„ë“œì— OnTextCommitted ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (FlySpeedText)
 	{
 		FlySpeedText->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnFlySpeedTextCommitted);
 	}
 
-	// °Å¸® ÀÔ·Â ÇÊµå¿¡ OnTextCommitted ÀÌº¥Æ® ¹ÙÀÎµù
+	// ê±°ë¦¬ ì…ë ¥ í•„ë“œì— OnTextCommitted ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (FlyHightText)
 	{
 		FlyHightText->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnFlyDistanceTextCommitted);
@@ -56,26 +56,26 @@ void UFlyWidget::NativeConstruct()
 	// Initialize function objects in ComboBox
 	InitializeFunctionObjects();
 
-	// ¿Õº¹¸ğµå Ã¼Å© ¹Ú½º
+	// ì™•ë³µëª¨ë“œ ì²´í¬ ë°•ìŠ¤
 	if (Chk_LoopMode)
 	{
 		Chk_LoopMode->OnCheckStateChanged.AddDynamic(this, &UFlyWidget::OnLoopModeCheckChanged);
 	}
 
-	// ÀÏ¹æ¸ğµå Ã¼Å© ¹Ú½º
+	// ì¼ë°©ëª¨ë“œ ì²´í¬ ë°•ìŠ¤
 	if (Chk_SingleDirectionMode)
 	{
 		Chk_SingleDirectionMode->OnCheckStateChanged.AddDynamic(this, &UFlyWidget::OnSingleDirectionCheckChanged);
 	}
 
-	// ¿Õº¹ ÅØ½ºÆ® ¹Ú½º
+	// ì™•ë³µ í…ìŠ¤íŠ¸ ë°•ìŠ¤
 	if (Txt_LoopCount)
 	{
 		Txt_LoopCount->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnLoopCountCommitted);
 	}
 }
 
-// À§·Î ¿Ã¶ó°¡±â ¹öÆ°
+// ìœ„ë¡œ ì˜¬ë¼ê°€ê¸° ë²„íŠ¼
 void UFlyWidget::OnUpButtonClicked()
 {
 	StoredFlyDirection = FVector(0.0f, 0.0f, 1.0f);
@@ -83,7 +83,7 @@ void UFlyWidget::OnUpButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("Fly direction set to Up."));
 }
 
-// ¾Æ·¡·Î ³»·Á°¡±â ¹öÆ°
+// ì•„ë˜ë¡œ ë‚´ë ¤ê°€ê¸° ë²„íŠ¼
 void UFlyWidget::OnDownButtonClicked()
 {
 	StoredFlyDirection = FVector(0.0f, 0.0f, -1.0f);
@@ -91,7 +91,7 @@ void UFlyWidget::OnDownButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("Fly direction set to Down."));
 }
 
-// ³¯±â ½ÃÀÛ
+// ë‚ ê¸° ì‹œì‘
 void UFlyWidget::OnStartButtonClicked()
 {
 	if (PreviewActor)
@@ -122,7 +122,7 @@ void UFlyWidget::OnStartButtonClicked()
 	}
 }
 
-// ³¯±â ¸ØÃã
+// ë‚ ê¸° ë©ˆì¶¤
 void UFlyWidget::OnStopButtonClicked()
 {
 	if (SelectedActor)
@@ -143,12 +143,12 @@ void UFlyWidget::OnStopButtonClicked()
 	}
 }
 
-// ¿ø·¡ À§Ä¡·Î µ¹¾Æ°¡±â
+// ì›ë˜ ìœ„ì¹˜ë¡œ ëŒì•„ê°€ê¸°
 void UFlyWidget::OnOriginButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Origin button clicked"));
 
-	// ÄÄÆ÷³ÍÆ® ¿À³Ê °¡Á®¿À±â
+	// ì»´í¬ë„ŒíŠ¸ ì˜¤ë„ˆ ê°€ì ¸ì˜¤ê¸°
 	if (AActor* Owner = GetOwnerFromComponent())
 	{
 		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
@@ -164,7 +164,7 @@ void UFlyWidget::OnOriginButtonClicked()
 	}
 }
 
-// µÚ·Î°¡±â ¹öÆ°
+// ë’¤ë¡œê°€ê¸° ë²„íŠ¼
 void UFlyWidget::OnBackButtonClicked()
 {
 	RemoveFromParent();
@@ -179,101 +179,118 @@ void UFlyWidget::OnBackButtonClicked()
 	}
 }
 
-// ¼Óµµ¿Í ³ôÀÌ °ª set
+// ì†ë„ì™€ ë†’ì´ ê°’ set
 void UFlyWidget::UpdateMovementValuesInUI(float SpeedValue = -1.0f, float DistanceValue = -1.0f)
 {
-	// ¼Óµµ °ªÀ» UIÀÇ EditableText¿¡ ¼³Á¤
+	// ì†ë„ ê°’ì„ UIì˜ EditableTextì— ì„¤ì •
 	if (FlySpeedText)
 	{
-		// SpeedValue°¡ À½¼ö(-1.0f)ÀÏ °æ¿ì ºñ¿öµÎ°í, ±×·¸Áö ¾ÊÀ¸¸é °ª ¼³Á¤
+		// SpeedValueê°€ ìŒìˆ˜(-1.0f)ì¼ ê²½ìš° ë¹„ì›Œë‘ê³ , ê·¸ë ‡ì§€ ì•Šìœ¼ë©´ ê°’ ì„¤ì •
 		FlySpeedText->SetText(SpeedValue < 0.0f ? FText::GetEmpty() : FText::AsNumber(SpeedValue));
 	}
-	// °Å¸® °ªÀ» UIÀÇ EditableText¿¡ ¼³Á¤
+	// ê±°ë¦¬ ê°’ì„ UIì˜ EditableTextì— ì„¤ì •
 	if (FlyHightText)
 	{
-		// DistanceValue°¡ À½¼ö(-1.0f)ÀÏ °æ¿ì ºñ¿öµÎ°í, ±×·¸Áö ¾ÊÀ¸¸é °ª ¼³Á¤
+		// DistanceValueê°€ ìŒìˆ˜(-1.0f)ì¼ ê²½ìš° ë¹„ì›Œë‘ê³ , ê·¸ë ‡ì§€ ì•Šìœ¼ë©´ ê°’ ì„¤ì •
 		FlyHightText->SetText(DistanceValue < 0.0f ? FText::GetEmpty() : FText::AsNumber(DistanceValue));
 	}
 }
 
 
-// ¼Óµµ³ª °Å¸® °ª ³Ö´Â ÇÔ¼ö
+// ì†ë„ë‚˜ ê±°ë¦¬ ê°’ ë„£ëŠ” í•¨ìˆ˜
 void UFlyWidget::ApplyMovementValues()
 {
-	// ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+	// ì»´í¬ë„ŒíŠ¸ ê°€ì ¸ì˜¤ê¸°
 	if (AActor* Owner = GetOwnerFromComponent())
 	{
 		UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
-			// ¼Óµµ°ª ¼³Á¤
+			// ì†ë„ê°’ ì„¤ì •
 			FString SpeedString = FlySpeedText->GetText().ToString();
-			float SpeedValue = FCString::Atof(*SpeedString); // ¹®ÀÚ¿­ float·Î ¹Ù²Ù±â
+			float SpeedValue = FCString::Atof(*SpeedString); // ë¬¸ìì—´ floatë¡œ ë°”ê¾¸ê¸°
 			FlyComponent->FlySpeed = SpeedValue;
 
-			// °Å¸®°ª ¼³Á¤
+			// ê±°ë¦¬ê°’ ì„¤ì •
 			FString DistnaceString = FlyHightText->GetText().ToString();
-			float DistanceValue = FCString::Atof(*DistnaceString); // ÀÌ°Íµµ floatÀ¸·Î ¹Ù²Ù±â
+			float DistanceValue = FCString::Atof(*DistnaceString); // ì´ê²ƒë„ floatìœ¼ë¡œ ë°”ê¾¸ê¸°
 			FlyComponent->FlyDistance = DistanceValue;
 
-			// UI¿¡ °ª ¾÷µ¥ÀÌÆ®
+			// UIì— ê°’ ì—…ë°ì´íŠ¸
 			UpdateMovementValuesInUI(FlyComponent->FlySpeed, FlyComponent->FlyDistance);
 		}
 	}
 }
 
-// ¼Óµµ ÀÔ·Â ÇÊµå¿¡¼­ ¿£ÅÍ¸¦ ÃÆÀ» ¶§
-void UFlyWidget::OnFlySpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
-{
-	if (CommitMethod == ETextCommit::OnEnter)
-	{
-		// ÀÔ·ÂµÈ ¼Óµµ °ªÀ» Ã³¸®
-		FString SpeedString = Text.ToString();
-		float SpeedValue = FCString::Atof(*SpeedString);
-
-		if (AActor* Owner = GetOwnerFromComponent())
-		{
-			UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-			if (FlyComponent)
-			{
-				FlyComponent->FlySpeed = SpeedValue;
-				// UI¿¡ °ª ¾÷µ¥ÀÌÆ®
-				UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), SpeedValue);
-			}
-		}
-	}
-}
-
-// ³ôÀÌ ÀÔ·Â ÇÊµå¿¡¼­ ¿£ÅÍ¸¦ ÃÆÀ» ¶§
+// ì†ë„ ì…ë ¥ í•„ë“œì—ì„œ ì—”í„°ë¥¼ ì³¤ì„ ë•Œ
 void UFlyWidget::OnFlyDistanceTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
-		// ÀÔ·ÂµÈ °Å¸® °ªÀ» Ã³¸®
+		// ê±°ë¦¬ ê°’ì„ ì„¤ì •
 		float DistValues = FCString::Atof(*Text.ToString());
+		StoredMoveDistance = (DistValues > 0.0f) ? DistValues : 1000.0f;
 
-		if (AActor* Owner = GetOwnerFromComponent())
+		UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), StoredMoveDistance);
+
+		// ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ì— ê±°ë¦¬ ê°’ ì ìš©
+		if (SelectedActor)
 		{
-			UMyFlyActorComponent* FlyComponent = Owner->FindComponentByClass<UMyFlyActorComponent>();
-			if (FlyComponent)
+			if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 			{
-				FlyComponent->MaxFlyDistance = DistValues;
-				UE_LOG(LogTemp, Warning, TEXT("Distance set to: %f"), DistValues);
-				UpdatePreviewLocation(StoredFlyDirection, DistValues); // ¹Ì¸®º¸±â À§Ä¡ ¾÷µ¥ÀÌÆ® Ãß°¡
+				FlyComponent->FlyDistance = StoredMoveDistance;
+				UE_LOG(LogTemp, Warning, TEXT("Distance applied to actor: %f"), FlyComponent->FlyDistance);
 			}
+		}
+
+		// í”„ë¦¬ë·° ìœ„ì¹˜ ì—…ë°ì´íŠ¸
+		UpdatePreviewLocation(StoredFlyDirection, StoredMoveDistance);
+	}
+}
+
+
+
+// ë†’ì´ ì…ë ¥ í•„ë“œì—ì„œ ì—”í„°ë¥¼ ì³¤ì„ ë•Œ
+void UFlyWidget::OnFlySpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
+{
+	if (CommitMethod == ETextCommit::OnEnter)
+	{
+		// ì†ë„ ê°’ì„ ì„¤ì •
+		float SpeedValue = FCString::Atof(*Text.ToString());
+		StoredMoveSpeed = (SpeedValue > 0.0f) ? SpeedValue : 100.0f;
+
+		UE_LOG(LogTemp, Warning, TEXT("Speed set to: %f"), StoredMoveSpeed);
+
+		// ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ì— ì†ë„ ê°’ ì ìš©
+		if (SelectedActor)
+		{
+			if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
+			{
+				FlyComponent->FlySpeed = StoredMoveSpeed;
+				UE_LOG(LogTemp, Warning, TEXT("Speed applied to actor: %f"), FlyComponent->FlySpeed);
+			}
+		}
+
+		// ì†ë„ ì…ë ¥ í›„ í”„ë¦¬ë·° ì›€ì§ì„ ì‹œì‘
+		if (PreviewActor)
+		{
+			GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
+			UE_LOG(LogTemp, Warning, TEXT("Preview movement started."));
 		}
 	}
 }
+
+
 
 AActor* UFlyWidget::GetOwnerFromComponent()
 {
 	if (SelectedActor)
 	{
-		return SelectedActor; // ¼±ÅÃÇÑ ¾×ÅÍ°¡ ÀÖÀ¸¸é ¹Ù·Î ¹İÈ¯
+		return SelectedActor; // ì„ íƒí•œ ì•¡í„°ê°€ ìˆìœ¼ë©´ ë°”ë¡œ ë°˜í™˜
 	}
 
-	// ¼±ÅÃÇÑ ¾×ÅÍ°¡ ¾øÀ» °æ¿ì, BP_FunctionObject Å¬·¡½º¿¡¼­ Ã£À½
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	// ì„ íƒí•œ ì•¡í„°ê°€ ì—†ì„ ê²½ìš°, BP_FunctionObject í´ë˜ìŠ¤ì—ì„œ ì°¾ìŒ
+	FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass)
@@ -284,11 +301,11 @@ AActor* UFlyWidget::GetOwnerFromComponent()
 		if (FoundActors.Num() > 0)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Found BP_FunctionObject: %s"), *FoundActors[0]->GetName());
-			SelectedActor = FoundActors[0]; // Ã¹ ¹øÂ° ¾×ÅÍ¸¦ ¼±ÅÃµÈ ¾×ÅÍ·Î ¼³Á¤
+			SelectedActor = FoundActors[0]; // ì²« ë²ˆì§¸ ì•¡í„°ë¥¼ ì„ íƒëœ ì•¡í„°ë¡œ ì„¤ì •
 			return SelectedActor;
 		}
 
-		// ¾øÀ¸¸é »õ·Î ½ºÆù
+		// ì—†ìœ¼ë©´ ìƒˆë¡œ ìŠ¤í°
 		SelectedActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
 		return SelectedActor;
 	}
@@ -298,7 +315,7 @@ AActor* UFlyWidget::GetOwnerFromComponent()
 
 void UFlyWidget::InitializeFunctionObjects()
 {
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass && GetWorld())
@@ -328,34 +345,42 @@ void UFlyWidget::AddObjectToComboBox(AActor* NewObject)
 {
 	if (NewObject && FlyBoxList)
 	{
-		//Display nameÀ» Ãß°¡ÇÒ ¶§ ObjectÀÇ LabelÀ» »ç¿ë
-		FString DisplayName = NewObject->GetActorLabel();
+		//Display nameì„ ì¶”ê°€í•  ë•Œ Objectì˜ Labelì„ ì‚¬ìš©
+		FString DisplayName = NewObject->GetName();
 		FlyBoxList->AddOption(DisplayName);
 
-		//AllFunctionObject ¹è¿­¿¡ Ãß°¡ÇÏ¿© ³ªÁß¿¡ ÂüÁ¶ °¡´ÉÇÏ°Ô 
+		//AllFunctionObject ë°°ì—´ì— ì¶”ê°€í•˜ì—¬ ë‚˜ì¤‘ì— ì°¸ì¡° ê°€ëŠ¥í•˜ê²Œ 
 		AllFunctionObject.Add(NewObject);
 		UE_LOG(LogTemp, Warning, TEXT("Added new object to ComboBox: %s"), *DisplayName);
 	}
 }
 
-// ¼±ÅÃÇÑ ¿ÀºêÁ§Æ®¿¡ µû¶ó °³º° FlyComponent¸¦ ¼³Á¤
+// ì„ íƒí•œ ì˜¤ë¸Œì íŠ¸ì— ë”°ë¼ ê°œë³„ FlyComponentë¥¼ ì„¤ì •
 void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	int32 SelectedIndex = FlyBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
+		// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected fly function object: %s"), *SelectedActor->GetName());
 
-		// ¼±ÅÃµÈ ¿ÀºêÁ§Æ®ÀÇ FlyComponent ¼³Á¤
+
+		DestroyPreviewActor();
+
+		// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		SpawnPreviewActor();
+
+		// ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ì˜ FlyComponent ì„¤ì •
 		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 		{
-			// UI ¿ä¼Ò¿Í FlyComponent °ª µ¿±âÈ­ ´ë½Å ÃÊ±â »óÅÂ·Î ºñ¿ò
-			UpdateMovementValuesInUI(); // ÆÄ¶ó¹ÌÅÍ Àü´ŞÇÏÁö ¾ÊÀ½À¸·Î½á ±âº»°ª ¼³Á¤
+			// UI ìš”ì†Œì™€ FlyComponent ê°’ ë™ê¸°í™” ëŒ€ì‹  ì´ˆê¸° ìƒíƒœë¡œ ë¹„ì›€
+			UpdateMovementValuesInUI(); // íŒŒë¼ë¯¸í„° ì „ë‹¬í•˜ì§€ ì•ŠìŒìœ¼ë¡œì¨ ê¸°ë³¸ê°’ ì„¤ì •
+
 			Chk_LoopMode->SetIsChecked(FlyComponent->bLoopMode);
 			Chk_SingleDirectionMode->SetIsChecked(FlyComponent->bSingleDirection);
 
-			// ¿Õº¹ È½¼ö ¾÷µ¥ÀÌÆ®
+			// ì™•ë³µ íšŸìˆ˜ ì—…ë°ì´íŠ¸
 			if (Txt_LoopCount)
 			{
 				Txt_LoopCount->SetText(FText::AsNumber(FlyComponent->LoopCount));
@@ -364,7 +389,9 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 	}
 }
 
-// ¿Õº¹ ¸ğµå Ã¼Å©¹Ú½º »óÅÂ º¯°æ
+
+// ì™•ë³µ ëª¨ë“œ ì²´í¬ë°•ìŠ¤ ìƒíƒœ ë³€ê²½
+
 void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
 {
 	if (SelectedActor)
@@ -382,7 +409,7 @@ void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
 	}
 }
 
-// ´Ü¼ø ÀÌµ¿ ¸ğµå Ã¼Å©¹Ú½º »óÅÂ º¯°æ
+// ë‹¨ìˆœ ì´ë™ ëª¨ë“œ ì²´í¬ë°•ìŠ¤ ìƒíƒœ ë³€ê²½
 void UFlyWidget::OnSingleDirectionCheckChanged(bool bIsChecked)
 {
 	if (SelectedActor)
@@ -400,7 +427,7 @@ void UFlyWidget::OnSingleDirectionCheckChanged(bool bIsChecked)
 	}
 }
 
-// ¿Õº¹ È½¼ö ÀÔ·Â ÇÊµå¿¡¼­ ¿£ÅÍ¸¦ ÃÆÀ» ¶§
+// ì™•ë³µ íšŸìˆ˜ ì…ë ¥ í•„ë“œì—ì„œ ì—”í„°ë¥¼ ì³¤ì„ ë•Œ
 void UFlyWidget::OnLoopCountCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter && SelectedActor)
@@ -409,13 +436,13 @@ void UFlyWidget::OnLoopCountCommitted(const FText& Text, ETextCommit::Type Commi
 		{
 			int32 LoopValue = FCString::Atoi(*Text.ToString());
 			FlyComponent->LoopCount = LoopValue;
-			FlyComponent->CurrentLoop = 0;  // »õ·Î¿î ·çÇÁ ¼³Á¤ ½Ã ·çÇÁ ÃÊ±âÈ­
+			FlyComponent->CurrentLoop = 0;  // ìƒˆë¡œìš´ ë£¨í”„ ì„¤ì • ì‹œ ë£¨í”„ ì´ˆê¸°í™”
 			UE_LOG(LogTemp, Warning, TEXT("Loop count set to: %d for %s"), LoopValue, *SelectedActor->GetName());
 		}
 	}
 }
 
-// ´ÙÁß FlyComponent Ãß°¡ ÇÔ¼ö
+// ë‹¤ì¤‘ FlyComponent ì¶”ê°€ í•¨ìˆ˜
 void UFlyWidget::AddControlledFlyComponent(UMyFlyActorComponent* NewFlyComponent)
 {
 	if (NewFlyComponent && !ControlledFlyComponents.Contains(NewFlyComponent))
@@ -424,34 +451,112 @@ void UFlyWidget::AddControlledFlyComponent(UMyFlyActorComponent* NewFlyComponent
 	}
 }
 
-// ÇÁ¸®ºä ¾×ÅÍ ½ºÆù ÇÔ¼ö
+// í”„ë¦¬ë·° ì•¡í„° ìŠ¤í° í•¨ìˆ˜
 void UFlyWidget::SpawnPreviewActor()
 {
-	if (!PreviewActor)
-	{
-		FStringClassReference PreviewActorClassRef(TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
-		UClass* PreviewActorClass = PreviewActorClassRef.TryLoadClass<AActor>();
+	 if (!PreviewActor && SelectedActor)
+  {
+    // BP_PreviewDistance ì•¡í„° ë¡œë“œ ë° ìŠ¤í°
+    UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+    if (PreviewClass)
+    {
+      // í”„ë¦¬ë·° ì˜¤ë¸Œì íŠ¸ë¥¼ SelectedActor ìœ„ì¹˜ì— ìŠ¤í°
+      PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass, SelectedActor->GetActorLocation(), FRotator::ZeroRotator);
+      if (PreviewActor)
+      {
+        // ì´ˆê¸° ìœ„ì¹˜ ì„¤ì •
+        PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // ì‹œì‘ ìœ„ì¹˜ë¡œ í™•ì‹¤íˆ ì„¤ì •
+        bPreviewDirectionReversed = false; // ì´ˆê¸°í™”: ëª©í‘œ ì§€ì ìœ¼ë¡œ ì´ë™í•˜ë„ë¡ ì„¤ì •
+        UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at starting location: %s"), *SelectedActor->GetActorLocation().ToString());
+      }
+    }
+  }
 
-		if (PreviewActorClass)
-		{
-			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewActorClass, FVector::ZeroVector, FRotator::ZeroRotator);
-			if (PreviewActor)
-			{
-				PreviewActor->SetActorHiddenInGame(false);
-			}
-		}
-	}
+// UIì—ì„œ ì†ë„ì™€ ê±°ë¦¬ ê°’ì„ ì½ì–´ ì´ˆê¸°í™”
+  if (FlySpeedText)
+  {
+    FString SpeedString = FlySpeedText->GetText().ToString();
+    StoredMoveSpeed = FCString::Atof(*SpeedString);
+  }
+  if (FlyHightText)
+  {
+    FString DistanceString = FlyHightText->GetText().ToString();
+    StoredMoveDistance = FCString::Atof(*DistanceString);
+  }
+
+// ê¸°ë³¸ê°’ ì„¤ì •
+  if (StoredMoveSpeed <= 0.0f)
+  {
+    StoredMoveSpeed = 100.0f; // ê¸°ë³¸ ì†ë„
+  }
+  if (StoredMoveDistance <= 0.0f)
+  {
+    StoredMoveDistance = 1000.0f; // ê¸°ë³¸ ê±°ë¦¬
+  }
+
+  UE_LOG(LogTemp, Warning, TEXT("StoredMoveSpeed: %f, StoredMoveDistance: %f"), StoredMoveSpeed, StoredMoveDistance);
+
+// íƒ€ì´ë¨¸ ì‹œì‘
+  if (PreviewActor)
+  {
+    GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
+    UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
+  }
 }
 
-// ÇÁ¸®ºä À§Ä¡ ¾÷µ¥ÀÌÆ® ÇÔ¼ö
+
+
+
+// í”„ë¦¬ë·° ì•¡í„°ì˜ ì´ë™ ì—…ë°ì´íŠ¸
+void UFlyWidget::UpdatePreviewMovement()
+{
+	if (!PreviewActor || !SelectedActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PreviewActor or SelectedActor is missing."));
+		return;
+	}
+
+	// ì›ë³¸ ì˜¤ë¸Œì íŠ¸ ìœ„ì¹˜ì™€ ëª©í‘œ ì§€ì  ê³„ì‚°
+	FVector StartLocation = SelectedActor->GetActorLocation(); // ì›ë³¸ ì˜¤ë¸Œì íŠ¸ ìœ„ì¹˜
+	FVector TargetLocation = StartLocation + (StoredFlyDirection * StoredMoveDistance); // ëª©í‘œ ì§€ì 
+
+	FVector CurrentLocation = PreviewActor->GetActorLocation(); // í˜„ì¬ ìœ„ì¹˜
+	FVector Direction = bPreviewDirectionReversed ? -StoredFlyDirection : StoredFlyDirection; // ì´ë™ ë°©í–¥
+
+	// ë‹¤ìŒ ìœ„ì¹˜ ê³„ì‚°
+	FVector NextLocation = CurrentLocation + (Direction * StoredMoveSpeed * 0.05f);
+
+	UE_LOG(LogTemp, Warning, TEXT("Start: %s, Target: %s, Current: %s, Next: %s, Direction: %s"),
+		*StartLocation.ToString(), *TargetLocation.ToString(), *CurrentLocation.ToString(), *NextLocation.ToString(), *Direction.ToString());
+
+	// ëª©í‘œ ì§€ì  ë„ë‹¬ ì—¬ë¶€ í™•ì¸
+	if (!bPreviewDirectionReversed && FVector::Dist(CurrentLocation, TargetLocation) <= 5.0f) // ëª©í‘œ ì§€ì  ë„ë‹¬
+	{
+		bPreviewDirectionReversed = true; // ë°©í–¥ ë°˜ì „
+		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the target. Reversing direction to START."));
+	}
+	else if (bPreviewDirectionReversed && FVector::Dist(CurrentLocation, StartLocation) <= 5.0f) // ì‹œì‘ ì§€ì  ë„ë‹¬
+	{
+		bPreviewDirectionReversed = false; // ë°©í–¥ ì´ˆê¸°í™”
+		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the start. Reversing direction to TARGET."));
+	}
+
+	// í”„ë¦¬ë·° ì•¡í„° ìœ„ì¹˜ ì—…ë°ì´íŠ¸
+	PreviewActor->SetActorLocation(NextLocation);
+}
+
+
+// í”„ë¦¬ë·° ìœ„ì¹˜ ì—…ë°ì´íŠ¸ í•¨ìˆ˜
 void UFlyWidget::UpdatePreviewLocation(FVector Direction, float Distance)
 {
+	// ê¸°ì¡´ í”„ë¦¬ë·° ì•¡í„° ì‚­ì œ
 	if (PreviewActor)
 	{
 		PreviewActor->Destroy();
 		PreviewActor = nullptr;
 	}
 
+	// ìƒˆë¡œìš´ ìœ„ì¹˜ ê³„ì‚° í›„ í”„ë¦¬ë·° ì•¡í„° ìƒì„±
 	if (SelectedActor)
 	{
 		FVector TargetLocation = SelectedActor->GetActorLocation() + (Direction * Distance);
@@ -463,3 +568,12 @@ void UFlyWidget::UpdatePreviewLocation(FVector Direction, float Distance)
 	}
 }
 
+void UFlyWidget::DestroyPreviewActor()
+{
+	if (PreviewActor)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(PreviewFlyTimer); // íƒ€ì´ë¨¸ ì œê±°
+		PreviewActor->Destroy(); // ì•¡í„° ì‚­ì œ
+		PreviewActor = nullptr;
+	}
+}

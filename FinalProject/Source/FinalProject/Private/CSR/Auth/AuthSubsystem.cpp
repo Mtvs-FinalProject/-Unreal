@@ -94,10 +94,10 @@ void UAuthSubsystem::OnSignUpRequestComplete(FHttpRequestPtr Request, FHttpRespo
     {
         bool bSuccessful = Response->GetResponseCode() == 200;
         FString Message;
-        if (JsonObject->HasField("message"))
+        if (JsonObject->HasField(TEXT("message")))
         {
             // 서버에서 message 필드를 보내줬다면 그 메시지를 사용
-            Message = JsonObject->GetStringField("message");
+            Message = JsonObject->GetStringField(TEXT("message"));
         }
         else
         {

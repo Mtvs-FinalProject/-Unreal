@@ -6,7 +6,7 @@
 
 AActor* APSH_GameModeBase::SpawnFunctionObject()
 {	
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass && GetWorld())
