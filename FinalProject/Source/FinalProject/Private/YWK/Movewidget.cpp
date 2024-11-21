@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "YWK/Movewidget.h"
@@ -15,67 +15,67 @@ void UMovewidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// °ÔÀÓ¸ğµå¿¡¼­ ¿ÀºêÁ§Æ® »ı¼º ÀÌº¥Æ®¸¦ ¹ÙÀÎµù
+	// ê²Œì„ëª¨ë“œì—ì„œ ì˜¤ë¸Œì íŠ¸ ìƒì„± ì´ë²¤íŠ¸ë¥¼ ë°”ì¸ë”©
 	APSH_GameModeBase* GameMode = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
 	if (GameMode)
 	{
 		GameMode->OnObjectCreated.AddDynamic(this, &UMovewidget::AddObjectToComboBox);
 	}
 
-	// µÚ·Î°¡±â ¹öÆ°
+	// ë’¤ë¡œê°€ê¸° ë²„íŠ¼
 	if (Btn_MoveBack)
 	{
 		Btn_MoveBack->OnClicked.AddDynamic(this, &UMovewidget::OnMoveBackClicked);
 	}
-	// ¾ÕÀ¸·Î °¡±â ¹öÆ°
+	// ì•ìœ¼ë¡œ ê°€ê¸° ë²„íŠ¼
 	if (Btn_Front)
 	{
 		Btn_Front->OnClicked.AddDynamic(this, &UMovewidget::OnFrontClicked);
 	}
 
-	// µÚ·Î °¡±â ¹öÆ°
+	// ë’¤ë¡œ ê°€ê¸° ë²„íŠ¼
 	if (Btn_Back)
 	{
 		Btn_Back->OnClicked.AddDynamic(this, &UMovewidget::OnBackClicked);
 	}
 
-	// ¿ŞÂÊÀ¸·Î °¡±â ¹öÆ°
+	// ì™¼ìª½ìœ¼ë¡œ ê°€ê¸° ë²„íŠ¼
 	if (Btn_Left)
 	{
 		Btn_Left->OnClicked.AddDynamic(this, &UMovewidget::OnLeftClicked);
 	}
 
-	// ¿À¸¥ÂÊÀ¸·Î °¡±â ¹öÆ°
+	// ì˜¤ë¥¸ìª½ìœ¼ë¡œ ê°€ê¸° ë²„íŠ¼
 	if (Btn_Right)
 	{
 		Btn_Right->OnClicked.AddDynamic(this, &UMovewidget::OnRightClicked);
 	}
 
-	// ±â´É ½ÃÀÛ ¹öÆ°
+	// ê¸°ëŠ¥ ì‹œì‘ ë²„íŠ¼
 	if (Btn_MoveStart)
 	{
 		Btn_MoveStart->OnClicked.AddDynamic(this, &UMovewidget::OnStartButtonClicked);
 	}
 
-	// ±â´É Á¤Áö ¹öÆ°
+	// ê¸°ëŠ¥ ì •ì§€ ë²„íŠ¼
 	if (Btn_MoveStop)
 	{
 		Btn_MoveStop->OnClicked.AddDynamic(this, &UMovewidget::OnStopButtonClicked);
 	}
 
-	// ÃÖÃÊ ÀÚ¸®·Î µ¹¾Æ°¡±â
+	// ìµœì´ˆ ìë¦¬ë¡œ ëŒì•„ê°€ê¸°
 	if (Btn_MoveOrigin)
 	{
 		Btn_MoveOrigin->OnClicked.AddDynamic(this, &UMovewidget::OnOriginButtonClicked);
 	}
 
-	// ¼Óµµ ÀÔ·Â ÇÊµå¿¡ OnTextCommitted ÀÌº¥Æ® ¹ÙÀÎµù
+	// ì†ë„ ì…ë ¥ í•„ë“œì— OnTextCommitted ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (SpeedMoveText)
 	{
 		SpeedMoveText->OnTextCommitted.AddDynamic(this, &UMovewidget::OnSpeedTextCommitted);
 	}
 
-	// °Å¸® ÀÔ·Â ÇÊµå¿¡ OnTextCommitted ÀÌº¥Æ® ¹ÙÀÎµù
+	// ê±°ë¦¬ ì…ë ¥ í•„ë“œì— OnTextCommitted ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (DistMoveText)
 	{
 		DistMoveText->OnTextCommitted.AddDynamic(this, &UMovewidget::OnDistanceTextCommitted);
@@ -83,7 +83,7 @@ void UMovewidget::NativeConstruct()
 
 	InitializeFunctionObjects();
 
-	// ¿Õº¹ ¸ğµå Ã¼Å©¹Ú½º¿Í È½¼ö ÀÔ·Â ÇÊµå ÀÌº¥Æ® ¹ÙÀÎµù
+	// ì™•ë³µ ëª¨ë“œ ì²´í¬ë°•ìŠ¤ì™€ íšŸìˆ˜ ì…ë ¥ í•„ë“œ ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (Chk_LoopMode)
 	{
 		Chk_LoopMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnLoopModeCheckChanged);
@@ -95,31 +95,31 @@ void UMovewidget::NativeConstruct()
 	}
 }
 
-// ¾ÕÀ¸·Î °¡±â
+// ì•ìœ¼ë¡œ ê°€ê¸°
 void UMovewidget::OnFrontClicked()
 {
-	SetMoveDirection(FVector(1.0f, 0.0f, 0.0f));  // Àü¹æ º¤ÅÍ
+	SetMoveDirection(FVector(1.0f, 0.0f, 0.0f));  // ì „ë°© ë²¡í„°
 }
 
-// µÚ·Î °¡±â
+// ë’¤ë¡œ ê°€ê¸°
 void UMovewidget::OnBackClicked()
 {
-	SetMoveDirection(FVector(-1.0f, 0.0f, 0.0f));  // ÈÄ¹æ º¤ÅÍ
+	SetMoveDirection(FVector(-1.0f, 0.0f, 0.0f));  // í›„ë°© ë²¡í„°
 }
 
-// ¿À¸¥ÂÊÀ¸·Î °¡±â
+// ì˜¤ë¥¸ìª½ìœ¼ë¡œ ê°€ê¸°
 void UMovewidget::OnRightClicked()
 {
-	SetMoveDirection(FVector(0.0f, 1.0f, 0.0f));  // ¿À¸¥ÂÊ º¤ÅÍ
+	SetMoveDirection(FVector(0.0f, 1.0f, 0.0f));  // ì˜¤ë¥¸ìª½ ë²¡í„°
 }
 
-// ¿ŞÂÊÀ¸·Î °¡±â
+// ì™¼ìª½ìœ¼ë¡œ ê°€ê¸°
 void UMovewidget::OnLeftClicked()
 {
-	SetMoveDirection(FVector(0.0f, -1.0f, 0.0f));  // ¿ŞÂÊ º¤ÅÍ
+	SetMoveDirection(FVector(0.0f, -1.0f, 0.0f));  // ì™¼ìª½ ë²¡í„°
 }
 
-// ÇöÀç ¶ç¿î ui Áö¿ì°í µÚ¿¡ ui ¿­±â
+// í˜„ì¬ ë„ìš´ ui ì§€ìš°ê³  ë’¤ì— ui ì—´ê¸°
 void UMovewidget::OnMoveBackClicked()
 {
 	RemoveFromParent();
@@ -134,16 +134,16 @@ void UMovewidget::OnMoveBackClicked()
 	}
 }
 
-// ±â´É ½ÃÀÛ ¹öÆ°
+// ê¸°ëŠ¥ ì‹œì‘ ë²„íŠ¼
 void UMovewidget::OnStartButtonClicked()
 {
-	// Start ¹öÆ°À» ´©¸¦ ¶§ ¹Ì¸®º¸±â ¿ÀºêÁ§Æ®°¡ »ç¶óÁöµµ·Ï ¼³Á¤
+	// Start ë²„íŠ¼ì„ ëˆ„ë¥¼ ë•Œ ë¯¸ë¦¬ë³´ê¸° ì˜¤ë¸Œì íŠ¸ê°€ ì‚¬ë¼ì§€ë„ë¡ ì„¤ì •
 	if (PreviewActor)
 	{
 		PreviewActor->SetActorHiddenInGame(true);
 		PreviewActor = nullptr;
 	}
-	// ´ÜÀÏ SelectedActor Ã³¸®
+	// ë‹¨ì¼ SelectedActor ì²˜ë¦¬
 	if (SelectedActor)
 	{
 		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
@@ -159,7 +159,7 @@ void UMovewidget::OnStartButtonClicked()
 		}
 	}
 
-	// ´ÙÁß ÄÄÆ÷³ÍÆ® Ã³¸®
+	// ë‹¤ì¤‘ ì»´í¬ë„ŒíŠ¸ ì²˜ë¦¬
 	for (UMyMoveActorComponent* MoveComponent : ControlledMoveComponents)
 	{
 		if (MoveComponent)
@@ -180,7 +180,7 @@ void UMovewidget::OnStartButtonClicked()
 
 
 
-// ÀÌ ¹öÆ° ´©¸£¸é ¸ØÃã
+// ì´ ë²„íŠ¼ ëˆ„ë¥´ë©´ ë©ˆì¶¤
 void UMovewidget::OnStopButtonClicked()
 {
 	if (SelectedActor)
@@ -201,7 +201,7 @@ void UMovewidget::OnStopButtonClicked()
 	}
 }
 
-// ÃÖÃÊ ÀÚ¸®·Î µ¹¾Æ°¡±â
+// ìµœì´ˆ ìë¦¬ë¡œ ëŒì•„ê°€ê¸°
 void UMovewidget::OnOriginButtonClicked()
 {
 	if (SelectedActor)
@@ -224,16 +224,16 @@ void UMovewidget::OnOriginButtonClicked()
 
 
 
-// ¼Óµµ¿Í °Å¸® °ª set text
+// ì†ë„ì™€ ê±°ë¦¬ ê°’ set text
 void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue)
 {
-	// ¼Óµµ °ªÀ» UIÀÇ EditableText¿¡ ¼³Á¤
+	// ì†ë„ ê°’ì„ UIì˜ EditableTextì— ì„¤ì •
 	if (SpeedMoveText)
 	{
-		FText SpeedText = FText::AsNumber(SpeedValue); // ¼ıÀÚ¸¦ FText·Î º¯È¯
+		FText SpeedText = FText::AsNumber(SpeedValue); // ìˆ«ìë¥¼ FTextë¡œ ë³€í™˜
 		SpeedMoveText->SetText(SpeedText);
 	}
-	// °Å¸® °ªÀ» UIÀÇ EditableText¿¡ ¼³Á¤
+	// ê±°ë¦¬ ê°’ì„ UIì˜ EditableTextì— ì„¤ì •
 	if (DistMoveText)
 	{
 		FText DistText = FText::AsNumber(DistanceValue);
@@ -241,7 +241,7 @@ void UMovewidget::UpdateMovementValuesInUI(float SpeedValue, float DistanceValue
 	}
 }
 
-// ¼Óµµ³ª °Å¸® °ª ³Ö´Â ÇÔ¼ö
+// ì†ë„ë‚˜ ê±°ë¦¬ ê°’ ë„£ëŠ” í•¨ìˆ˜
 void UMovewidget::ApplyMovementValues()
 {
 	if (SelectedActor)
@@ -249,12 +249,12 @@ void UMovewidget::ApplyMovementValues()
 		UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>();
 		if (MoveComponent)
 		{
-			// ¼Óµµ °ª ³Ö´Â ºÎºĞ
+			// ì†ë„ ê°’ ë„£ëŠ” ë¶€ë¶„
 			FString SpeedString = SpeedMoveText->GetText().ToString();
 			float SpeedValue = FCString::Atof(*SpeedString);
 			MoveSpeedMap.FindOrAdd(MoveComponent) = SpeedValue;
 
-			// °Å¸® °ª ³Ö´Â ºÎºĞ
+			// ê±°ë¦¬ ê°’ ë„£ëŠ” ë¶€ë¶„
 			FString DistanceString = DistMoveText->GetText().ToString();
 			float DistanceValue = FCString::Atof(*DistanceString);
 			MoveComponent->MaxDistance = DistanceValue;
@@ -267,11 +267,11 @@ void UMovewidget::ApplyMovementValues()
 }
 
 
-// ¼Óµµ ÀÔ·Â ÇÊµå¿¡¼­ ¿£ÅÍ¸¦ ÃÆÀ» ¶§
+// ì†ë„ ì…ë ¥ í•„ë“œì—ì„œ ì—”í„°ë¥¼ ì³¤ì„ ë•Œ
 void UMovewidget::OnSpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod == ETextCommit::OnEnter)
-	{	//  ¼Óµµ ÀÔ·Â °ª Ã³¸®
+	{	//  ì†ë„ ì…ë ¥ ê°’ ì²˜ë¦¬
 		FString SpeedString = Text.ToString();
 		float SpeedValue = FCString::Atof(*SpeedString);
 
@@ -291,7 +291,7 @@ void UMovewidget::OnDistanceTextCommitted(const FText& Text, ETextCommit::Type C
 {
 	if (CommitMethod == ETextCommit::OnEnter)
 	{
-		// ÀÔ·ÂµÈ °Å¸® °ª Ã³¸®
+		// ì…ë ¥ëœ ê±°ë¦¬ ê°’ ì²˜ë¦¬
 		FString DistanceString = Text.ToString();
 		float DistanceValue = FCString::Atof(*DistanceString);
 		UpdatePreviewLocation(StoredMoveDirection, DistanceValue);
@@ -310,13 +310,13 @@ void UMovewidget::OnDistanceTextCommitted(const FText& Text, ETextCommit::Type C
 
 AActor* UMovewidget::GetOwnerFromComponent()
 {
-	// SelectedActor°¡ ¼³Á¤µÇ¾î ÀÖÀ¸¸é ¹Ù·Î ¹İÈ¯
+	// SelectedActorê°€ ì„¤ì •ë˜ì–´ ìˆìœ¼ë©´ ë°”ë¡œ ë°˜í™˜
 	if (SelectedActor)
 	{
 		return SelectedActor;
 	}
 
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass)
@@ -326,11 +326,11 @@ AActor* UMovewidget::GetOwnerFromComponent()
 
 		if (FoundActors.Num() > 0)
 		{
-			// Ã¹ ¹øÂ° ¹ß°ßµÈ ¾×ÅÍ¸¦ ±âº»À¸·Î ¼³Á¤
+			// ì²« ë²ˆì§¸ ë°œê²¬ëœ ì•¡í„°ë¥¼ ê¸°ë³¸ìœ¼ë¡œ ì„¤ì •
 			SelectedActor = FoundActors[0];
 			return SelectedActor;
 		}
-		// ¾øÀ¸¸é »õ·Î »ı¼º
+		// ì—†ìœ¼ë©´ ìƒˆë¡œ ìƒì„±
 		SelectedActor = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
 		return SelectedActor;
 	}
@@ -338,17 +338,17 @@ AActor* UMovewidget::GetOwnerFromComponent()
 }
 
 
-// ±â´É ¿ÀºêÁ§Æ® ÃÊ±âÈ­
+// ê¸°ëŠ¥ ì˜¤ë¸Œì íŠ¸ ì´ˆê¸°í™”
 void UMovewidget::InitializeFunctionObjects()
 {
-	FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
+	FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_MoveandFly.BP_MoveandFly_C"));
 	UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
 	if (BP_FunctionObjectClass && GetWorld())
 	{
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), BP_FunctionObjectClass, AllFunctionObject);
 
-		// ComboBox¿¡ ÃÊ±â ¿ÀºêÁ§Æ® Ãß°¡
+		// ComboBoxì— ì´ˆê¸° ì˜¤ë¸Œì íŠ¸ ì¶”ê°€
 		if (MoveBoxList)
 		{
 			for (AActor* FunctionObject : AllFunctionObject)
@@ -358,10 +358,10 @@ void UMovewidget::InitializeFunctionObjects()
 					MoveBoxList->AddOption(FunctionObject->GetName());
 				}
 			}
-			// ÄŞº¸¹Ú½º ¼±ÅÃ º¯°æ ½Ã ÀÌº¥Æ® ¹ÙÀÎµù
+			// ì½¤ë³´ë°•ìŠ¤ ì„ íƒ ë³€ê²½ ì‹œ ì´ë²¤íŠ¸ ë°”ì¸ë”©
 			MoveBoxList->OnSelectionChanged.AddDynamic(this, &UMovewidget::OnFunctionObjectSelected);
 		}
-		// ¹è¿­ÀÇ Ã¹ ¹øÂ° ¿ÀºêÁ§Æ®¸¦ ±âº» ¼±ÅÃ
+		// ë°°ì—´ì˜ ì²« ë²ˆì§¸ ì˜¤ë¸Œì íŠ¸ë¥¼ ê¸°ë³¸ ì„ íƒ
 		if (AllFunctionObject.Num() > 0)
 		{
 			SelectedActor = AllFunctionObject[0];
@@ -373,11 +373,11 @@ void UMovewidget::AddObjectToComboBox(AActor* NewObject)
 {
 	if (NewObject && MoveBoxList)
 	{
-		// ComboBox¿¡ ¿ÀºêÁ§Æ® ÀÌ¸§ Ãß°¡
-		FString DisplayName = NewObject->GetActorLabel(); // ¿¡µğÅÍ¿¡¼­ ¼³Á¤ÇÑ ÀÌ¸§
+		// ComboBoxì— ì˜¤ë¸Œì íŠ¸ ì´ë¦„ ì¶”ê°€
+		FString DisplayName = NewObject->GetName(); // ì—ë””í„°ì—ì„œ ì„¤ì •í•œ ì´ë¦„
 		MoveBoxList->AddOption(DisplayName);
 
-		// AllFunctionObject ¹è¿­¿¡ ¿ÀºêÁ§Æ® ÂüÁ¶ Ãß°¡ÇÏ¿© ComboBox¿Í ÀÎµ¦½º¸¦ ¸ÂÃß±â
+		// AllFunctionObject ë°°ì—´ì— ì˜¤ë¸Œì íŠ¸ ì°¸ì¡° ì¶”ê°€í•˜ì—¬ ComboBoxì™€ ì¸ë±ìŠ¤ë¥¼ ë§ì¶”ê¸°
 		AllFunctionObject.Add(NewObject);
 	}
 }
@@ -387,19 +387,21 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 	int32 SelectedIndex = MoveBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
-		// »õ·Î ¼±ÅÃµÈ ¿ÀºêÁ§Æ® ¼³Á¤
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected function object: %s"), *SelectedActor->GetName());
 
-		// ±âÁ¸ ÇÁ¸®ºä Á¦°Å
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		DestroyPreviewActor();
 
-		// »õ·Î¿î ÇÁ¸®ºä »ı¼º (SelectedActor À§Ä¡¿¡ »ı¼º)
+		// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (SelectedActor ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 		SpawnPreviewActor();
 
-		// UI¿¡ ¼±ÅÃµÈ MoveComponentÀÇ °ªÀ» ¾÷µ¥ÀÌÆ®
+		// UIï¿½ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ MoveComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 		if (UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>())
 		{
+
+			// UIì— ì„ íƒëœ MoveComponentì˜ ê°’ì„ ì—…ë°ì´íŠ¸
 			UpdateMovementValuesInUI(MoveComponent->MoveSpeed, MoveComponent->MaxDistance);
 			Chk_LoopMode->SetIsChecked(MoveComponent->bLoopMode);
 			Chk_SingleDirectionMode->SetIsChecked(MoveComponent->bSingleDirection);
@@ -453,7 +455,7 @@ void UMovewidget::OnSingleDirectionCheckChanged(bool bIsChecked)
 	}
 }
 
-// ´ÙÁß MoveComponent Ãß°¡ ÇÔ¼ö
+// ë‹¤ì¤‘ MoveComponent ì¶”ê°€ í•¨ìˆ˜
 void UMovewidget::AddControlledMoveComponent(UMyMoveActorComponent* MoveComponent)
 {
 	if (MoveComponent && !ControlledMoveComponents.Contains(MoveComponent))
@@ -462,7 +464,7 @@ void UMovewidget::AddControlledMoveComponent(UMyMoveActorComponent* MoveComponen
 	}
 }
 
-// ¹æÇâÁ¤ÇÏ±â
+// ë°©í–¥ì •í•˜ê¸°
 void UMovewidget::SetMoveDirection(FVector Direction)
 {
 	StoredMoveDirection = Direction;
@@ -500,20 +502,20 @@ void UMovewidget::SpawnPreviewActor()
 {
 	if (!PreviewActor)
 	{
-		// BP_PreviewDistance ¾×ÅÍ ·Îµå ¹× ½ºÆù
+		// BP_PreviewDistance ì•¡í„° ë¡œë“œ ë° ìŠ¤í°
 		UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
 		if (PreviewClass && SelectedActor)
 		{
-			// PreviewActor¸¦ SelectedActorÀÇ À§Ä¡¿¡ ½ºÆù
+			// PreviewActorë¥¼ SelectedActorì˜ ìœ„ì¹˜ì— ìŠ¤í°
 			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass);
 			if (PreviewActor)
 			{
-				PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // SelectedActorÀÇ À§Ä¡°¡ ½ÃÀÛ À§Ä¡
+				PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // SelectedActorì˜ ìœ„ì¹˜ê°€ ì‹œì‘ ìœ„ì¹˜
 			}
 		}
 	}
 
-	// À§Á¬ ÀÔ·Â°ª¿¡¼­ ÀÌµ¿ ¼Óµµ¿Í °Å¸® °¡Á®¿À±â
+	// ìœ„ì ¯ ì…ë ¥ê°’ì—ì„œ ì´ë™ ì†ë„ì™€ ê±°ë¦¬ ê°€ì ¸ì˜¤ê¸°
 	if (SpeedMoveText)
 	{
 		FString SpeedString = SpeedMoveText->GetText().ToString();
@@ -526,10 +528,10 @@ void UMovewidget::SpawnPreviewActor()
 		StoredMoveDistance = FCString::Atof(*DistanceString);
 	}
 
-	// ÃÊ±âÈ­: ¹æÇâ ÀüÈ¯ »óÅÂ ¸®¼Â
+	// ì´ˆê¸°í™”: ë°©í–¥ ì „í™˜ ìƒíƒœ ë¦¬ì…‹
 	bPreviewDirectionReversed = false;
 
-	// Å¸ÀÌ¸Ó ¼³Á¤
+	// íƒ€ì´ë¨¸ ì„¤ì •
 	if (PreviewActor)
 	{
 		GetWorld()->GetTimerManager().SetTimer(PreviewMoveTimer, this, &UMovewidget::UpdatePreviewMovement, 0.1f, true);
@@ -543,41 +545,41 @@ void UMovewidget::UpdatePreviewMovement()
 		return;
 	}
 
-	FVector StartLocation = SelectedActor->GetActorLocation(); // ½ÃÀÛ À§Ä¡´Â Ç×»ó SelectedActorÀÇ À§Ä¡
+	FVector StartLocation = SelectedActor->GetActorLocation(); // ì‹œì‘ ìœ„ì¹˜ëŠ” í•­ìƒ SelectedActorì˜ ìœ„ì¹˜
 	FVector TargetLocation = StartLocation + (StoredMoveDirection * StoredMoveDistance);
 
 	FVector CurrentLocation = PreviewActor->GetActorLocation();
 	FVector Direction = bPreviewDirectionReversed ? -StoredMoveDirection : StoredMoveDirection;
 
-	// ´ÙÀ½ À§Ä¡ °è»ê
+	// ë‹¤ìŒ ìœ„ì¹˜ ê³„ì‚°
 	FVector NextLocation = CurrentLocation + Direction * StoredMoveSpeed * 0.1f;
 
-	// ¸ñÇ¥¿¡ µµ´ŞÇßÀ» °æ¿ì Ã³¸®
+	// ëª©í‘œì— ë„ë‹¬í–ˆì„ ê²½ìš° ì²˜ë¦¬
 	if (!bPreviewDirectionReversed && FVector::Dist(CurrentLocation, TargetLocation) <= 10.0f)
 	{
-		// ¸ñÇ¥ÁöÁ¡¿¡ µµ´ŞÇÏ¸é ¹æÇâ ¹İÀü
+		// ëª©í‘œì§€ì ì— ë„ë‹¬í•˜ë©´ ë°©í–¥ ë°˜ì „
 		bPreviewDirectionReversed = true;
 	}
 	else if (bPreviewDirectionReversed && FVector::Dist(CurrentLocation, StartLocation) <= 10.0f)
 	{
-		// ½ÃÀÛÁöÁ¡¿¡ µµ´ŞÇÏ¸é ¹æÇâ ÃÊ±âÈ­
+		// ì‹œì‘ì§€ì ì— ë„ë‹¬í•˜ë©´ ë°©í–¥ ì´ˆê¸°í™”
 		bPreviewDirectionReversed = false;
 	}
 
-	// Preview ActorÀÇ À§Ä¡ ¾÷µ¥ÀÌÆ®
+	// Preview Actorì˜ ìœ„ì¹˜ ì—…ë°ì´íŠ¸
 	PreviewActor->SetActorLocation(NextLocation);
 }
 
 void UMovewidget::UpdatePreviewLocation(FVector Direction, float Distance)
 {
-	// ±âÁ¸ Preview Actor Á¦°Å
+	// ê¸°ì¡´ Preview Actor ì œê±°
 	DestroyPreviewActor();
 
-	// »õ·Î¿î ¼³Á¤ Àû¿ë
+	// ìƒˆë¡œìš´ ì„¤ì • ì ìš©
 	StoredMoveDirection = Direction;
 	StoredMoveDistance = Distance;
 
-	// Preview Actor »ı¼º
+	// Preview Actor ìƒì„±
 	SpawnPreviewActor();
 }
 
@@ -585,7 +587,7 @@ void UMovewidget::DestroyPreviewActor()
 {
 	if (PreviewActor)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(PreviewMoveTimer); // Å¸ÀÌ¸Ó Á¤¸®
+		GetWorld()->GetTimerManager().ClearTimer(PreviewMoveTimer); // íƒ€ì´ë¨¸ ì •ë¦¬
 		PreviewActor->Destroy();
 		PreviewActor = nullptr;
 	}

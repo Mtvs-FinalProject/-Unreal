@@ -74,6 +74,45 @@ TArray<uint8> ACSR_HTTP_Actor::CreateMultipartData(const TArray<uint8>& FileData
     return Content;
 }
 
+FString ConvertDataTableToJSON(UDataTable* DataTable)
+{
+    if (!DataTable)
+    {
+        UE_LOG(LogTemp, Error, TEXT("DataTable is null."));
+        return FString();
+    }
+
+    TArray<FName> RowNames = DataTable->GetRowNames();
+    const UScriptStruct* RowStruct = DataTable->GetRowStruct();
+    TSharedRef<FJsonObject> JsonObject = MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+
+    for (const FName& RowName : RowNames)
+    {
+        void* RowData = DataTable->FindRowUnchecked(RowName);
+        if (RowData)
+        {
+            TSharedRef<FJsonObject> RowJson = MakeShared<FJsonObject>();
+            for (TFieldIterator<FProperty> PropIt(RowStruct); PropIt; ++PropIt)
+            {
+                FProperty* Property = *PropIt;
+                FString ValueString;
+                Property->ExportTextItem(ValueString, Property->ContainerPtrToValuePtr<void>(RowData), nullptr, nullptr, 0);
+                RowJson->SetStringField(Property->GetNameCPP(), ValueString);
+            }
+            JsonArray.Add(MakeShared<FJsonValueObject>(RowJson));
+        }
+    }
+
+    JsonObject->SetArrayField(TEXT("Rows"), JsonArray);
+
+    FString JSONString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JSONString);
+    FJsonSerializer::Serialize(JsonObject, Writer);
+
+    return JSONString;
+}
+
 void ACSR_HTTP_Actor::SendUMapAndJsonToServer()
 {
     UE_LOG(LogTemp, Warning, TEXT("hellp"));
@@ -97,7 +136,8 @@ void ACSR_HTTP_Actor::SendUMapAndJsonToServer()
         UE_LOG(LogTemp, Error, TEXT("No UMap file data to send."));
         return;
     }
-    FString DataTableJsonString = player->dataTable->GetTableAsJSON();
+    //FString DataTableJsonString = player->dataTable->GetTableAsJSON();
+    FString DataTableJsonString = ConvertDataTableToJSON(player->dataTable);
     TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
 
     RootJsonObject->SetNumberField(TEXT("price"), 0);
@@ -226,13 +266,13 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
 
         if (FJsonSerializer::Deserialize(Reader, JsonObject))
         {
-            if (JsonObject->HasField("data_table"))
+            if (JsonObject->HasField(TEXT("data_table")))
             {
                 // data_table 필드를 TArray<FPSH_ObjectData>로 파싱
                 TArray<FPSH_ObjectData> DataTableArray;
                 const TArray<TSharedPtr<FJsonValue>>* JsonArray;
 
-                if (JsonObject->TryGetArrayField("data_table", JsonArray))
+                if (JsonObject->TryGetArrayField(TEXT("data_table"), JsonArray))
                 {
                     for (const TSharedPtr<FJsonValue>& Value : *JsonArray)
                     {

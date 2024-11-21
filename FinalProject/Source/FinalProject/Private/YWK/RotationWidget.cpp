@@ -202,7 +202,7 @@ void URotationWidget::InitializeFunctionObjects()
         return;
     }
 
-    FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
+    FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
     UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
     if (BP_FunctionObjectClass && GetWorld())
@@ -235,7 +235,7 @@ void URotationWidget::AddObjectToComboBox(AActor* NewObject)
 {
     if (NewObject && RotateBoxList)
     {
-        FString DisplayName = NewObject->GetActorLabel();
+        FString DisplayName = NewObject->GetName();
         RotateBoxList->AddOption(DisplayName);
         AllFunctionObject.Add(NewObject);
         UE_LOG(LogTemp, Warning, TEXT("Added new object to ComboBox: %s"), *DisplayName);
@@ -378,7 +378,7 @@ AActor* URotationWidget::GetOwnerFromComponent()
         return SelectedActor;
     }
 
-    FStringClassReference BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
+    FSoftClassPath BP_FunctionObjectClassRef(TEXT("/Game/YWK/BP/BP_Rotate.BP_Rotate_C"));
     UClass* BP_FunctionObjectClass = BP_FunctionObjectClassRef.TryLoadClass<AActor>();
 
     if (BP_FunctionObjectClass)
