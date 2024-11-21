@@ -370,7 +370,7 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 
 		// ���ο� ������ ���� ����
 		SpawnPreviewActor();
-=======
+
 		// 선택된 오브젝트의 FlyComponent 설정
 		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 		{
@@ -390,8 +390,6 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 }
 
 
-
-=======
 // 왕복 모드 체크박스 상태 변경
 
 void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
