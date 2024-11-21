@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "MyFlyActorComponent.generated.h"
 
 
@@ -73,6 +74,10 @@ public:
 
 	UFUNCTION()
 	void GetDelegateBool(bool delegatebool);
+
+	FPSH_FunctionBlockData SaveData();
+
+	void LoadData(FPSH_FunctionBlockData funtionData);
 
 	bool bStart;
 };

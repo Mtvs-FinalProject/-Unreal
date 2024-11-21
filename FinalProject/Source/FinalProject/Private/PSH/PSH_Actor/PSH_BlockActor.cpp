@@ -12,6 +12,7 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyRotateActorComponent.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+#include "GameFramework/RotatingMovementComponent.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -464,63 +465,117 @@ void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, F
 
 FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 {
-
-	FPSH_ObjectData Data;
-
-	// 부모 블럭의 클래스 및 위치 정보를 저장
-	Data.actor = GetClass();
-
-	FTransform actorTransfrom = GetActorTransform();
-	
-	actorTransfrom.SetLocation(
-	FVector(actorTransfrom.GetLocation().X, actorTransfrom.GetLocation().Y, FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f)
-	);
-
-	Data.actorTransfrom = actorTransfrom;
-
-	// 자식 블럭들이 있는지 확인
-	if (childsActors.Num() > 0)
+	if (bisSavePoint == false)
 	{
-		FPSH_Childdats ChildrenData = SaveBlock();  // 자식 블럭 정보를 저장하는 함수 호출
-		Data.childsData.Add(ChildrenData);  // 저장한 자식 블럭 정보를 Data에 추가
-	}
+		FPSH_ObjectData Data;
 
-	return Data;
+		// 부모 블록 정보 저장
+		Data.actor = GetClass();
+		FTransform ActorTransform = GetActorTransform();
+		ActorTransform.SetLocation(FVector(
+			ActorTransform.GetLocation().X,
+			ActorTransform.GetLocation().Y,
+			FMath::RoundToFloat(ActorTransform.GetLocation().Z / 50.0f) * 50.0f
+		));
+
+		Data.actorTransfrom = ActorTransform;
+		Data.funcitonData = ComponentSaveData(functionObjectDataType);
+		// 스택을 이용한 비재귀적 저장
+		TArray<APSH_BlockActor*> Stack;
+		Stack.Push(this);
+
+		while (Stack.Num() > 0)
+		{
+			APSH_BlockActor* CurrentBlock = Stack.Pop();
+			if (!CurrentBlock) continue;
+
+			for (AActor* ChildActor : CurrentBlock->childsActors)
+			{
+				APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(ChildActor);
+
+				if (ChildBlock)
+				{
+
+					FPSH_ChildData ChildData;
+					ChildData.actor = ChildBlock->GetClass();
+					ChildData.actorTransfrom = ChildBlock->GetActorTransform();
+					ChildData.actorTransfrom.SetScale3D(FVector(1));
+					ChildData.funcitonData = ChildBlock->ComponentSaveData(ChildBlock->functionObjectDataType);;
+
+					FPSH_Childdats ChildWrapper;
+					ChildWrapper.childData.Add(ChildData);
+					Data.childsData.Add(ChildWrapper);
+
+					Stack.Push(ChildBlock); // 자식 블록을 스택에 추가
+				}
+			}
+		}
+
+		return Data;
+	 }
+	return locationData;
 }
 
-FPSH_Childdats  APSH_BlockActor::SaveBlock()
-{ 
+void APSH_BlockActor::SRPC_SaveBlockLocations_Implementation()
+{
 
-	FPSH_Childdats ChildrenData;
+}
+void APSH_BlockActor::SaveBlockLocations()
+{
+	bisSavePoint = true;
+	// 부모 위치 정보 저장
+	locationData.actor = GetClass();
+	FTransform ActorTransform = GetActorTransform();
+	ActorTransform.SetLocation(FVector(
+		ActorTransform.GetLocation().X,
+		ActorTransform.GetLocation().Y,
+		FMath::RoundToFloat(ActorTransform.GetLocation().Z / 50.0f) * 50.0f
+	));
 
-	for (auto* Child : childsActors)
+	locationData.actorTransfrom = ActorTransform;
+	locationData.funcitonData = ComponentSaveData(functionObjectDataType);
+
+	// 스택을 이용한 비재귀적 탐색
+	TArray<APSH_BlockActor*> Stack;
+	Stack.Push(this);
+
+	while (Stack.Num() > 0)
 	{
-		APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(Child);
-		if (ChildBlock)
-		{
-			// 각 자식 블럭의 정보를 저장
-			FPSH_ChildData SingleChildData;
-			SingleChildData.actor = ChildBlock->GetClass();
-			SingleChildData.actorTransfrom = ChildBlock->GetActorTransform();
-			ChildrenData.childData.Add(SingleChildData);  // 자식 정보 추가
+		APSH_BlockActor* CurrentBlock = Stack.Pop();
+		if (!CurrentBlock) continue;
 
-			// 자식의 자식 블럭들도 재귀적으로 저장
-			if (ChildBlock->childsActors.Num() > 0)
+		for (AActor* ChildActor : CurrentBlock->childsActors)
+		{
+			APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(ChildActor);
+			if (ChildBlock)
 			{
-				FPSH_Childdats SubChildrenData = ChildBlock->SaveBlock();  // 자식 블럭의 자식들도 저장
-				ChildrenData.childData.Append(SubChildrenData.childData);  // 자식의 자식 데이터를 추가
+				FPSH_ChildData ChildLocationData;
+				ChildLocationData.actor = ChildBlock->GetClass();
+				ChildLocationData.actorTransfrom = ChildBlock->GetActorTransform();
+				ChildLocationData.actorTransfrom.SetScale3D(FVector(1)); // 스케일 초기화
+				ChildLocationData.funcitonData = ChildBlock->ComponentSaveData(ChildBlock->functionObjectDataType);
+
+				FPSH_Childdats ChildWrapper;
+				ChildWrapper.childData.Add(ChildLocationData);
+
+				locationData.childsData.Add(ChildWrapper);
+
+				Stack.Push(ChildBlock);
 			}
 		}
 	}
 
-	return ChildrenData;
+
 
 }
 
 void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 {
+	if (Data.funcitonData.IsEmpty() == false)
+	{
+		ComponentLoadData(Data.funcitonData);
+	}
 	SetActorTransform(Data.actorTransfrom);
-
 	// 자식 블럭들 생성 및 불러오기
 	for (const FPSH_Childdats& ChildrenData : Data.childsData)
 	{
@@ -537,9 +592,20 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 				{
 					// 부모 블럭에 자식 블럭을 붙임
 					ChildBlock->meshComp->SetSimulatePhysics(false);
-					ChildBlock->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+					FAttachmentTransformRules rule = FAttachmentTransformRules(
+						EAttachmentRule::KeepWorld,
+						EAttachmentRule::KeepWorld,
+						EAttachmentRule::KeepWorld,
+						true
+					);
+					ChildBlock->AttachToActor(this, rule);
 					AddChild(ChildBlock);
 
+					if (ChildData.funcitonData.IsEmpty() == false)
+					{
+						ChildBlock->ComponentLoadData(ChildData.funcitonData);
+					}
+					
 					// 자식의 자식 블럭도 재귀적으로 불러옴
 					ChildBlock->LoadBlockHierarchy(ChildBlock->SaveBlockHierachy());
 				}
@@ -547,6 +613,7 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 		}
 	}
 
+	
 }
 void APSH_BlockActor::AllDestroy()
 {
@@ -617,12 +684,64 @@ void APSH_BlockActor::MRPC_SetOutLine_Implementation(bool chek)
 
 void APSH_BlockActor::StartBlockDelgate(bool createMode)
 {
-	MROC_StartBlockDelgate(createMode);
+	MRPC_StartBlockDelgate(createMode);
 }
-void APSH_BlockActor::MROC_StartBlockDelgate_Implementation(bool createMode)
+void APSH_BlockActor::MRPC_StartBlockDelgate_Implementation(bool createMode)
 {
 	if (componentCreateBoolDelegate.IsBound())
 	{
 		componentCreateBoolDelegate.Broadcast(createMode);
+	}
+}
+
+TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EFunctionObjectDataType dataType)
+{
+	PRINTLOG(TEXT("ComponentSaveData"));
+	TArray<FPSH_FunctionBlockData> funcionBlockData;
+	
+	if(ActorHasTag(FName("owner") ) == false) return funcionBlockData;
+
+	switch (functionObjectDataType)
+	{
+	case EFunctionObjectDataType::MOVEANDFLY:
+		flyComp = Cast<UMyFlyActorComponent>(GetComponentByClass(UMyFlyActorComponent::StaticClass()));
+		moveComp = Cast<UMyMoveActorComponent>(GetComponentByClass(UMyMoveActorComponent::StaticClass()));
+		if(flyComp == nullptr || moveComp == nullptr) return funcionBlockData;
+		funcionBlockData.Add(moveComp->SaveData());
+		funcionBlockData.Add(flyComp->SaveData());
+		break;
+	case EFunctionObjectDataType::ROTATE:
+		rotationMovementComp = Cast<UMyRotateActorComponent>(GetComponentByClass(UMyRotateActorComponent::StaticClass()));
+		if (rotationMovementComp == nullptr) return funcionBlockData;
+		funcionBlockData.Add(rotationMovementComp->SaveData());
+		break;
+	default :
+		PRINTLOG(TEXT("TypeNull"));
+		break;
+	}
+
+	return funcionBlockData;
+}
+
+void APSH_BlockActor::ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBlockData)
+{
+	PRINTLOG(TEXT("ComponentLoadData"));
+	switch (functionObjectDataType)
+	{
+	case EFunctionObjectDataType::MOVEANDFLY:
+		flyComp = Cast<UMyFlyActorComponent>(GetComponentByClass(UMyFlyActorComponent::StaticClass()));
+		moveComp = Cast<UMyMoveActorComponent>(GetComponentByClass(UMyMoveActorComponent::StaticClass()));
+		if (flyComp == nullptr || moveComp == nullptr) return;
+		moveComp->LoadData(funcionBlockData[0]);
+		flyComp->LoadData(funcionBlockData[1]);
+		break;
+	case EFunctionObjectDataType::ROTATE:
+		rotationMovementComp = Cast<UMyRotateActorComponent>(GetComponentByClass(UMyRotateActorComponent::StaticClass()));
+		if (rotationMovementComp == nullptr) return;
+		rotationMovementComp->LoadData(funcionBlockData[0]);
+		break;
+	default:
+		PRINTLOG(TEXT("TypeNull"));
+		break;
 	}
 }

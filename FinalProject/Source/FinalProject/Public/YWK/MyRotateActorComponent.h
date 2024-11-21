@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "MyRotateActorComponent.generated.h"
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -66,4 +67,8 @@ public:
 	void OriginRolling();
 
 	float LastLogTime = 0.0f; // 마지막으로 로그가 출력된 시간
+
+	FPSH_FunctionBlockData  SaveData();
+
+	void LoadData(FPSH_FunctionBlockData funtionData);
 };

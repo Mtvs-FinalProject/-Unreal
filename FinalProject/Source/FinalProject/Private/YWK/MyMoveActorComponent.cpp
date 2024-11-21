@@ -3,6 +3,8 @@
 
 #include "YWK/MyMoveActorComponent.h"
 #include "YWK/Movewidget.h"
+#include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "../FinalProject.h"
 
 // Sets default values for this component's properties
 UMyMoveActorComponent::UMyMoveActorComponent()
@@ -37,6 +39,7 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 	// ÇöÀç ¿Õº¹ È½¼ö
 	CurrentLoop = 0;
 
+    SetIsReplicated(true);
 }
 
 
@@ -118,7 +121,15 @@ void UMyMoveActorComponent::StartMoving()
 {
     StartLocation = GetOwner()->GetActorLocation();
     CurrentLoop = 0;
+
+    APSH_BlockActor * block = Cast<APSH_BlockActor>(GetOwner());
+    if (block && block->ActorHasTag(FName("owner")))
+    {
+        block->SaveBlockLocations();
+        PRINTLOG(TEXT("SaveBlockLocations"));
+    }
     bShouldMove = true;
+
     UE_LOG(LogTemp, Warning, TEXT("Movement started with direction: %s"), *MoveDirection.ToString());
 }
 
@@ -137,4 +148,49 @@ void UMyMoveActorComponent::OriginMove()
 		Owner->SetActorLocation(StartLocation);
 		UE_LOG(LogTemp, Warning, TEXT("Moved back to start location: %s"), *StartLocation.ToString());
 	}
+}
+
+void UMyMoveActorComponent::GetDelegateBool(bool delegatebool)
+{   
+    bShouldMove = delegatebool;
+
+    if (bShouldMove)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("true"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("fasle"));
+    }
+}
+FPSH_FunctionBlockData UMyMoveActorComponent::SaveData()
+{
+        FPSH_FunctionBlockData funtionData;
+	    funtionData.floatArray.Add(MoveSpeed);
+	    funtionData.floatArray.Add(MoveDistance);
+	    funtionData.fvectorArray.Add(MoveDirection);
+	    funtionData.intArray.Add(LoopCount);
+	    funtionData.boolArray.Add(bLoopMode);
+
+//         MoveSpeed; // float
+// 		MoveDistance; // float
+//         MoveDirection; //FVector
+//         LoopCount; //int32
+//         bLoopMode; //bool
+
+        return funtionData;
+}
+void UMyMoveActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
+{
+        MoveSpeed = funtionData.floatArray[0]; // float
+        MaxDistance = funtionData.floatArray[1]; // float
+        MoveDirection = funtionData.fvectorArray[0]; //FVector
+        LoopCount = funtionData.intArray[0]; //int32
+        bLoopMode = funtionData.boolArray[0]; //bool
+        bShouldMove = true;
+        PRINTLOG(TEXT("MoveSpeed: %f"), MoveSpeed);
+        PRINTLOG(TEXT("MaxDistance: %f"), MaxDistance);
+        PRINTLOG(TEXT("MoveDirection: %s"), *MoveDirection.ToString());
+        PRINTLOG(TEXT("LoopCount: %d"), LoopCount);
+        PRINTLOG(TEXT("bLoopMode: %s"), bLoopMode ? TEXT("True") : TEXT("False"));
 }

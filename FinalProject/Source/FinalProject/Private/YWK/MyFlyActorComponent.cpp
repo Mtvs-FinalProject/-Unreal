@@ -3,6 +3,7 @@
 
 #include "YWK/MyFlyActorComponent.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "../FinalProject.h"
 
 // Sets default values for this component's properties
 UMyFlyActorComponent::UMyFlyActorComponent()
@@ -140,9 +141,9 @@ void UMyFlyActorComponent::OriginFly()
 }
 void UMyFlyActorComponent::GetDelegateBool(bool delegatebool)
 {
-	bStart = delegatebool;
+	bShouldFly = delegatebool;
 
-	if (bStart)
+	if (bShouldFly)
 	{
 		UE_LOG(LogTemp,Warning,TEXT("true"));
 	}
@@ -150,4 +151,34 @@ void UMyFlyActorComponent::GetDelegateBool(bool delegatebool)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("fasle"));
 	}
+}
+
+FPSH_FunctionBlockData UMyFlyActorComponent::SaveData()
+{
+	FPSH_FunctionBlockData funtionData;
+
+	funtionData.floatArray.Add(FlySpeed);
+	funtionData.fvectorArray.Add(FlyDirection);
+	funtionData.intArray.Add(LoopCount);
+	funtionData.boolArray.Add(bLoopMode);
+	
+// 	FlySpeed; // float
+// 	FlyDirection; // fvector
+// 	LoopCount;	// int32
+// 	bLoopMode; // bool
+
+	return funtionData;
+}
+void UMyFlyActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
+{
+	
+	FlySpeed = funtionData.floatArray[0]; // float
+	FlyDirection = funtionData.fvectorArray[0]; // fvector
+	LoopCount = funtionData.intArray[0];	// int32
+	bLoopMode = funtionData.boolArray[0]; // bool
+
+// 	UE_LOG(LogTemp, Log, TEXT("FlySpeed: %f"), FlySpeed);
+// 	UE_LOG(LogTemp, Log, TEXT("FlyDirection: %s"), *FlyDirection.ToString());
+// 	UE_LOG(LogTemp, Log, TEXT("LoopCount: %d"), LoopCount);
+// 	UE_LOG(LogTemp, Log, TEXT("bLoopMode: %s"), bLoopMode ? TEXT("True") : TEXT("False"));
 }

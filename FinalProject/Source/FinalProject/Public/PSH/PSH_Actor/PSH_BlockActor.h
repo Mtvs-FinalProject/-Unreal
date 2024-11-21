@@ -9,6 +9,14 @@
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FComponentCreateBoolDelegate, bool);
 
+UENUM(BlueprintType)
+enum class EFunctionObjectDataType : uint8 
+{
+	NOMAL UMETA(DisplayName = "Nomal"),
+	MOVEANDFLY UMETA(DisplayName = "MoveAndFly"),
+	ROTATE UMETA(DisplayName = "Rotate"),
+};
+
 UCLASS()
 class FINALPROJECT_API APSH_BlockActor : public AActor
 {
@@ -108,8 +116,6 @@ public:
 
 	FPSH_ObjectData SaveBlockHierachy();
 
-	FPSH_Childdats  SaveBlock(/*FPSH_ObjectData& blockdata*/);
-
 /*	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);*/
 	void LoadBlockHierarchy(const FPSH_ObjectData& Data);
 
@@ -152,19 +158,40 @@ public:
 	void MRPC_SetOutLine(bool chek);
 
 	UPROPERTY(EditDefaultsOnly)
+	bool funtionBlock = false;
+
+	UPROPERTY(EditAnywhere)
+	EFunctionObjectDataType functionObjectDataType = EFunctionObjectDataType::NOMAL;
+
+	UPROPERTY(EditDefaultsOnly)
 	bool mapBlock = false;
 
 // 	UFUNCTION(Server,Reliable)
 // 	void SRPC_
-	
-	
-	void ComponentDelegate();
 
 	UFUNCTION()
 	void StartBlockDelgate(bool createMode);
 
 	UFUNCTION(NetMulticast,Reliable)
-	void MROC_StartBlockDelgate(bool createMode);
+	void MRPC_StartBlockDelgate(bool createMode);
+
+	FPSH_ObjectData locationData;
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_SaveBlockLocations();
+
+	void SaveBlockLocations();
+
+	bool bisSavePoint = false;
+
+	TArray<FPSH_FunctionBlockData> ComponentSaveData(EFunctionObjectDataType dataType);
+
+	void ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBlockData);
+
+	class UMyFlyActorComponent* flyComp;
+	class UMyMoveActorComponent * moveComp;
+	class UMyRotateActorComponent* rotationMovementComp;
+
 private:
 	class APSH_Player * master = nullptr;
 

@@ -203,8 +203,6 @@ void APSH_PlayerController::CRPC_ShowObjectWidget_Implementation()
 {
 	if(objectWidget == nullptr ) return;
 
-	PRINTLOG(TEXT("Show objectWidget"));
-
 	if (objectWidget->IsVisible() == false)
 	{
 		objectWidget->SetVisibility(ESlateVisibility::Visible);

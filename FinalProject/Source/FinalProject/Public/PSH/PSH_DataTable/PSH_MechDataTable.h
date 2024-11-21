@@ -13,16 +13,19 @@ struct FPSH_FunctionBlockData // 자식 데이터 베이스 저장할 공간.
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere)
-	TArray<int32> intArray;
+	TArray<int32> intArray; // 인트 변수 배열
 
 	UPROPERTY(EditAnywhere)
-	TArray<float> floatArray;
+	TArray<float> floatArray;  // 인트 변수 배열
 
 	UPROPERTY(EditAnywhere)
-	TArray<FVector> fvectorArray;
+	TArray<FVector> fvectorArray;  // 인트 변수 배열
 
 	UPROPERTY(EditAnywhere)
-	TArray<bool> boolArray;
+	TArray<FRotator> frotatorArray;
+
+	UPROPERTY(EditAnywhere)
+	TArray<bool> boolArray;  // 인트 변수 배열
 
 };
 
@@ -32,7 +35,7 @@ struct FPSH_ChildData // 자식 데이터 베이스 저장할 공간.
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere)
-	FPSH_FunctionBlockData funcitonData; // funciton 블럭에 저장된 변수들
+	TArray<FPSH_FunctionBlockData> funcitonData; // funciton 블럭에 저장된 변수들
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
@@ -56,7 +59,7 @@ struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere)
-	FPSH_FunctionBlockData funcitonData; // funciton 블럭에 저장된 변수들
+	TArray<FPSH_FunctionBlockData> funcitonData; // funciton 블럭에 저장된 변수들
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형

@@ -303,25 +303,7 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 		}
 	}
 }
-void APSH_Player::SaveTest()
-{
-	TArray<AActor*> blackArray;
 
-	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blackArray);
-
-	for (auto* arrayActor : blackArray)
-	{
-		APSH_BlockActor* actor = Cast<APSH_BlockActor>(arrayActor);
-
-		if (actor)
-		{
-			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
-			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
-			dataTable->AddRow(rowName, BlockData);
-		}
-
-	}
-}
 void APSH_Player::DelegateTest()
 {
 	SRPC_ModeChangeDelegate();
@@ -366,6 +348,7 @@ void APSH_Player::Delegatebool(bool createMode)
 		 NRPC_SetUiVisible(bCreatingMode);
 	 }
 }
+
 
 void APSH_Player::NRPC_SetUiVisible_Implementation(bool check)
 {
@@ -873,7 +856,7 @@ float APSH_Player::NormalizeAxis(float Angle)
 }
 
 void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation, FTransform hitActorTransfrom ,
-								FVector & closestPt, float& dist , int32& closetPointIndex)
+								FVector& closestPt, float& dist , int32& closetPointIndex)
 {
 	if (pointArray.Num() == 0) return;
 
@@ -1120,31 +1103,53 @@ void APSH_Player::BotMoveAndModeChange()
 	}
 }
 
+void APSH_Player::SaveTest()
+{
+	SRPC_Save();
+}
+
 void APSH_Player::LoadTest()
 {
-	
-// 	FName Rowname = FName(*FString::FormatAsNumber(4));
-// 	FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(Rowname, TEXT("non"));
-// 	float sum = 200.0f;
-// 	APSH_BlockActor * sapwnPartent = nullptr;
-// 
-// 	if (data && data->actor != nullptr)
-// 	{
-// 		// 루트 블럭 소환
-// 		TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
-// 		if (SpawnActor)
-// 		{
-// 			FActorSpawnParameters Params;
-// 			APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, GetActorForwardVector() * sum, GetActorRotation(), Params);
-// 
-// 			// 블럭 계층 구조 불러오기
-// 			if (SpawnedBlock)
-// 			{
-// 				SpawnedBlock->LoadBlockHierarchy(*data);
-// 			}
-// 		}
-// 	}
+	SRPC_Load();
+}
 
+void APSH_Player::SRPC_Save_Implementation()
+{
+	TArray<AActor*> blockArray;
+	// "owner" 태그가 달린 모든 블록을 가져옴
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
+
+	for (AActor* arrayActor : blockArray)
+	{
+		APSH_BlockActor* blockActor = Cast<APSH_BlockActor>(arrayActor);
+
+		if (blockActor)
+		{
+			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
+
+			// 계층 구조 저장
+			FPSH_ObjectData BlockData = blockActor->SaveBlockHierachy();
+
+			// 데이터 테이블에 추가
+			if (dataTable)
+			{
+				dataTable->AddRow(rowName, BlockData);
+			}
+		}
+	}
+}
+void APSH_Player::SRPC_Load_Implementation()
+{
+
+	if (!dataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("DataTable is null!"));
+		return;
+	}
+	if (!dataTable) return;
+
+
+	// 데이터 테이블에서 모든 행 가져오기
 	TArray<FPSH_ObjectData*> dataAraay;
 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
 
@@ -1157,6 +1162,7 @@ void APSH_Player::LoadTest()
 			if (SpawnActor)
 			{
 				FActorSpawnParameters Params;
+
 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
 
 				// 블럭 계층 구조 불러오기

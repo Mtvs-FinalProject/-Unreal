@@ -286,4 +286,11 @@ public:
 
 	UFUNCTION()
 	void Delegatebool(bool createMode);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_Save();
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_Load();
+
 };

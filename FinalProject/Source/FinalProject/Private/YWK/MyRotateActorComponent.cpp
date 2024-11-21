@@ -4,6 +4,7 @@
 #include "YWK/MyRotateActorComponent.h"
 #include "YWK/RotationWidget.h"
 #include "Math/Quat.h"
+#include "../FinalProject.h"
 
 UMyRotateActorComponent::UMyRotateActorComponent()
 {
@@ -102,4 +103,25 @@ void UMyRotateActorComponent::OriginRolling()
 		TotalRotationAngle = 0.0f;  // 누적 각도 초기화
 		UE_LOG(LogTemp, Warning, TEXT("Moved back to start Rotation: %s"), *StartRotation.ToString());
 	}
+}
+FPSH_FunctionBlockData UMyRotateActorComponent::SaveData()
+{
+    FPSH_FunctionBlockData funtionData;
+    PRINTLOG(TEXT("UMyRotateActorComponent::SaveData()"));
+  
+    funtionData.floatArray.Add(RotateSpeed);
+    funtionData.intArray.Add(RotateNum);
+    funtionData.frotatorArray.Add(RotateDirection);
+    funtionData.boolArray.Add(bLoopMode);
+
+
+
+    return funtionData;
+}
+void UMyRotateActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
+{
+    RotateSpeed; //float
+    RotateNum;//(회전 횟수)->int32
+    RotateDirection; //FRotator
+    bLoopMode;//bool
 }

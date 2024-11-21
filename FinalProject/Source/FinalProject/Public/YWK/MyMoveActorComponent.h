@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "MyMoveActorComponent.generated.h"
 
 
@@ -75,5 +76,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void OriginMove();
 
+	UFUNCTION()
+	void GetDelegateBool(bool delegatebool);
+
+	FPSH_FunctionBlockData SaveData();
+
+	void LoadData(FPSH_FunctionBlockData funtionData);
 	
 };
