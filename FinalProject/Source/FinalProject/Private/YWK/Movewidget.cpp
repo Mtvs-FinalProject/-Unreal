@@ -387,12 +387,19 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 	int32 SelectedIndex = MoveBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
+		// 새로 선택된 오브젝트 설정
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected function object: %s"), *SelectedActor->GetName());
 
+		// 기존 프리뷰 제거
+		DestroyPreviewActor();
+
+		// 새로운 프리뷰 생성 (SelectedActor 위치에 생성)
+		SpawnPreviewActor();
+
+		// UI에 선택된 MoveComponent의 값을 업데이트
 		if (UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>())
 		{
-			// UI에 선택된 MoveComponent의 값을 업데이트
 			UpdateMovementValuesInUI(MoveComponent->MoveSpeed, MoveComponent->MaxDistance);
 			Chk_LoopMode->SetIsChecked(MoveComponent->bLoopMode);
 			Chk_SingleDirectionMode->SetIsChecked(MoveComponent->bSingleDirection);
@@ -403,6 +410,7 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
 	}
 }
+
 
 
 void UMovewidget::OnLoopModeCheckChanged(bool bIsChecked)

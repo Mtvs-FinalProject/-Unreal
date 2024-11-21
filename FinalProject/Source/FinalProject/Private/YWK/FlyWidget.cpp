@@ -361,14 +361,21 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 	int32 SelectedIndex = FlyBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
+		// 새로운 오브젝트 설정
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected fly function object: %s"), *SelectedActor->GetName());
 
-		// 선택된 오브젝트의 FlyComponent 설정
+		// 기존 프리뷰 액터 제거
+		DestroyPreviewActor();
+
+		// 새로운 프리뷰 액터 생성
+		SpawnPreviewActor();
+
+		// UI 값 초기화
 		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 		{
-			// UI 요소와 FlyComponent 값 동기화 대신 초기 상태로 비움
-			UpdateMovementValuesInUI(); // 파라미터 전달하지 않음으로써 기본값 설정
+			// UI 업데이트 (속도, 거리 등)
+			UpdateMovementValuesInUI(FlyComponent->FlySpeed, FlyComponent->FlyDistance);
 			Chk_LoopMode->SetIsChecked(FlyComponent->bLoopMode);
 			Chk_SingleDirectionMode->SetIsChecked(FlyComponent->bSingleDirection);
 
@@ -380,6 +387,7 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 		}
 	}
 }
+
 
 // 왕복 모드 체크박스 상태 변경
 void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
@@ -450,13 +458,14 @@ void UFlyWidget::SpawnPreviewActor()
 		UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
 		if (PreviewClass)
 		{
-			// 프리뷰 오브젝트를 항상 SelectedActor 위치에서 스폰
+			// 프리뷰 오브젝트를 SelectedActor 위치에 스폰
 			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass, SelectedActor->GetActorLocation(), FRotator::ZeroRotator);
 			if (PreviewActor)
 			{
-				PreviewActor->SetActorHiddenInGame(false);
-				bPreviewDirectionReversed = false; // 방향 초기화
-				UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at original location: %s"), *SelectedActor->GetActorLocation().ToString());
+				// 초기 위치 설정
+				PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // 시작 위치로 확실히 설정
+				bPreviewDirectionReversed = false; // 초기화: 목표 지점으로 이동하도록 설정
+				UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at starting location: %s"), *SelectedActor->GetActorLocation().ToString());
 			}
 		}
 	}
@@ -492,6 +501,7 @@ void UFlyWidget::SpawnPreviewActor()
 		UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
 	}
 }
+
 
 
 // 프리뷰 액터의 이동 업데이트
@@ -564,5 +574,3 @@ void UFlyWidget::DestroyPreviewActor()
 		PreviewActor = nullptr;
 	}
 }
-
-
