@@ -361,14 +361,22 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 	int32 SelectedIndex = FlyBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
+		// ���ο� ������Ʈ ����
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected fly function object: %s"), *SelectedActor->GetName());
 
+
+		DestroyPreviewActor();
+
+		// ���ο� ������ ���� ����
+		SpawnPreviewActor();
+=======
 		// 선택된 오브젝트의 FlyComponent 설정
 		if (UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>())
 		{
 			// UI 요소와 FlyComponent 값 동기화 대신 초기 상태로 비움
 			UpdateMovementValuesInUI(); // 파라미터 전달하지 않음으로써 기본값 설정
+
 			Chk_LoopMode->SetIsChecked(FlyComponent->bLoopMode);
 			Chk_SingleDirectionMode->SetIsChecked(FlyComponent->bSingleDirection);
 
@@ -381,7 +389,11 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 	}
 }
 
+
+
+=======
 // 왕복 모드 체크박스 상태 변경
+
 void UFlyWidget::OnLoopModeCheckChanged(bool bIsChecked)
 {
 	if (SelectedActor)
@@ -444,54 +456,57 @@ void UFlyWidget::AddControlledFlyComponent(UMyFlyActorComponent* NewFlyComponent
 // 프리뷰 액터 스폰 함수
 void UFlyWidget::SpawnPreviewActor()
 {
-	if (!PreviewActor && SelectedActor)
-	{
-		// BP_PreviewDistance 액터 로드 및 스폰
-		UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
-		if (PreviewClass)
-		{
-			// 프리뷰 오브젝트를 항상 SelectedActor 위치에서 스폰
-			PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass, SelectedActor->GetActorLocation(), FRotator::ZeroRotator);
-			if (PreviewActor)
-			{
-				PreviewActor->SetActorHiddenInGame(false);
-				bPreviewDirectionReversed = false; // 방향 초기화
-				UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at original location: %s"), *SelectedActor->GetActorLocation().ToString());
-			}
-		}
-	}
+	 if (!PreviewActor && SelectedActor)
+  {
+    // BP_PreviewDistance 액터 로드 및 스폰
+    UClass* PreviewClass = LoadObject<UClass>(nullptr, TEXT("/Game/YWK/BP/BP_PreviewDistance.BP_PreviewDistance_C"));
+    if (PreviewClass)
+    {
+      // 프리뷰 오브젝트를 SelectedActor 위치에 스폰
+      PreviewActor = GetWorld()->SpawnActor<AActor>(PreviewClass, SelectedActor->GetActorLocation(), FRotator::ZeroRotator);
+      if (PreviewActor)
+      {
+        // 초기 위치 설정
+        PreviewActor->SetActorLocation(SelectedActor->GetActorLocation()); // 시작 위치로 확실히 설정
+        bPreviewDirectionReversed = false; // 초기화: 목표 지점으로 이동하도록 설정
+        UE_LOG(LogTemp, Warning, TEXT("PreviewActor spawned at starting location: %s"), *SelectedActor->GetActorLocation().ToString());
+      }
+    }
+  }
 
-	// UI에서 속도와 거리 값을 읽어 초기화
-	if (FlySpeedText)
-	{
-		FString SpeedString = FlySpeedText->GetText().ToString();
-		StoredMoveSpeed = FCString::Atof(*SpeedString);
-	}
-	if (FlyHightText)
-	{
-		FString DistanceString = FlyHightText->GetText().ToString();
-		StoredMoveDistance = FCString::Atof(*DistanceString);
-	}
+// UI에서 속도와 거리 값을 읽어 초기화
+  if (FlySpeedText)
+  {
+    FString SpeedString = FlySpeedText->GetText().ToString();
+    StoredMoveSpeed = FCString::Atof(*SpeedString);
+  }
+  if (FlyHightText)
+  {
+    FString DistanceString = FlyHightText->GetText().ToString();
+    StoredMoveDistance = FCString::Atof(*DistanceString);
+  }
 
-	// 기본값 설정
-	if (StoredMoveSpeed <= 0.0f)
-	{
-		StoredMoveSpeed = 100.0f; // 기본 속도
-	}
-	if (StoredMoveDistance <= 0.0f)
-	{
-		StoredMoveDistance = 1000.0f; // 기본 거리
-	}
+// 기본값 설정
+  if (StoredMoveSpeed <= 0.0f)
+  {
+    StoredMoveSpeed = 100.0f; // 기본 속도
+  }
+  if (StoredMoveDistance <= 0.0f)
+  {
+    StoredMoveDistance = 1000.0f; // 기본 거리
+  }
 
-	UE_LOG(LogTemp, Warning, TEXT("StoredMoveSpeed: %f, StoredMoveDistance: %f"), StoredMoveSpeed, StoredMoveDistance);
+  UE_LOG(LogTemp, Warning, TEXT("StoredMoveSpeed: %f, StoredMoveDistance: %f"), StoredMoveSpeed, StoredMoveDistance);
 
-	// 타이머 시작
-	if (PreviewActor)
-	{
-		GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
-		UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
-	}
+// 타이머 시작
+  if (PreviewActor)
+  {
+    GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
+    UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
+  }
 }
+
+
 
 
 // 프리뷰 액터의 이동 업데이트
@@ -564,5 +579,3 @@ void UFlyWidget::DestroyPreviewActor()
 		PreviewActor = nullptr;
 	}
 }
-
-

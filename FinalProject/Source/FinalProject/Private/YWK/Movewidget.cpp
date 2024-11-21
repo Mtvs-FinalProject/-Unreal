@@ -387,11 +387,20 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 	int32 SelectedIndex = MoveBoxList->FindOptionIndex(SelectedItem);
 	if (SelectedIndex != INDEX_NONE && AllFunctionObject.IsValidIndex(SelectedIndex))
 	{
+		// ���� ���õ� ������Ʈ ����
 		SelectedActor = AllFunctionObject[SelectedIndex];
 		UE_LOG(LogTemp, Warning, TEXT("Selected function object: %s"), *SelectedActor->GetName());
 
+		// ���� ������ ����
+		DestroyPreviewActor();
+
+		// ���ο� ������ ���� (SelectedActor ��ġ�� ����)
+		SpawnPreviewActor();
+
+		// UI�� ���õ� MoveComponent�� ���� ������Ʈ
 		if (UMyMoveActorComponent* MoveComponent = SelectedActor->FindComponentByClass<UMyMoveActorComponent>())
 		{
+
 			// UI에 선택된 MoveComponent의 값을 업데이트
 			UpdateMovementValuesInUI(MoveComponent->MoveSpeed, MoveComponent->MaxDistance);
 			Chk_LoopMode->SetIsChecked(MoveComponent->bLoopMode);
@@ -403,6 +412,7 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 		UE_LOG(LogTemp, Warning, TEXT("No matching function object found for: %s"), *SelectedItem);
 	}
 }
+
 
 
 void UMovewidget::OnLoopModeCheckChanged(bool bIsChecked)
