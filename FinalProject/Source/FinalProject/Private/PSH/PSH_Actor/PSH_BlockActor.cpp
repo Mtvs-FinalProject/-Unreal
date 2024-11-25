@@ -12,8 +12,12 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyRotateActorComponent.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+<<<<<<< Updated upstream
 #include "GameFramework/RotatingMovementComponent.h"
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
+=======
+#include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
+>>>>>>> Stashed changes
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -657,6 +661,8 @@ void APSH_BlockActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(APSH_BlockActor, bIsOwnedByRoomInstance);
+
 }
 
 void APSH_BlockActor::SetMaster(class APSH_Player* owner)
@@ -718,6 +724,7 @@ void APSH_BlockActor::MRPC_StartBlockDelgate_Implementation(bool createMode)
 	}
 }
 
+<<<<<<< Updated upstream
 TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EFunctionObjectDataType dataType)
 {
 	PRINTLOG(TEXT("ComponentSaveData"));
@@ -790,3 +797,17 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 	if(spawnEffect == nullptr) return;
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), spawnEffect, impactPoint);
 }
+
+bool APSH_BlockActor::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
+{
+	if (bIsOwnedByRoomInstance)
+	{
+		AAutoRoomLevelInstance* OwningLevelInstance = Cast<AAutoRoomLevelInstance>(GetOwner());
+		if (OwningLevelInstance)
+		{
+			return OwningLevelInstance->IsPlayerInRoom(Cast<APlayerController>(ViewTarget->GetInstigatorController()));
+		}
+	}
+	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+}
+

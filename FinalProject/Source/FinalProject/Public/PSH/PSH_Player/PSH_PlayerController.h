@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "PSH_PlayerController.generated.h"
 
 /**
@@ -59,8 +60,10 @@ public:
 
 	UFUNCTION(Client,Reliable)
 	void CRPC_ShowObjectWidget();
+
 	UFUNCTION(Client,Reliable)
 	void CRPC_CloseObjectWidget();
+
 	UFUNCTION(Client,Reliable)
 	void CRPC_ObjectWidgetVisible(bool check);
 
@@ -86,4 +89,17 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void SaveTheGame();
+
+// 서버에 룸 관련 요청
+#pragma region
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void ServerRequestCreateAutoRoom(const FString& RoomName);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void ServerRequestJoinAutoRoom(const FString& RoomName);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void ServerRequestLeaveAutoRoom(const FString& RoomName);
+
+
 };

@@ -206,4 +206,17 @@ public:
 private:
 	class APSH_Player * master = nullptr;
 
+
+// 성락 코드
+#pragma region 
+public:
+	 // 커스텀 네트워크 가시성을 위한 프로퍼티
+    UPROPERTY(Replicated)
+    bool bIsOwnedByRoomInstance;
+
+    // 네트워크 관련성 함수 오버라이드
+    virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+#pragma endregion
+
+
 };

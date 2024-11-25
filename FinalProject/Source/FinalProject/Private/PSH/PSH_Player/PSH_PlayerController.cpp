@@ -13,6 +13,8 @@
 #include "CSR/UI/CSR_Proto_StartUI.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "../FinalProject.h"
+#include "CSR/DedicatedServer/AutoGameState.h"
+#include "CSR/DedicatedServer/AutoRoomManager.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
@@ -102,10 +104,11 @@ void APSH_PlayerController::ObjectSave()
 			dataTable->AddRow(rowName, BlockData);
 			UE_LOG(LogTemp,Warning,TEXT("Save RowNam : %d"),RowNum);
 		}
-
+		
 	}
 	//SaveTheGame();
 }
+
 void APSH_PlayerController::ObjectLoad()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Load RowNam : %d"), RowNum);
@@ -239,4 +242,81 @@ void APSH_PlayerController::CRPC_ObjectWidgetVisible_Implementation(bool check)
 		}
 	}
 	
-}	
+}
+
+
+void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FString& RoomName)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerRequestCreateAutoRoom: No Authority"));
+		return;
+	}
+
+	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestCreateAutoRoom: GameState not found"));
+		return;
+	}
+
+	if (!GameState->AutoRoomManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestCreateAutoRoom: AutoRoomManager not found in GameState"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerRequestCreateAutoRoom: Creating room %s"), *RoomName);
+	GameState->AutoRoomManager->CreateAutoRoom(RoomName, this);
+}
+
+void APSH_PlayerController::ServerRequestJoinAutoRoom_Implementation(const FString& RoomName)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
+		return;
+	}
+
+	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
+		return;
+	}
+
+	if (!GameState->AutoRoomManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Joining room %s"), *RoomName);
+	GameState->AutoRoomManager->JoinAutoRoom(RoomName, this);
+}
+
+void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FString& RoomName)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
+		return;
+	}
+
+	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
+		return;
+	}
+
+	if (!GameState->AutoRoomManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Leaving room %s"), *RoomName);
+	GameState->AutoRoomManager->LeaveAutoRoom(RoomName, this);
+}
+
