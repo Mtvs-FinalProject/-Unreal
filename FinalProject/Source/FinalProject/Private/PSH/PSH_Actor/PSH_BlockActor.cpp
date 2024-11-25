@@ -12,12 +12,9 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "YWK/MyRotateActorComponent.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
-<<<<<<< Updated upstream
 #include "GameFramework/RotatingMovementComponent.h"
-#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
-=======
+#include "NiagaraFunctionLibrary.h"
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
->>>>>>> Stashed changes
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -724,7 +721,6 @@ void APSH_BlockActor::MRPC_StartBlockDelgate_Implementation(bool createMode)
 	}
 }
 
-<<<<<<< Updated upstream
 TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EFunctionObjectDataType dataType)
 {
 	PRINTLOG(TEXT("ComponentSaveData"));

@@ -1,11 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "AutoRoomLevelInstance.h"
-#include "AutoGameState.h"
 #include "AutoRoomManager.generated.h"
 
 UCLASS()
@@ -16,24 +15,23 @@ class FINALPROJECT_API AAutoRoomManager : public AActor
 public:
     AAutoRoomManager();
 
-    UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly)
+    UPROPERTY(Replicated)
     TArray<AAutoRoomLevelInstance*> AutoRoomPool;
 
- // ¹æ »ı¼º ÇÔ¼ö (¼öÁ¤µÊ: bool ¹İÈ¯ Å¸ÀÔ Ãß°¡)
-    UFUNCTION(BlueprintCallable, Category = "Room")
-    bool CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
+    // ë°© ìƒì„± í•¨ìˆ˜
+    void CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
-    // ¹æ Âü°¡ ÇÔ¼ö
+    // ë°© ì°¸ê°€ í•¨ìˆ˜
     void JoinAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
-    // ¹æ ³ª°¡±â ÇÔ¼ö 
+    // ë°© ë‚˜ê°€ê¸° í•¨ìˆ˜ 
     void LeaveAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
-   // »ç¿ë °¡´ÉÇÑ ¹æ Ã£±â
 	UFUNCTION(BlueprintCallable, Category = "Room")
+   // ì‚¬ìš© ê°€ëŠ¥í•œ ë°© ì°¾ê¸°
    AAutoRoomLevelInstance* FindAvailableAutoRoom() const;
 
-   // ÀÌ¸§À¸·Î ¹æ Ã£±â
+   // ì´ë¦„ìœ¼ë¡œ ë°© ì°¾ê¸°
    UFUNCTION(BlueprintCallable, Category = "Room")
    AAutoRoomLevelInstance* FindAutoRoomByName(const FString& RoomName) const;
 
@@ -42,22 +40,11 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-   // Ç® Å©±â
+   // í’€ í¬ê¸°
    UPROPERTY(EditAnywhere, Category = "Room Configuration")
    int32 MaxRooms;
 
-   // ¹æ »çÀÌ °£°İ
+   // ë°© ì‚¬ì´ ê°„ê²©
    UPROPERTY(EditAnywhere, Category = "Room Configuration")
    float SpaceBetweenRooms;
-
-
-   // ¿ùµå¿¡ ½ºÆùÇÏ±â 1
-#pragma region
-public:
-
-private:
-
-#pragma endregion
-
 };
-

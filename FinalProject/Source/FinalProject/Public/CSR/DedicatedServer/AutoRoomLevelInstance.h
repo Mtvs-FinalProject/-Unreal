@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -17,56 +17,15 @@ public:
     AAutoRoomLevelInstance();
 
 public:
-#pragma region 
-
-    // ¹æÁ¦¸ñ ¼³Á¤ ¹× °¡Á®¿À±â
-    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Room")
-    FString RoomName;
-
-    // ¹æÁ¦¸ñ ¼³Á¤ ÇÔ¼ö
-    void SetRoomName(const FString& NewRoomName) { RoomName = NewRoomName; }
-
-    const FString& GetRoomName() const { return (RoomName); };
-
-    UFUNCTION(Server, Reliable)
-    void ServerSpawnActorsFromJson(const FString& JsonString);
-
-	UFUNCTION(Server, Reliable)
-    void ServerAddPlayerToRoom(APlayerController* PlayerController);
-
-    UFUNCTION(Server, Reliable)
-    void ServerRemovePlayerFromRoom(APlayerController* PlayerController);
-
-private:
-    UPROPERTY(ReplicatedUsing = OnRep_ManagedActors)
-    TArray<AActor*> ManagedActors;
-
+    // ë°© í• ë‹¹ ì—¬ë¶€
     UPROPERTY(Replicated)
-    TArray<APlayerController*> PlayersInRoom;
-
-    UFUNCTION()
-    void OnRep_ManagedActors();
-
-    void SpawnActorsFromJson(const FString& JsonString);
-    void SpawnPlayerCharacter(APlayerController* PlayerController);
-
-    virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
-
-    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-#pragma endregion
-public:
-    // ¹æ ÇÒ´ç ¿©ºÎ
-    UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly)
     bool bIsRoomAssigned;
 
-    UFUNCTION(BlueprintCallable, Category = "Room")
-    bool IsPlayerInRoom(APlayerController* PlayerController) const;
-
-    // ÇöÀç ¹æ¿¡ ÀÖ´Â ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ·¯µéÀ» ÃßÀû
+    // í˜„ì¬ ë°©ì— ìˆëŠ” í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ë“¤ì„ ì¶”ì 
     UPROPERTY(ReplicatedUsing = OnRep_ConnectedPlayers, BlueprintReadOnly, EditAnywhere)
     TArray<APlayerController*> ConnectedPlayers;
 
-    // Runtime WorldAsset °ü¸®
+    // Runtime WorldAsset ê´€ë¦¬
     UPROPERTY(ReplicatedUsing = OnRep_RuntimeWorldAsset)
     TSoftObjectPtr<UWorld> RuntimeWorldAsset;
 
@@ -85,7 +44,7 @@ public:
 		}
 	}
 
-    // ¼­¹ö¿¡¼­¸¸ È£ÃâµÇ´Â ¹æ °ü¸® ÇÔ¼öµé
+    // ì„œë²„ì—ì„œë§Œ í˜¸ì¶œë˜ëŠ” ë°© ê´€ë¦¬ í•¨ìˆ˜ë“¤
     UFUNCTION(Server, Reliable) 
     void ServerAssignAutoRoom(const FString& NewRoomName);
 
@@ -101,12 +60,16 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientOnLeaveRoom(APlayerController* LeavingPlayer);
 
-    // WorldAsset °ü·Ã ¿À¹ö¶óÀÌµå
+    // WorldAsset ê´€ë ¨ ì˜¤ë²„ë¼ì´ë“œ
     UFUNCTION()
     bool SetRuntimeWorldAsset(TSoftObjectPtr<UWorld> InWorldAsset);
 
+    // íŠ¹ì • í”Œë ˆì´ì–´ê°€ ì´ ë°©ì— ìˆëŠ”ì§€ í™•ì¸
+    bool IsPlayerInRoom(APlayerController* PlayerController) const;
+
 protected:
     virtual void BeginPlay() override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     UFUNCTION()
     void OnRep_RuntimeWorldAsset();
@@ -114,41 +77,18 @@ protected:
     UFUNCTION()
     void OnRep_ConnectedPlayers();
 
-    // WorldAssetÀÌ º¯°æµÉ ¶§ È£ÃâµÉ ÇÔ¼ö
+    // WorldAssetì´ ë³€ê²½ë  ë•Œ í˜¸ì¶œë  í•¨ìˆ˜
     void HandleWorldAssetChanged();
     bool ShouldLoadLevelLocally() const;
 
     UFUNCTION()
     void OnRep_RoomState();
 
-    // °¢ Å¬¶óÀÌ¾ğÆ®ÀÇ ·ÎÄÃ ·¹º§ ·Îµå »óÅÂ
+    // ê° í´ë¼ì´ì–¸íŠ¸ì˜ ë¡œì»¬ ë ˆë²¨ ë¡œë“œ ìƒíƒœ
     UPROPERTY(Transient)
     bool bIsLevelLoadedLocally;
 
-    // WorldAsset °æ·Î
+    // WorldAsset ê²½ë¡œ
     UPROPERTY()
     FString LevelPath;	
-
-
-// Ãß°¡ ÄÚµå
-#pragma region
-public:
-    UPROPERTY(Replicated)
-    APlayerController* RoomCreator;
-
-    // ÀúÀå ±ÇÇÑ Ã¼Å© ÇÔ¼ö
-    UFUNCTION(BlueprintPure, Category="Room")
-    bool HasSavePermission(APlayerController* PlayerController) const
-    {
-        return RoomCreator == PlayerController;
-    }
-
-protected:
-
-
-private:
-
-
-#pragma endregion
-
 };

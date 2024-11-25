@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
@@ -6,16 +6,6 @@
 #include "LevelInstance/LevelInstanceSubsystem.h"
 #include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
-#include "JsonObjectConverter.h"
-#include "Engine/LevelStreamingDynamic.h"
-#include "Serialization/JsonReader.h"
-#include "Templates/SharedPointer.h"
-#include "Json.h"
-#include "Serialization/JsonSerializer.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerStart.h"
-#include "GameFramework/PlayerController.h"
-#include "PSH/PSH_Player/PSH_Player.h"
 
 
 AAutoRoomLevelInstance::AAutoRoomLevelInstance()
@@ -26,132 +16,23 @@ AAutoRoomLevelInstance::AAutoRoomLevelInstance()
     SetReplicatingMovement(true);
     bAlwaysRelevant = true;
 
-    // ÃÊ±â¿¡´Â WorldAssetÀ» ¼³Á¤ÇÏÁö ¾ÊÀ½
+    // ì´ˆê¸°ì—ëŠ” WorldAssetì„ ì„¤ì •í•˜ì§€ ì•ŠìŒ
     //SetWorldAsset(nullptr);
-    
-    // ·¹º§ °æ·Î ¼³Á¤ (ÇÁ·ÎÁ§Æ®¿¡ ¸Â°Ô ¼öÁ¤ ÇÊ¿ä)
+
+    // ë ˆë²¨ ê²½ë¡œ ì„¤ì • (í”„ë¡œì íŠ¸ì— ë§ê²Œ ìˆ˜ì • í•„ìš”)
     LevelPath = TEXT("/Game/Alpha/NewFolder/runningmap_alpha.runningmap_alpha");
 }
 
-
-void AAutoRoomLevelInstance::ServerSpawnActorsFromJson_Implementation(const FString& JsonString)
+void AAutoRoomLevelInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-    if (HasAuthority())
-    {
-        SpawnActorsFromJson(JsonString);
-    }
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(AAutoRoomLevelInstance, bIsRoomAssigned);
+    DOREPLIFETIME(AAutoRoomLevelInstance, RuntimeWorldAsset);
+    // ConnectedPlayersê°€ ë³€ê²½ë  ë•Œë§ˆë‹¤ ì•Œë¦¼ì„ ë°›ë„ë¡ ìˆ˜ì •
+    DOREPLIFETIME_CONDITION_NOTIFY(AAutoRoomLevelInstance, ConnectedPlayers, COND_None, REPNOTIFY_Always);
 }
 
-void AAutoRoomLevelInstance::ServerAddPlayerToRoom_Implementation(APlayerController* PlayerController)
-{
-    if (HasAuthority() && !PlayersInRoom.Contains(PlayerController))
-    {
-        PlayersInRoom.Add(PlayerController);
-        SpawnPlayerCharacter(PlayerController);
-    }
-}
-
-void AAutoRoomLevelInstance::ServerRemovePlayerFromRoom_Implementation(APlayerController* PlayerController)
-{
-    if (HasAuthority())
-    {
-        PlayersInRoom.Remove(PlayerController);
-        // If this was the last player, clean up the room
-        if (PlayersInRoom.Num() == 0)
-        {
-            for (AActor* Actor : ManagedActors)
-            {
-                if (Actor)
-                {
-                    Actor->Destroy();
-                }
-            }
-            ManagedActors.Empty();
-            // Here you would also unload the level
-        }
-    }
-}
-
-void AAutoRoomLevelInstance::OnRep_ManagedActors()
-{
-
-}
-
-void AAutoRoomLevelInstance::SpawnActorsFromJson(const FString& JsonString)
-{
-    TArray<TSharedPtr<FJsonValue>> JsonArray;
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-
-    if (FJsonSerializer::Deserialize(Reader, JsonArray))
-    {
-        for (const auto& JsonValue : JsonArray)
-        {
-            TSharedPtr<FJsonObject> ObjectData = JsonValue->AsObject();
-            if (ObjectData.IsValid())
-            {
-                FPSH_ObjectData Data;
-                if (FJsonObjectConverter::JsonObjectToUStruct(ObjectData.ToSharedRef(), &Data))
-                {
-                    FActorSpawnParameters SpawnParams;
-                    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-                    SpawnParams.Owner = this;
-
-                    FTransform SpawnTransform = Data.actorTransfrom;
-                    SpawnTransform.SetLocation(GetActorLocation() + Data.actorTransfrom.GetLocation());
-
-                    AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(Data.actor, SpawnTransform, SpawnParams);
-                    if (SpawnedActor)
-                    {
-                        ManagedActors.Add(SpawnedActor);
-                        UE_LOG(LogTemp, Log, TEXT("Actor spawned: %s at location %s"),
-                            *SpawnedActor->GetName(), *SpawnedActor->GetActorLocation().ToString());
-                    }
-                }
-            }
-        }
-    }
-}
-
-void AAutoRoomLevelInstance::SpawnPlayerCharacter(APlayerController* PlayerController)
-{
-    // Find a PlayerStart in the loaded level
-    TArray<AActor*> PlayerStarts;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), PlayerStarts);
-
-    FVector SpawnLocation = GetActorLocation() + FVector(0, 0, 100); // ±âº» ½ºÆù À§Ä¡
-    FRotator SpawnRotation = FRotator::ZeroRotator;
-    TSubclassOf<APSH_Player> PlayerClass = APSH_Player::StaticClass();
-    if (PlayerStarts.Num() > 0)
-    {
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-        APlayerStart* Start = Cast<APlayerStart>(PlayerStarts[0]);
-        if (Start)
-        {
-            SpawnLocation = Start->GetActorLocation();
-            SpawnRotation = Start->GetActorRotation();
-        }
-        APSH_Player* NewPlayerCharacter = GetWorld()->SpawnActor<APSH_Player>(PlayerClass, SpawnLocation, SpawnRotation, SpawnParams);
-
-        if (NewPlayerCharacter)
-        {
-            PlayerController->Possess(NewPlayerCharacter);
-            ManagedActors.Add(NewPlayerCharacter);
-            UE_LOG(LogTemp, Log, TEXT("APSH_Player spawned and possessed by %s"), *PlayerController->GetName());
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to spawn APSH_Player."));
-        }
-    }
-}
-
-bool AAutoRoomLevelInstance::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
-{
-    const APlayerController* PC = Cast<APlayerController>(RealViewer);
-    return PC && PlayersInRoom.Contains(const_cast<APlayerController*>(PC));
-}
 
 void AAutoRoomLevelInstance::OnRep_RuntimeWorldAsset()
 {
@@ -207,15 +88,15 @@ bool AAutoRoomLevelInstance::ShouldLoadLevelLocally() const
         return false;
     }
 
-    if (HasAuthority()) // ¼­¹ö
+    if (HasAuthority()) // ì„œë²„
     {
-        // ¼­¹ö´Â ¹æ¿¡ ÇÃ·¹ÀÌ¾î°¡ ÀÖ´Â ÇÑ ·¹º§ À¯Áö
+        // ì„œë²„ëŠ” ë°©ì— í”Œë ˆì´ì–´ê°€ ìˆëŠ” í•œ ë ˆë²¨ ìœ ì§€
         bool bShouldLoad = ConnectedPlayers.Num() > 0;
         UE_LOG(LogTemp, Log, TEXT("ShouldLoadLevelLocally - Server: %d (Players: %d)"),
             bShouldLoad, ConnectedPlayers.Num());
         return bShouldLoad;
     }
-    else // Å¬¶óÀÌ¾ğÆ®
+    else // í´ë¼ì´ì–¸íŠ¸
     {
         APlayerController* LocalPlayer = GetWorld()->GetFirstPlayerController();
         bool bShouldLoad = IsPlayerInRoom(LocalPlayer);
@@ -229,7 +110,7 @@ void AAutoRoomLevelInstance::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ÃÊ±â¿¡´Â ·¹º§À» ¾ğ·Îµå »óÅÂ·Î ½ÃÀÛ
+    // ì´ˆê¸°ì—ëŠ” ë ˆë²¨ì„ ì–¸ë¡œë“œ ìƒíƒœë¡œ ì‹œì‘
     if (ULevelInstanceSubsystem* LevelInstanceSubsystem =
         GetWorld()->GetSubsystem<ULevelInstanceSubsystem>())
     {
@@ -237,15 +118,6 @@ void AAutoRoomLevelInstance::BeginPlay()
         LevelInstanceSubsystem->RequestUnloadLevelInstance(this);
         bIsLevelLoadedLocally = false;
     }
-}
-
-void AAutoRoomLevelInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-    DOREPLIFETIME(AAutoRoomLevelInstance, ManagedActors);
-    DOREPLIFETIME(AAutoRoomLevelInstance, PlayersInRoom);
-    DOREPLIFETIME(AAutoRoomLevelInstance, RoomName);
 }
 
 void AAutoRoomLevelInstance::ServerAssignAutoRoom_Implementation(const FString& NewRoomName)
@@ -257,7 +129,7 @@ void AAutoRoomLevelInstance::ServerAssignAutoRoom_Implementation(const FString& 
         bIsRoomAssigned = true;
         SetCurrentRoomName(NewRoomName);
         SetRuntimeWorldAsset(TSoftObjectPtr<UWorld>(FSoftObjectPath(LevelPath)));
-        // WorldAsset ¼³Á¤ - ÀÌ°ÍÀÌ º¹Á¦µÇ¾î Å¬¶óÀÌ¾ğÆ®µµ ÀÚµ¿À¸·Î ·ÎµåÇÏ°Ô µÊ
+        // WorldAsset ì„¤ì • - ì´ê²ƒì´ ë³µì œë˜ì–´ í´ë¼ì´ì–¸íŠ¸ë„ ìë™ìœ¼ë¡œ ë¡œë“œí•˜ê²Œ ë¨
         //SetWorldAsset(TSoftObjectPtr<UWorld>(FSoftObjectPath(LevelPath)));
 
 
@@ -271,14 +143,15 @@ void AAutoRoomLevelInstance::ServerUnassignAutoRoom_Implementation()
     {
         UE_LOG(LogTemp, Log, TEXT("Server: Unassigning auto room %s"), *GetCurrentRoomName());
 
+        // ë°© ìƒíƒœ ì´ˆê¸°í™”
         bIsRoomAssigned = false;
         ConnectedPlayers.Empty();
         SetCurrentRoomName(TEXT(""));
 
-        // WorldAsset Á¦°Å
+        // WorldAsset ì œê±°
         SetRuntimeWorldAsset(nullptr);
 
-        // WorldAsset º¯°æ Ã³¸®
+        // WorldAsset ë³€ê²½ ì²˜ë¦¬
         //HandleWorldAssetChanged();
 
         OnRep_RoomState();
@@ -293,9 +166,9 @@ void AAutoRoomLevelInstance::ServerJoinRoom_Implementation(APlayerController* Jo
         {
             ConnectedPlayers.Add(JoiningPlayer);
             UE_LOG(LogTemp, Log, TEXT("Player %s joined room"), *JoiningPlayer->GetName());
-            // ConnectedPlayers°¡ º¹Á¦µÇ¾î °¢ Å¬¶óÀÌ¾ğÆ®ÀÇ HandleLevelLoadingState°¡ È£ÃâµÊ
+            // ConnectedPlayersê°€ ë³µì œë˜ì–´ ê° í´ë¼ì´ì–¸íŠ¸ì˜ HandleLevelLoadingStateê°€ í˜¸ì¶œë¨
 
-            // ¼­¹ö¿¡¼­ ·¹º§ ·Îµå »óÅÂ °»½Å
+            // ì„œë²„ì—ì„œ ë ˆë²¨ ë¡œë“œ ìƒíƒœ ê°±ì‹ 
             HandleWorldAssetChanged();
         }
     }
@@ -307,21 +180,21 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
 
     if (HasAuthority() && bIsRoomAssigned && LeavingPlayer)
     {
-        // ÇØ´ç ÇÃ·¹ÀÌ¾î¸¸ Á¦°Å
+        // í•´ë‹¹ í”Œë ˆì´ì–´ë§Œ ì œê±°
         if (ConnectedPlayers.Remove(LeavingPlayer))
         {
             UE_LOG(LogTemp, Log, TEXT("Player %s left room"), *LeavingPlayer->GetName());
 
-            // ¼­¹öÀÇ ·¹º§Àº ´Ù¸¥ ÇÃ·¹ÀÌ¾î°¡ ÀÖÀ¸¸é À¯Áö
+            // ì„œë²„ì˜ ë ˆë²¨ì€ ë‹¤ë¥¸ í”Œë ˆì´ì–´ê°€ ìˆìœ¼ë©´ ìœ ì§€
             if (ConnectedPlayers.Num() == 0)
             {
-                // ¸¶Áö¸· ÇÃ·¹ÀÌ¾î°¡ ³ª°¬À» ¶§¸¸ ¹æÀ» Á¤¸®
+                // ë§ˆì§€ë§‰ í”Œë ˆì´ì–´ê°€ ë‚˜ê°”ì„ ë•Œë§Œ ë°©ì„ ì •ë¦¬
                 //UE_LOG(LogTemp, Warning, TEXT("%s"))
                 ServerUnassignAutoRoom();
             }
             else
             {
-                // ³ª°£ ÇÃ·¹ÀÌ¾îÀÇ Å¬¶óÀÌ¾ğÆ®¿¡°Ô¸¸ ·¹º§ ¾ğ·Îµå ¿äÃ»
+                // ë‚˜ê°„ í”Œë ˆì´ì–´ì˜ í´ë¼ì´ì–¸íŠ¸ì—ê²Œë§Œ ë ˆë²¨ ì–¸ë¡œë“œ ìš”ì²­
                 ClientOnLeaveRoom(LeavingPlayer);
             }
         }
@@ -331,7 +204,7 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
 
 void AAutoRoomLevelInstance::ClientOnLeaveRoom_Implementation(APlayerController* LeavingPlayer)
 {
-    // ÀÚ½ÅÀÌ ³ª°¡´Â ÇÃ·¹ÀÌ¾îÀÎ °æ¿ì¸¸ ·¹º§ ¾ğ·Îµå
+    // ìì‹ ì´ ë‚˜ê°€ëŠ” í”Œë ˆì´ì–´ì¸ ê²½ìš°ë§Œ ë ˆë²¨ ì–¸ë¡œë“œ
     if (!HasAuthority()) {
         if (LeavingPlayer && LeavingPlayer->IsLocalController())
         {
@@ -365,7 +238,7 @@ bool AAutoRoomLevelInstance::SetRuntimeWorldAsset(TSoftObjectPtr<UWorld> InWorld
 void AAutoRoomLevelInstance::OnRep_ConnectedPlayers()
 {
     UE_LOG(LogTemp, Log, TEXT("OnRep_ConnectedPlayers - Player count: %d"), ConnectedPlayers.Num());
-    // ConnectedPlayers°¡ º¯°æµÉ ¶§¸¶´Ù ·¹º§ ·Îµå »óÅÂ Ã¼Å©
+    // ConnectedPlayersê°€ ë³€ê²½ë  ë•Œë§ˆë‹¤ ë ˆë²¨ ë¡œë“œ ìƒíƒœ ì²´í¬
     HandleWorldAssetChanged();
 }
 

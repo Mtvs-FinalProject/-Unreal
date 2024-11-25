@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CSR/DedicatedServer/AutoGameState.h"
@@ -9,7 +9,7 @@ void AAutoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// AutoRoomManager ∫π¡¶ º≥¡§¿ª Reliable∑Œ º≥¡§
+	// AutoRoomManager Î≥µÏ†ú ÏÑ§Ï†ïÏùÑ ReliableÎ°ú ÏÑ§Ï†ï
 	DOREPLIFETIME_CONDITION_NOTIFY(AAutoGameState, AutoRoomManager, COND_None, REPNOTIFY_Always);
 }
 

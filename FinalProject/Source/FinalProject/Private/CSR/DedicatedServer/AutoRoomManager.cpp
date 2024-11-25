@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CSR/DedicatedServer/AutoRoomManager.h"
@@ -12,24 +12,25 @@ AAutoRoomManager::AAutoRoomManager()
     PrimaryActorTick.bCanEverTick = false;
     bReplicates = true;
 
-    // ±âº» ¼³Á¤
+    // ê¸°ë³¸ ì„¤ì •
     MaxRooms = 10;
     SpaceBetweenRooms = 100000.0f;
 }
 
-bool AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
+
+void AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
     if (!HasAuthority() || !RequestingPlayer)
     {
         UE_LOG(LogTemp, Warning, TEXT("CreateAutoRoom: Invalid state or player"));
-        return false;
+        return;
     }
 
-    // °°Àº ÀÌ¸§ÀÇ ¹æÀÌ ÀÌ¹Ì ÀÖ´ÂÁö È®ÀÎ
+    // ê°™ì€ ì´ë¦„ì˜ ë°©ì´ ì´ë¯¸ ìžˆëŠ”ì§€ í™•ì¸
     if (FindAutoRoomByName(RoomName))
     {
         UE_LOG(LogTemp, Warning, TEXT("Room with name %s already exists"), *RoomName);
-        return false;
+        return;
     }
 
     AAutoRoomLevelInstance* AvailableRoom = FindAvailableAutoRoom();
@@ -39,14 +40,13 @@ bool AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController
             *RoomName, *RequestingPlayer->GetName());
         AvailableRoom->ServerAssignAutoRoom(RoomName);
         AvailableRoom->ServerJoinRoom(RequestingPlayer);
-        return true;
     }
     else
     {
         UE_LOG(LogTemp, Warning, TEXT("No available rooms for creation"));
-        return false;
     }
 }
+
 
 void AAutoRoomManager::JoinAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
@@ -62,13 +62,14 @@ void AAutoRoomManager::JoinAutoRoom(const FString& RoomName, APlayerController* 
         UE_LOG(LogTemp, Log, TEXT("Player %s joining room %s"),
             *RequestingPlayer->GetName(), *RoomName);
         Room->ServerJoinRoom(RequestingPlayer);
-        // ¿©±â¼­ Ãß°¡ÀûÀÎ ÀÔÀå ·ÎÁ÷ ±¸Çö °¡´É
+        // ì—¬ê¸°ì„œ ì¶”ê°€ì ì¸ ìž…ìž¥ ë¡œì§ êµ¬í˜„ ê°€ëŠ¥
     }
     else
     {
         UE_LOG(LogTemp, Warning, TEXT("Room %s not found"), *RoomName);
     }
 }
+
 
 void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
@@ -83,11 +84,12 @@ void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController*
     {
         UE_LOG(LogTemp, Log, TEXT("Player %s leaving room %s"),
             *RequestingPlayer->GetName(), *RoomName);
-        // ¸¶Áö¸· ÇÃ·¹ÀÌ¾î°¡ ³ª°¡¸é ¹æÀ» ÇØÁ¦ÇÏ´Â ·ÎÁ÷ Ãß°¡ °¡´É
+        // ë§ˆì§€ë§‰ í”Œë ˆì´ì–´ê°€ ë‚˜ê°€ë©´ ë°©ì„ í•´ì œí•˜ëŠ” ë¡œì§ ì¶”ê°€ ê°€ëŠ¥
         //Room->ServerUnassignAutoRoom();
         Room->ServerLeaveRoom(RequestingPlayer);
     }
 }
+
 
 AAutoRoomLevelInstance* AAutoRoomManager::FindAvailableAutoRoom() const
 {
@@ -101,6 +103,7 @@ AAutoRoomLevelInstance* AAutoRoomManager::FindAvailableAutoRoom() const
     UE_LOG(LogTemp, Warning, TEXT("AAutoRoomManager::FindAvailableAutoRoom Warring"));
     return nullptr;
 }
+
 
 AAutoRoomLevelInstance* AAutoRoomManager::FindAutoRoomByName(const FString& RoomName) const
 {
@@ -122,7 +125,7 @@ void AAutoRoomManager::BeginPlay()
 
     if (HasAuthority())
     {
-        // GameState¿¡ µî·Ï
+        // GameStateì— ë“±ë¡
         if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
         {
             UE_LOG(LogTemp, Log, TEXT("Registering AutoRoomManager to GameState"));
@@ -174,7 +177,7 @@ void AAutoRoomManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
 
-    // ¸ðµç ¹æ Á¤¸®
+    // ëª¨ë“  ë°© ì •ë¦¬
     if (HasAuthority())
     {
         for (AAutoRoomLevelInstance* Room : AutoRoomPool)
