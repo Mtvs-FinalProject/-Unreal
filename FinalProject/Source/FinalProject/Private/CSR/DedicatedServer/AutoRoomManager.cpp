@@ -91,6 +91,32 @@ void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController*
 }
 
 
+void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer)
+{
+    // 이미 존재하는 방인지 확인
+    if (FindAutoRoomByName(RoomName))
+    {
+        // 에러 처리
+        return;
+    }
+
+    // 사용 가능한 LevelInstance 찾기
+    AAutoRoomLevelInstance* AvailableRoom = FindAvailableAutoRoom();
+    if (!AvailableRoom)
+    {
+        return;
+    }
+
+    // 방 생성 및 설정
+    AvailableRoom->ServerAssignAutoRoom(RoomName);
+
+    // JsonData 파싱 및 액터 스폰 처리를 위한 함수 호출
+    //AvailableRoom->InitializeRoomWithData(JsonData);
+
+    // 플레이어 입장
+    AvailableRoom->ServerJoinRoom(RequestingPlayer);
+}
+
 AAutoRoomLevelInstance* AAutoRoomManager::FindAvailableAutoRoom() const
 {
     for (AAutoRoomLevelInstance* Room : AutoRoomPool)

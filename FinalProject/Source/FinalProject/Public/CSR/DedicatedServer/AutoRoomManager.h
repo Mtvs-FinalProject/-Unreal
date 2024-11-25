@@ -27,6 +27,9 @@ public:
     // 방 나가기 함수 
     void LeaveAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
+    // 방 생성 함수 (플레이 맵)
+    void CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer);
+
 	UFUNCTION(BlueprintCallable, Category = "Room")
    // 사용 가능한 방 찾기
    AAutoRoomLevelInstance* FindAvailableAutoRoom() const;
