@@ -113,6 +113,8 @@ void UMyRotateActorComponent::StartRolling()
      {
          block->SRPC_SetSimulatePhysics(false);
      }
+
+     SRPC_SetOwnerSync(RotateDirection,RotateSpeed);
 //     TotalRotationAngle = 0.0f;
     UE_LOG(LogTemp, Warning, TEXT("StartRolling called and bShouldRot set to true for %s"), *GetOwner()->GetName());
 }
@@ -172,11 +174,16 @@ void UMyRotateActorComponent::SetOwnerRotation_Implementation(const FQuat& newRo
     PRINTLOG(TEXT("SetOwnerLocation_Implementation"));
 }
 
+void UMyRotateActorComponent::SRPC_SetOwnerSync_Implementation(FRotator CRotateDirection, float CRotateSpeed)
+{
+    RotateDirection = CRotateDirection;
+    RotateSpeed = CRotateSpeed;
+}
 void UMyRotateActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-// 
-//     DOREPLIFETIME(UMyRotateActorComponent, RotateDirection);
-//     DOREPLIFETIME(UMyRotateActorComponent, RotateSpeed);
-//     DOREPLIFETIME(UMyRotateActorComponent, bShouldRot);
+
+     DOREPLIFETIME(UMyRotateActorComponent, RotateDirection);
+     DOREPLIFETIME(UMyRotateActorComponent, RotateSpeed);
+     DOREPLIFETIME(UMyRotateActorComponent, bShouldRot);
  }

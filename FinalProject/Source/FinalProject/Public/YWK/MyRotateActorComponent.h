@@ -78,5 +78,7 @@ public:
 	UFUNCTION(Server,Unreliable)
 	void SetOwnerRotation(const FQuat& newRotation);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetOwnerSync(FRotator CRotateDirection, float CRotateSpeed);
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

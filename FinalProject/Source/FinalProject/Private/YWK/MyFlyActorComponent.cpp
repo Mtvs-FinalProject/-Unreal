@@ -202,13 +202,17 @@ void UMyFlyActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& n
 
 }
 
+void UMyFlyActorComponent::SRPC_SetOwnerSync_Implementation(FVector CFlyDirection, float CMaxFlyDistance, float CFlySpeed, bool CbLoopMode, bool CbSingleDirection)
+{
+
+}
 void UMyFlyActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-// 	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
-// 	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
-// 	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
-// 	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
-// 	DOREPLIFETIME(UMyFlyActorComponent, bSingleDirection);
+	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
+	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
+	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
+	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
+	DOREPLIFETIME(UMyFlyActorComponent, bSingleDirection);
 }

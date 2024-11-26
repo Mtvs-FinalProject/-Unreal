@@ -84,4 +84,7 @@ public:
 	UFUNCTION(Server,Unreliable)
 	void SRPC_SetOwnerLocation(const FVector & newLocation);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetOwnerSync(FVector CFlyDirection, float CMaxFlyDistance, float CFlySpeed, bool CbLoopMode , bool CbSingleDirection);
+
 };

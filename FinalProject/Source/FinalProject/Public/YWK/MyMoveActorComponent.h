@@ -86,6 +86,8 @@ public:
 	UFUNCTION(Server,Unreliable)
 	void SRPC_SetOwnerLocation(const FVector & newLocation);
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetOwnerSync(FVector CMoveDirection, float CMoveDistance, float CMoveSpeed, bool CbLoopMode, bool CbSingleDirection);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	

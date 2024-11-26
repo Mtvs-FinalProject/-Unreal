@@ -38,6 +38,7 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 	CurrentLoop = 0;
 
     SetIsReplicated(true);
+
 }
 
 
@@ -183,14 +184,24 @@ void UMyMoveActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& 
 
     GetOwner()->SetActorLocation(newLocation);
 }
+
+void UMyMoveActorComponent::SRPC_SetOwnerSync_Implementation(FVector CMoveDirection, float CMoveDistance, float CMoveSpeed, bool CbLoopMode ,bool CbSingleDirection)
+{
+    MoveSpeed = CMoveSpeed; // float
+    MaxDistance = CMoveDistance; // float
+    MoveDirection = CMoveDirection;
+    bLoopMode = CbLoopMode; //bool
+    bSingleDirection = CbSingleDirection;
+}
+
 void UMyMoveActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-// 
-//     DOREPLIFETIME(UMyMoveActorComponent, MoveSpeed);
-//     DOREPLIFETIME(UMyMoveActorComponent, MaxDistance);
-//     DOREPLIFETIME(UMyMoveActorComponent, MoveDirection);
-//     DOREPLIFETIME(UMyMoveActorComponent, bLoopMode);
-//     DOREPLIFETIME(UMyMoveActorComponent, bSingleDirection);
-//     DOREPLIFETIME(UMyMoveActorComponent, bShouldMove);
+
+    DOREPLIFETIME(UMyMoveActorComponent, MoveSpeed);
+    DOREPLIFETIME(UMyMoveActorComponent, MaxDistance);
+    DOREPLIFETIME(UMyMoveActorComponent, MoveDirection);
+    DOREPLIFETIME(UMyMoveActorComponent, bLoopMode);
+    DOREPLIFETIME(UMyMoveActorComponent, bSingleDirection);
+    DOREPLIFETIME(UMyMoveActorComponent, bShouldMove);
 }
