@@ -4,6 +4,7 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
 #include "../FinalProject.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UMyFlyActorComponent::UMyFlyActorComponent()
@@ -13,13 +14,13 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// 초기 상승 속도
-	FlySpeed = 100;
+	FlySpeed = 0;
 
 	// 초기 상승 상태
 	bShouldFly = false;
 	
 	// 초기 상승 방향
-	FlyDirection = FVector(0.0f, 0.0f, 1.0f);
+	FlyDirection = FVector::ZeroVector;
 
 	// 상승한 높이 초기화
 	FlyDistance = 0.0f;
@@ -29,8 +30,9 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 
 	bLoopMode = false;
 	bSingleDirection = false;
-	LoopCount = 1;
-	CurrentLoop = 0;
+
+
+	SetIsReplicated(true);
 }
 
 // Called when the game starts
@@ -40,15 +42,21 @@ void UMyFlyActorComponent::BeginPlay()
 
 	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
 
+	if (GetOwner()->GetOwner() == nullptr)
+	{
+		PRINTLOG(TEXT("Owner == Null"));
+	}
+	else
+	{
+		PRINTLOG(TEXT("Owner : %s"), * GetOwner()->GetOwner()->GetName());
+	}
+
 	if (block)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Bind"));
 		block->componentCreateBoolDelegate.AddUObject(this,&UMyFlyActorComponent::GetDelegateBool);
 	}
 
-	// 초기 위치 저장
-    StartLocation = GetOwner()->GetActorLocation();
-    UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
 }
 
 
@@ -62,72 +70,123 @@ void UMyFlyActorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	if (bShouldFly)
 	{
-		ObjectFly(DeltaTime);
+		objectFly(DeltaTime);
 	}
 }
 
-void UMyFlyActorComponent::ObjectFly(float DeltaTime)
+void UMyFlyActorComponent::objectFly(float DeltaTime)
 {
 	AActor* Owner = GetOwner();
-	if (!Owner) return;
+	if (!Owner)
+	{
+		return;
+	}
+	if (Owner->HasAuthority()) return;
 
 	FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
+	//float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
+
+// 	float Tolerance = 1.0f;
+// 
+// 	if (bSingleDirection)
+// 	{
+// 		PRINTLOG(TEXT("bSingleDirection"));
+// 		if (DistanceTraveled <= MaxFlyDistance)
+// 		{
+// 			SRPC_SetOwnerLocation(NewLocation);
+// 		}
+// 		else
+// 		{
+// 			StopFly();
+// 			UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping flight."));
+// 		}
+// 	}
+// 	else
+// 	{
+// 		PRINTLOG(TEXT("bSingleDirection == false"));
+// 		if (DistanceTraveled >= MaxFlyDistance )
+// 		{
+// 			PRINTLOG(TEXT("DistanceTraveled >= MaxFlyDistance - Tolerance"));
+// 			if (bLoopMode)
+// 			{
+// 				FlyDirection *= -1.0f;
+// 				StartLocation = Owner->GetActorLocation();
+// 
+// 			}
+// 			else
+// 			{
+// 				StopFly();
+// 			}
+// 		}
+// 		else
+// 		{
+// 			PRINTLOG(TEXT("Owner->SetActorLocation(newLocation)"));
+// 			SRPC_SetOwnerLocation(NewLocation);
+// 		}
+// 	}
+
 	float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
-	float Tolerance = 1.0f;
-
-	if (bSingleDirection)
+	if (DistanceTraveled >= MaxFlyDistance)
 	{
-		if (DistanceTraveled <= MaxFlyDistance)
+		if (bSingleDirection)
 		{
-			Owner->SetActorLocation(NewLocation);
+			StopFly();
 		}
 		else
 		{
-			StopFly();
-			UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping flight."));
+			// Loop mode: reverse direction and reset start location
+			if (bLoopMode)
+			{
+				// Reverse direction
+				FlyDirection *= -1.0f;
+				StartLocation = Owner->GetActorLocation();
+
+			}
+			else
+			{
+				// Stop moving if loop count limit has been reached
+				StopFly();
+			}
 		}
 	}
 	else
 	{
-		if (DistanceTraveled >= MaxFlyDistance - Tolerance)
-		{
-			if (bLoopMode || CurrentLoop < LoopCount)
-			{
-				FlyDirection *= -1.0f;
-				StartLocation = Owner->GetActorLocation();
-
-				if (!bLoopMode)
-				{
-					CurrentLoop++;
-				}
-				UE_LOG(LogTemp, Warning, TEXT("Loop %d/%d: Reversing direction for fly. New direction: %s"), CurrentLoop, LoopCount, *FlyDirection.ToString());
-			}
-			else
-			{
-				StopFly();
-				UE_LOG(LogTemp, Warning, TEXT("Max loop count reached. Stopping flight."));
-			}
-		}
-		else
-		{
-			Owner->SetActorLocation(NewLocation);
-		}
+		SRPC_SetOwnerLocation(NewLocation);
+		PRINTLOG(TEXT("Owner->SetActorLocation(newLocation)"));
 	}
 }
-
-
 void UMyFlyActorComponent::StartFly()
 {
 	StartLocation = GetOwner()->GetActorLocation();
-	CurrentLoop = 0;
+	
 	bShouldFly = true;
+
+	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+	if (block && block->ActorHasTag(FName("owner")))
+	{
+		block->SaveBlockLocations();
+		PRINTLOG(TEXT("SaveBlockLocations"));
+	}
+
+	if (block)
+	{
+		block->SRPC_SetSimulatePhysics(false);
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("Flight started with direction: %s"), *FlyDirection.ToString());
 }
 
 void UMyFlyActorComponent::StopFly()
 {
 	bShouldFly = false;
+
+	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+
+	if (block)
+	{
+		block->SRPC_SetSimulatePhysics(true);
+	}
 	UE_LOG(LogTemp, Warning, TEXT("StopFly called. bShouldFly = %s"), bShouldFly ? TEXT("true") : TEXT("false"));
 }
 
@@ -135,7 +194,7 @@ void UMyFlyActorComponent::OriginFly()
 {
 	if (AActor* Owner = GetOwner())
 	{
-		Owner->SetActorLocation(StartLocation);
+		SRPC_SetOwnerLocation(StartLocation);
 		UE_LOG(LogTemp, Warning, TEXT("Moved back to start location: %s"), *StartLocation.ToString());
 	}
 }
@@ -159,26 +218,34 @@ FPSH_FunctionBlockData UMyFlyActorComponent::SaveData()
 
 	funtionData.floatArray.Add(FlySpeed);
 	funtionData.fvectorArray.Add(FlyDirection);
-	funtionData.intArray.Add(LoopCount);
 	funtionData.boolArray.Add(bLoopMode);
 	
-// 	FlySpeed; // float
-// 	FlyDirection; // fvector
-// 	LoopCount;	// int32
-// 	bLoopMode; // bool
-
 	return funtionData;
 }
+
 void UMyFlyActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
 {
 	
 	FlySpeed = funtionData.floatArray[0]; // float
 	FlyDirection = funtionData.fvectorArray[0]; // fvector
-	LoopCount = funtionData.intArray[0];	// int32
 	bLoopMode = funtionData.boolArray[0]; // bool
 
-// 	UE_LOG(LogTemp, Log, TEXT("FlySpeed: %f"), FlySpeed);
-// 	UE_LOG(LogTemp, Log, TEXT("FlyDirection: %s"), *FlyDirection.ToString());
-// 	UE_LOG(LogTemp, Log, TEXT("LoopCount: %d"), LoopCount);
-// 	UE_LOG(LogTemp, Log, TEXT("bLoopMode: %s"), bLoopMode ? TEXT("True") : TEXT("False"));
+}
+
+void UMyFlyActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& newLocation)
+{
+	if (GetOwner() == nullptr) return;
+
+	GetOwner()->SetActorLocation(newLocation);
+
+}
+
+void UMyFlyActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+// 	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
+// 	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
+// 	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
+// 	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
 }

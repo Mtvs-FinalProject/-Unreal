@@ -18,28 +18,31 @@ public:
 	UMyFlyActorComponent();
 
 	// 상승,하강 속도
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated,BlueprintReadWrite, Category = "Fly")
 	float FlySpeed;
 
 	// 상,하강 방향
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Fly" )
 	FVector FlyDirection;
 
 	// 상승 상태 변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Fly")
 	bool bShouldFly;	
 
 	// 상승 시작 위치
+	UPROPERTY(EditAnywhere, Category = "Fly")
 	FVector StartLocation;
 
 	// 상승 거리 변수
+	UPROPERTY(EditAnywhere, Category = "Fly")
 	float FlyDistance;
 
 	// 최대 상승 거리
+	UPROPERTY(EditAnywhere, Category = "Fly")
 	float MaxFlyDistance;
 
 	// 무한 왕복 모드
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated,BlueprintReadWrite, Category = "Fly")
 	bool bLoopMode;
 
 	// 단순 이동 모드
@@ -50,7 +53,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
     int32 LoopCount;
 
-	int32 CurrentLoop;  // 현재 왕복 횟수
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	// Called when the game starts
@@ -60,8 +63,7 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Fly")
-	void ObjectFly(float DeltaTime);
+	void objectFly(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable, Category = "Fly")
 	void StartFly();
@@ -79,5 +81,7 @@ public:
 
 	void LoadData(FPSH_FunctionBlockData funtionData);
 
-	bool bStart;
+	UFUNCTION(Server,Unreliable)
+	void SRPC_SetOwnerLocation(const FVector & newLocation);
+
 };

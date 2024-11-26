@@ -1,4 +1,4 @@
-Ôªø// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PSH/PSH_Player/PSH_PlayerController.h"
@@ -12,14 +12,11 @@
 #include "Blueprint/UserWidget.h"
 #include "CSR/UI/CSR_Proto_StartUI.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
-#include "CSR/DedicatedServer/AutoGameState.h"
-#include "CSR/DedicatedServer/AutoRoomManager.h"
-#include "CSR/UI/CreateLevel/WBP_CreateWidget.h"
-
+#include "../FinalProject.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
-	// ÏÉùÏÑ±ÏûêÏóê Î∏îÎ£®ÌîÑÎ¶∞Ìä∏ ÌÅ¥ÎûòÏä§ Î°úÎìú
+	// ª˝º∫¿⁄ø° ∫Ì∑Á«¡∏∞∆Æ ≈¨∑°Ω∫ ∑ŒµÂ
 	static ConstructorHelpers::FClassFinder<UMyChoiceActionWidget> WidgetClassFinder(TEXT("/Game/YWK/UI/WBP_Choice.WBP_Choice_C"));
 	if (WidgetClassFinder.Succeeded())
 	{
@@ -29,16 +26,6 @@ APSH_PlayerController::APSH_PlayerController()
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to find WBP_Choice at specified path"));
 	}
-	
-	static ConstructorHelpers::FClassFinder<UWBP_CreateWidget> CreateWidgetClassFinder(TEXT("/Game/CSR/UI/MainPage/CreatePage/WBP_CreateLevel.WBP_CreateLevel_C"));
-	if (CreateWidgetClassFinder.Succeeded())
-	{
-		CreateWidgetClass = CreateWidgetClassFinder.Class;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to find UWBP_CreateWidget at specified path"));
-	}
 }
 void APSH_PlayerController::PlayerTick(float DeltaTime)
 {
@@ -46,9 +33,6 @@ void APSH_PlayerController::PlayerTick(float DeltaTime)
 
 // 	if(targetLockOn)
 // 	LookMouseCursor();
-  // HTTP Actor Ïä§Ìè∞
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
 }
 void APSH_PlayerController::BeginPlay()
 {
@@ -69,7 +53,7 @@ void APSH_PlayerController::LookMouseCursor()
 	FHitResult hit;
 	GetHitResultUnderCursor(ECC_Visibility,false,hit);
 
-	if (hit.bBlockingHit) // ÎùºÏù∏ Ìä∏Î†àÏù¥Ïä§Í∞Ä Î¨ºÏ≤¥ÏôÄ Î∂ÄÎî´ÌòîÏùÑ Í≤ΩÏö∞
+	if (hit.bBlockingHit) // ∂Û¿Œ ∆Æ∑π¿ÃΩ∫∞° π∞√ºøÕ ∫ŒãH«˚¿ª ∞ÊøÏ
 	{
 		APawn * MyPawn = GetPawn();
 		if (MyPawn)
@@ -77,7 +61,7 @@ void APSH_PlayerController::LookMouseCursor()
 			FVector WorldLoc;
 			FVector WorldDir;
 
-			DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ÎßàÏö∞Ïä§ Ï¢åÌëú Î≥ÄÌôò
+			DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ∏∂øÏΩ∫ ¡¬«• ∫Ø»Ø
 // 			WorldLoc.Normalize();
 // 			WorldDir.Normalize();
 
@@ -100,15 +84,12 @@ void APSH_PlayerController::LookMouseCursor()
 		}
 	}
 }
-
 void APSH_PlayerController::ObjectSave()
 {
 	TArray<AActor*> blackArray;
 	
 
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(),FName(TEXT("owner")), blackArray);
-
-
 
 	for (auto* arrayActor : blackArray)
 	{
@@ -117,40 +98,68 @@ void APSH_PlayerController::ObjectSave()
 		if (actor)
 		{
 			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
-			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
+			FPSH_ObjectData BlockData = actor->SaveBlock();
 			dataTable->AddRow(rowName, BlockData);
 			UE_LOG(LogTemp,Warning,TEXT("Save RowNam : %d"),RowNum);
 		}
-		
+
 	}
 	//SaveTheGame();
 }
-
-//void APSH_PlayerController::ObjectLoad()
-//{
-//	TArray<FPSH_ObjectData*> dataAraay;
-//	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
-//
-//	for (int i = 0; i < dataAraay.Num(); i++)
-//	{
-//		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
-//		{
-//			// Î£®Ìä∏ Î∏îÎü≠ ÏÜåÌôò
-//			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
-//			if (SpawnActor)
-//			{
-//				FActorSpawnParameters Params;
-//				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
-//
-//				// Î∏îÎü≠ Í≥ÑÏ∏µ Íµ¨Ï°∞ Î∂àÎü¨Ïò§Í∏∞
-//				if (SpawnedBlock)
-//				{
-//					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
-//				}
-//			}
-//		}
-//	}
-//}
+void APSH_PlayerController::ObjectLoad()
+{
+// 	UE_LOG(LogTemp, Warning, TEXT("Load RowNam : %d"), RowNum);
+// 
+// 	TArray<FPSH_ObjectData*> dataAraay;
+// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
+// 
+// 	for (int i = 0; i < dataAraay.Num(); i++)
+// 	{
+// 		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
+// 		{
+// 			// ∑Á∆Æ ∫Ì∑∞ º“»Ø
+// 			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
+// 			if (SpawnActor)
+// 			{
+// 				FActorSpawnParameters Params;
+// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
+// 
+// 				// ∫Ì∑∞ ∞Ë√˛ ±∏¡∂ ∫“∑Øø¿±‚
+// 				if (SpawnedBlock)
+// 				{
+// 					//SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+// 				}
+// 			}
+// 		}
+// 		
+// 	}
+// 
+// 	for (int i = RowNum; i >= 0; i--)
+// 	{
+// 		FName rowName = FName(*FString::FormatAsNumber(i));
+// 		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(rowName, TEXT("non"));
+// 		APSH_BlockActor* sapwnPartent = nullptr;
+// 
+// 		if (data && data->actor != nullptr)
+// 		{
+// 			// ∑Á∆Æ ∫Ì∑∞ º“»Ø
+// 			TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
+// 			if (SpawnActor)
+// 			{
+// 				FActorSpawnParameters Params;
+// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, data->actorTransfrom, Params);
+// 
+// 				// ∫Ì∑∞ ∞Ë√˛ ±∏¡∂ ∫“∑Øø¿±‚
+// 				if (SpawnedBlock)
+// 				{
+// 					SpawnedBlock->LoadBlockHierarchy(*data);
+// 				}
+// 			}
+// 		}
+// 		UE_LOG(LogTemp, Warning, TEXT("%d"), RowNum);
+// 	}
+// 	
+}
 
 void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 {
@@ -158,7 +167,7 @@ void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 
 	//APSH_BlockActor* BlockActor = Cast<APSH_BlockActor>(SelectedActor);
 
-	//// ÏÑ†ÌÉùÌïú Ïï°ÌÑ∞Í∞Ä BlockActorÏù¥Í≥†, ÌïÑÏöîÌïú Ïª¥Ìè¨ÎÑåÌä∏Î•º Í∞ÄÏßÄÍ≥† ÏûàÏùÑ ÎïåÎßå UI Ïó¥Í∏∞
+	//// º±≈√«— æ◊≈Õ∞° BlockActor¿Ã∞Ì, « ø‰«— ƒƒ∆˜≥Õ∆Æ∏¶ ∞°¡ˆ∞Ì ¿÷¿ª ∂ß∏∏ UI ø≠±‚
 	//if (BlockActor)
 	//{
 	//	UMyMoveActorComponent* MoveComponent = BlockActor->FindComponentByClass<UMyMoveActorComponent>();
@@ -178,11 +187,11 @@ void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 	//				UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget set to Visible and added to viewport"));
 	//			}
 	//		}
-	//		return; // UIÍ∞Ä Ïó¥Î†∏ÏúºÎØÄÎ°ú Ìï®Ïàò Ï¢ÖÎ£å
+	//		return; // UI∞° ø≠∑»¿∏π«∑Œ «‘ºˆ ¡æ∑·
 	//	}
 	//}
 
-	//// Ï°∞Í±¥Ïù¥ Ï∂©Ï°±ÎêòÏßÄ ÏïäÏùÑ Í≤ΩÏö∞ UIÎ•º Îã´Í∏∞
+	//// ¡∂∞«¿Ã √Ê¡∑µ«¡ˆ æ ¿ª ∞ÊøÏ UI∏¶ ¥›±‚
 	//if (MyChoiceActionWidget && MyChoiceActionWidget->IsInViewport())
 	//{
 	//	MyChoiceActionWidget->RemoveFromParent();
@@ -230,140 +239,4 @@ void APSH_PlayerController::CRPC_ObjectWidgetVisible_Implementation(bool check)
 		}
 	}
 	
-}
-
-
-// ÏÑúÎ≤ÑÏóê Î£∏ Í¥ÄÎ†® ÏöîÏ≤≠ - ÏÑ±ÎùΩ
-#pragma region
-void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FString& RoomName, const FString& JsonData)
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
-	{
-		if (AAutoRoomManager* RoomManager = GameState->AutoRoomManager)
-		{
-			if (JsonData.IsEmpty())
-			{
-				// Create Î™®Îìú - Îπà Î∞© ÏÉùÏÑ±
-				RoomManager->CreateAutoRoom(RoomName, this);
-			}
-			else
-			{
-				// Play Î™®Îìú - JSON Îç∞Ïù¥ÌÑ∞Î°ú Î∞© ÏÉùÏÑ±
-				RoomManager->CreateAutoRoomWithData(RoomName, JsonData, this);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("AutoRoomManager not found in GameState"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GameState not found"));
-	}
-}
-
-void APSH_PlayerController::ServerRequestJoinAutoRoom_Implementation(const FString& RoomName)
-{
-	if (!HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
-		return;
-	}
-
-	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
-	if (!GameState)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
-		return;
-	}
-
-	if (!GameState->AutoRoomManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Joining room %s"), *RoomName);
-	GameState->AutoRoomManager->JoinAutoRoom(RoomName, this);
-}
-
-void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FString& RoomName)
-{
-	if (!HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
-		return;
-	}
-
-	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
-	if (!GameState)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
-		return;
-	}
-
-	if (!GameState->AutoRoomManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Leaving room %s"), *RoomName);
-	GameState->AutoRoomManager->LeaveAutoRoom(RoomName, this);
-}
-
-TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FString& JsonString)
-{
-	TArray<FPSH_ObjectData*> DataArray;
-
-	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-
-	if (FJsonSerializer::Deserialize(Reader, JsonObject))
-	{
-		const TArray<TSharedPtr<FJsonValue>>* DataTableArray;
-		if (JsonObject->TryGetArrayField(TEXT("data_table"), DataTableArray))
-		{
-			for (const auto& Value : *DataTableArray)
-			{
-				FPSH_ObjectData* ObjectData = new FPSH_ObjectData();
-				const TSharedPtr<FJsonObject>* RowObject;
-
-				if (Value->TryGetObject(RowObject))
-				{
-					if (FJsonObjectConverter::JsonObjectToUStruct((*RowObject).ToSharedRef(), ObjectData))
-					{
-						DataArray.Add(ObjectData);
-					}
-				}
-			}
-		}
-	}
-
-	return DataArray;
-}
-
-//void APSH_PlayerController::ShowMapSaveUI()
-//{
-//	if (HasAuthority()) {
-//		return ;
-//	}
-//	if (!MapCreateWidget && CreateWidgetClass)
-//	{
-//		MapCreateWidget = CreateWidget<UWBP_CreateWidget>(this, CreateWidgetClass);
-//	}
-//
-//	if (MapCreateWidget)
-//	{
-//		MapCreateWidget->AddToViewport();
-//	}
-//}
-//
-//#pragma endregion
-//
+}	

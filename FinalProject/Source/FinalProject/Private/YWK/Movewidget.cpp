@@ -16,11 +16,11 @@ void UMovewidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	// 게임모드에서 오브젝트 생성 이벤트를 바인딩
-	APSH_GameModeBase* GameMode = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
-	if (GameMode)
-	{
-		GameMode->OnObjectCreated.AddDynamic(this, &UMovewidget::AddObjectToComboBox);
-	}
+// 	APSH_GameModeBase* GameMode = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+// 	if (GameMode)
+// 	{
+// 		GameMode->OnObjectCreated.AddDynamic(this, &UMovewidget::AddObjectToComboBox);
+// 	}
 
 	// 뒤로가기 버튼
 	if (Btn_MoveBack)

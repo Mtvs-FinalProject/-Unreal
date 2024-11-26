@@ -9,6 +9,7 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "Components/ComboBoxString.h"
 #include "Components/CheckBox.h"
+#include "../FinalProject.h"
 
 void UFlyWidget::NativeConstruct()
 {
@@ -80,6 +81,16 @@ void UFlyWidget::OnUpButtonClicked()
 {
 	StoredFlyDirection = FVector(0.0f, 0.0f, 1.0f);
 	UpdatePreviewLocation(StoredFlyDirection, FCString::Atof(*FlyHightText->GetText().ToString()));
+
+	if (SelectedActor)
+	{
+		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
+		if (FlyComponent)
+		{
+			FlyComponent->FlyDirection =  FVector::UpVector;
+
+		}
+	}
 	UE_LOG(LogTemp, Warning, TEXT("Fly direction set to Up."));
 }
 
@@ -105,7 +116,7 @@ void UFlyWidget::OnStartButtonClicked()
 		UMyFlyActorComponent* FlyComponent = SelectedActor->FindComponentByClass<UMyFlyActorComponent>();
 		if (FlyComponent)
 		{
-			FlyComponent->FlyDirection = StoredFlyDirection.IsNearlyZero() ? FVector(0.0f, 0.0f, 1.0f) : StoredFlyDirection;
+			/*FlyComponent->FlyDirection = StoredFlyDirection.IsNearlyZero() ? FVector(0.0f, 0.0f, 1.0f) : StoredFlyDirection;*/
 			FlyComponent->StartFly();
 			UE_LOG(LogTemp, Warning, TEXT("Started flight for %s with direction: %s"), *SelectedActor->GetName(), *FlyComponent->FlyDirection.ToString());
 		}
@@ -436,7 +447,6 @@ void UFlyWidget::OnLoopCountCommitted(const FText& Text, ETextCommit::Type Commi
 		{
 			int32 LoopValue = FCString::Atoi(*Text.ToString());
 			FlyComponent->LoopCount = LoopValue;
-			FlyComponent->CurrentLoop = 0;  // 새로운 루프 설정 시 루프 초기화
 			UE_LOG(LogTemp, Warning, TEXT("Loop count set to: %d for %s"), LoopValue, *SelectedActor->GetName());
 		}
 	}
@@ -500,7 +510,7 @@ void UFlyWidget::SpawnPreviewActor()
   if (PreviewActor)
   {
     GetWorld()->GetTimerManager().SetTimer(PreviewFlyTimer, this, &UFlyWidget::UpdatePreviewMovement, 0.05f, true);
-    UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
+   // UE_LOG(LogTemp, Warning, TEXT("Preview movement timer started."));
   }
 }
 
@@ -510,9 +520,14 @@ void UFlyWidget::SpawnPreviewActor()
 // 프리뷰 액터의 이동 업데이트
 void UFlyWidget::UpdatePreviewMovement()
 {
-	if (!PreviewActor || !SelectedActor)
+	if (!PreviewActor )
 	{
-		UE_LOG(LogTemp, Error, TEXT("PreviewActor or SelectedActor is missing."));
+		//PRINTLOG(TEXT("PreviewActor is missing."));
+		return;
+	}
+	else if (!SelectedActor)
+	{
+	//	PRINTLOG(TEXT("SelectedActor is missing."));
 		return;
 	}
 
@@ -526,19 +541,19 @@ void UFlyWidget::UpdatePreviewMovement()
 	// 다음 위치 계산
 	FVector NextLocation = CurrentLocation + (Direction * StoredMoveSpeed * 0.05f);
 
-	UE_LOG(LogTemp, Warning, TEXT("Start: %s, Target: %s, Current: %s, Next: %s, Direction: %s"),
-		*StartLocation.ToString(), *TargetLocation.ToString(), *CurrentLocation.ToString(), *NextLocation.ToString(), *Direction.ToString());
+// 	UE_LOG(LogTemp, Warning, TEXT("Start: %s, Target: %s, Current: %s, Next: %s, Direction: %s"),
+// 		*StartLocation.ToString(), *TargetLocation.ToString(), *CurrentLocation.ToString(), *NextLocation.ToString(), *Direction.ToString());
 
 	// 목표 지점 도달 여부 확인
 	if (!bPreviewDirectionReversed && FVector::Dist(CurrentLocation, TargetLocation) <= 5.0f) // 목표 지점 도달
 	{
 		bPreviewDirectionReversed = true; // 방향 반전
-		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the target. Reversing direction to START."));
+	//	UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the target. Reversing direction to START."));
 	}
 	else if (bPreviewDirectionReversed && FVector::Dist(CurrentLocation, StartLocation) <= 5.0f) // 시작 지점 도달
 	{
 		bPreviewDirectionReversed = false; // 방향 초기화
-		UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the start. Reversing direction to TARGET."));
+		//UE_LOG(LogTemp, Warning, TEXT("PreviewActor reached the start. Reversing direction to TARGET."));
 	}
 
 	// 프리뷰 액터 위치 업데이트

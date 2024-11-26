@@ -277,6 +277,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     for (const TSharedPtr<FJsonValue>& Value : *JsonArray)
                     {
                         FPSH_ObjectData ObjectData;
+
                         if (FJsonObjectConverter::JsonObjectToUStruct(Value->AsObject().ToSharedRef(), &ObjectData))
                         {
                             DataTableArray.Add(ObjectData);
