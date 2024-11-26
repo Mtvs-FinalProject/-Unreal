@@ -352,7 +352,7 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
     {
         if (Data && Data->blockData.actor)
         {
-            FTransform SpawnTransform = Data->blockData.actorTransfrom;
+            FTransform SpawnTransform = Data->blockData.actorTransform;
             SpawnTransform.SetLocation(SpawnTransform.GetLocation() + SpawnOrigin);
             FActorSpawnParameters SpawnParams;
             //SpawnParams.bDeferConstruction = true;  // 추가

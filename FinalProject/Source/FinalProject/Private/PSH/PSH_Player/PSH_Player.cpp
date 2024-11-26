@@ -353,7 +353,6 @@ void APSH_Player::Delegatebool(bool createMode)
 	 }
 }
 
-
 void APSH_Player::NRPC_SetUiVisible_Implementation(bool check)
 {
 	if (pc == nullptr) return;
@@ -1165,16 +1164,8 @@ void APSH_Player::BotMoveAndModeChange()
 
 void APSH_Player::SaveTest()
 {
-	SRPC_Save();
-}
+	/*SRPC_Save();*/
 
-void APSH_Player::LoadTest()
-{
-	SRPC_Load();
-}
-
-void APSH_Player::SRPC_Save_Implementation()
-{
 	if (!IsValid(dataTable))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
@@ -1208,16 +1199,66 @@ void APSH_Player::SRPC_Save_Implementation()
 	}
 }
 
+void APSH_Player::LoadTest()
+{
+	SRPC_Load();
+}
+
+
+void APSH_Player::SRPC_Save_Implementation()
+{
+
+}
+
 void APSH_Player::SRPC_Load_Implementation()
 {
 
+// 	if (!IsValid(dataTable))
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
+// 		return;
+// 	}
+// 
+// // 	// 데이터 테이블에서 모든 행 가져오기
+// 	TArray<FPSH_ObjectData*> dataArray;
+// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
+// 
+// 	if (dataArray.IsEmpty())
+// 	{
+// 		PRINTLOG(TEXT("dataArray.IsEmpty()"));
+// 		return;
+// 	}
+// 
+// 	for (FPSH_ObjectData * data : dataArray)
+// 	{
+// 		
+// 		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor; //부모 몸체 할당
+// 
+// 		if (spawnActor)
+// 		{
+// 			FActorSpawnParameters Params;
+// 			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, data->blockData.actorTransform, Params);
+// 			
+// 			if (spawnBlock)
+// 			{
+// 				if (data->blockData.funcitonData.IsEmpty() == false) // 기능 블럭 데이터가 존재함으로 기능 블럭
+// 				{
+// 					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
+// 					spawnBlock->LoadBlockHierarchy(*data);
+// 					spawnBlock->SetOwner(this);
+// 				}
+// 				
+// 				spawnBlock->SetActorTransform(data->blockData.actorTransform); // 블럭 위치 지정
+// 				
+// 			}
+// 		}
+// 	}
 	if (!IsValid(dataTable))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
 		return;
 	}
 
-// 	// 데이터 테이블에서 모든 행 가져오기
 	TArray<FPSH_ObjectData*> dataArray;
 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
 
@@ -1227,30 +1268,32 @@ void APSH_Player::SRPC_Load_Implementation()
 		return;
 	}
 
-	for (FPSH_ObjectData * data : dataArray)
+	for (FPSH_ObjectData* data : dataArray)
 	{
-		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor; //부모 몸체 할당
-
+		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor;
 		if (spawnActor)
 		{
 			FActorSpawnParameters Params;
-			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, data->blockData.actorTransfrom, Params);
-			
+			Params.Owner = this;
+
+			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+				spawnActor,
+				data->blockData.actorTransform,
+				Params
+			);
+
 			if (spawnBlock)
 			{
-				if (data->blockData.funcitonData.IsEmpty() == false) // 기능 블럭 데이터가 존재함으로 기능 블럭
+				if (!data->blockData.funcitonData.IsEmpty())
 				{
 					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
-					spawnBlock->SetOwner(this);
 				}
-				
-				spawnBlock->SetActorTransform(data->blockData.actorTransfrom); // 블럭 위치 지정
-				
 
+				// 계층 구조 로드
+				spawnBlock->LoadBlockHierarchy(*data);
 			}
 		}
 	}
-
 // 	for (int i = 0; i < dataArray.Num(); i++)
 // 	{
 // 		if (!dataArray.IsEmpty() && dataArray[i]->actor != nullptr) // 비어있지 않고 데이터테이블에 엑터 클레스가 정확하게 들어있을때 반복

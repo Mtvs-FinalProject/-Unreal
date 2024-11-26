@@ -41,9 +41,10 @@ struct FPSH_BlockData // 자식 데이터 베이스 저장할 공간.
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
 
 	UPROPERTY(EditAnywhere)
-	FTransform actorTransfrom; // 블럭의 위치
+	FTransform actorTransform; // 블럭의 위치
 	
 	TArray<FPSH_BlockData> childData;
+
 };
 
 USTRUCT(Atomic, BlueprintType)

@@ -84,47 +84,7 @@ void UMyFlyActorComponent::objectFly(float DeltaTime)
 	if (Owner->HasAuthority()) return;
 
 	FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
-	//float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
-
-// 	float Tolerance = 1.0f;
-// 
-// 	if (bSingleDirection)
-// 	{
-// 		PRINTLOG(TEXT("bSingleDirection"));
-// 		if (DistanceTraveled <= MaxFlyDistance)
-// 		{
-// 			SRPC_SetOwnerLocation(NewLocation);
-// 		}
-// 		else
-// 		{
-// 			StopFly();
-// 			UE_LOG(LogTemp, Warning, TEXT("Reached max distance in single direction. Stopping flight."));
-// 		}
-// 	}
-// 	else
-// 	{
-// 		PRINTLOG(TEXT("bSingleDirection == false"));
-// 		if (DistanceTraveled >= MaxFlyDistance )
-// 		{
-// 			PRINTLOG(TEXT("DistanceTraveled >= MaxFlyDistance - Tolerance"));
-// 			if (bLoopMode)
-// 			{
-// 				FlyDirection *= -1.0f;
-// 				StartLocation = Owner->GetActorLocation();
-// 
-// 			}
-// 			else
-// 			{
-// 				StopFly();
-// 			}
-// 		}
-// 		else
-// 		{
-// 			PRINTLOG(TEXT("Owner->SetActorLocation(newLocation)"));
-// 			SRPC_SetOwnerLocation(NewLocation);
-// 		}
-// 	}
-
+	
 	float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
 	if (DistanceTraveled >= MaxFlyDistance)
@@ -219,6 +179,7 @@ FPSH_FunctionBlockData UMyFlyActorComponent::SaveData()
 	funtionData.floatArray.Add(FlySpeed);
 	funtionData.fvectorArray.Add(FlyDirection);
 	funtionData.boolArray.Add(bLoopMode);
+	funtionData.boolArray.Add(bSingleDirection);
 	
 	return funtionData;
 }
@@ -229,6 +190,7 @@ void UMyFlyActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
 	FlySpeed = funtionData.floatArray[0]; // float
 	FlyDirection = funtionData.fvectorArray[0]; // fvector
 	bLoopMode = funtionData.boolArray[0]; // bool
+	bSingleDirection = funtionData.boolArray[1]; // bool
 
 }
 
@@ -240,12 +202,17 @@ void UMyFlyActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& n
 
 }
 
+void UMyFlyActorComponent::SRPC_SetOwnerSync_Implementation(FVector CFlyDirection, float CMaxFlyDistance, float CFlySpeed, bool CbLoopMode, bool CbSingleDirection)
+{
+
+}
 void UMyFlyActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-// 	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
-// 	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
-// 	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
-// 	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
+	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
+	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
+	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
+	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
+	DOREPLIFETIME(UMyFlyActorComponent, bSingleDirection);
 }

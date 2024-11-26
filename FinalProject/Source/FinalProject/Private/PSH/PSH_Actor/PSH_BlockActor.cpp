@@ -490,7 +490,7 @@ void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, F
 
 }
 
-FPSH_ObjectData APSH_BlockActor::SaveBlock()
+FPSH_ObjectData APSH_BlockActor::SaveBlock() // 클라 서버 2번 불림
 {
 	FPSH_ObjectData Data;
 
@@ -510,7 +510,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlock()
 		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
 	));
 
-	Data.blockData.actorTransfrom = actorTransfrom; // 위치 저장
+	Data.blockData.actorTransform = actorTransfrom; // 위치 저장
 
 	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
@@ -523,6 +523,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlock()
 	for (AActor* actor : childsActors)
 	{
 		APSH_BlockActor * block = Cast<APSH_BlockActor>(actor);
+		PRINTLOG(TEXT("childsActors : %d "), childsActors.Num());
 		
 		if (block) // 자식 블럭.
 		{
@@ -531,12 +532,11 @@ FPSH_ObjectData APSH_BlockActor::SaveBlock()
 		}
 	}
 
-	PRINTLOG(TEXT("Data"));
 	return Data;
 
 }
 
-FPSH_BlockData APSH_BlockActor::SaveChildBlock()
+FPSH_BlockData APSH_BlockActor::SaveChildBlock() // 서버 클라
 {
 	FPSH_BlockData data;
 
@@ -550,7 +550,7 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock()
 		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
 	));
 
-	data.actorTransfrom = actorTransfrom; // 위치 저장
+	data.actorTransform = actorTransfrom; // 위치 저장
 
 	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
@@ -565,6 +565,7 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock()
 
 		if (block) // 자식 블럭.
 		{
+			PRINTLOG(TEXT("childsActors : %d "), childsActors.Num());
 			data.childData.Add(block->SaveChildBlock());
 		}
 	}
@@ -572,7 +573,7 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock()
 	return data;
 }
 
-void APSH_BlockActor::SaveBlockLocations()
+void APSH_BlockActor::SaveBlockLocations() // 클라이언트만.
 {
 	PRINTLOG(TEXT("SaveBlockLocations"));
 	if(locationData.bisSave) return;
@@ -589,7 +590,7 @@ void APSH_BlockActor::SaveBlockLocations()
 		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
 	));
 
-	locationData.blockData.actorTransfrom = actorTransfrom; // 위치 저장
+	locationData.blockData.actorTransform = actorTransfrom; // 위치 저장
 
 	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
@@ -614,7 +615,50 @@ void APSH_BlockActor::SaveBlockLocations()
 
 void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Childdats)
 {
-// 	if (Childdats.childData.IsEmpty()) return; // 자식 데이터가 없으면 종료
+//  	if (Childdats.blockData.childData.IsEmpty()) return; // 자식 데이터가 없으면 종료
+// 
+// 	PRINTLOG(TEXT("Childdats.blockData.childData. :%d"), Childdats.blockData.childData.Num());
+// 	
+// 	for (FPSH_BlockData data : Childdats.blockData.childData)
+// 	{
+// 		PRINTLOG(TEXT("ChildActor : %s"), *data.actor->GetName());
+// 
+// 	}
+
+	if (Childdats.blockData.childData.IsEmpty()) return;
+
+	PRINTLOG(TEXT("Childdats.blockData.childData. :%d"), Childdats.blockData.childData.Num());
+
+	for (const FPSH_BlockData& data : Childdats.blockData.childData)
+	{
+		// 자식 블록 스폰
+		if (data.actor)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this; // 현재 액터를 소유자로 설정
+
+			APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+				data.actor,
+				data.actorTransform,
+				SpawnParams
+			);
+
+			if (ChildBlock)
+			{
+				// 자식 블록에 데이터 로드
+				if (!data.funcitonData.IsEmpty())
+				{
+					ChildBlock->ComponentLoadData(data.funcitonData);
+				}
+
+				// 자식 블록의 자식들도 재귀적으로 로드
+				FPSH_ObjectData ChildObjectData;
+				ChildObjectData.blockData = data;
+				ChildBlock->LoadBlockHierarchy(ChildObjectData);
+			}
+		}
+	}
+
 // 
 // 	// 자실들의 데이터 를 확인.
 // 	for (const FPSH_ChildData& ChildData : Childdats.childData)
