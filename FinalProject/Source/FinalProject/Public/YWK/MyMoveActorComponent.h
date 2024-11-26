@@ -84,6 +84,6 @@ public:
 	void LoadData(FPSH_FunctionBlockData funtionData);
 	
 	UFUNCTION(Server,Unreliable)
-	void SetOwnerLocation(const FVector & newLocation);
+	void SRPC_SetOwnerLocation(const FVector & newLocation);
 	
 };

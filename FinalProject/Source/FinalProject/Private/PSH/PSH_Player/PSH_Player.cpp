@@ -1175,6 +1175,12 @@ void APSH_Player::LoadTest()
 
 void APSH_Player::SRPC_Save_Implementation()
 {
+	if (!IsValid(dataTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
+		return;
+	}
+
 	TArray<AActor*> blockArray;
 	// "owner" 태그가 달린 모든 블록을 가져옴
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
@@ -1188,7 +1194,7 @@ void APSH_Player::SRPC_Save_Implementation()
 			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
 
 			// 계층 구조 저장
-			FPSH_ObjectData BlockData = blockActor->SaveBlockHierachy();
+			FPSH_ObjectData BlockData = blockActor->SaveBlock();
 
 			// 데이터 테이블에 추가
 			if (dataTable)
@@ -1198,42 +1204,85 @@ void APSH_Player::SRPC_Save_Implementation()
 		}
 	}
 }
+
 void APSH_Player::SRPC_Load_Implementation()
 {
 
-	if (!dataTable)
+	if (!IsValid(dataTable))
 	{
-		UE_LOG(LogTemp, Error, TEXT("DataTable is null!"));
+		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
 		return;
 	}
-	if (!dataTable) return;
 
+// 	// 데이터 테이블에서 모든 행 가져오기
+	TArray<FPSH_ObjectData*> dataArray;
+	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
 
-	// 데이터 테이블에서 모든 행 가져오기
-	TArray<FPSH_ObjectData*> dataAraay;
-	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
-
-	for (int i = 0; i < dataAraay.Num(); i++)
+	if (dataArray.IsEmpty())
 	{
-		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
+		PRINTLOG(TEXT("dataArray.IsEmpty()"));
+		return;
+	}
+
+	for (FPSH_ObjectData * data : dataArray)
+	{
+		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor; //부모 몸체 할당
+
+		if (spawnActor)
 		{
-			// 루트 블럭 소환
-			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
-			if (SpawnActor)
+			FActorSpawnParameters Params;
+			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, data->blockData.actorTransfrom, Params);
+			
+			if (spawnBlock)
 			{
-				FActorSpawnParameters Params;
-
-				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
-
-				// 블럭 계층 구조 불러오기
-				if (SpawnedBlock)
+				if (data->blockData.funcitonData.IsEmpty() == false) // 기능 블럭 데이터가 존재함으로 기능 블럭
 				{
-					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
+					spawnBlock->SetOwner(this);
 				}
+				
+				spawnBlock->SetActorTransform(data->blockData.actorTransfrom); // 블럭 위치 지정
+				
+
 			}
 		}
-
 	}
+
+// 	for (int i = 0; i < dataArray.Num(); i++)
+// 	{
+// 		if (!dataArray.IsEmpty() && dataArray[i]->actor != nullptr) // 비어있지 않고 데이터테이블에 엑터 클레스가 정확하게 들어있을때 반복
+// 		{
+// 			// 루트 블럭 소환
+// 			TSubclassOf<APSH_BlockActor> SpawnActor = dataArray[i]->actor; //부모 할당
+// 			if (SpawnActor)
+// 			{
+// 				FActorSpawnParameters Params;
+// 
+// 				// 부모 소환
+// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataArray[i]->actorTransfrom, Params);
+// 
+// 				// 블럭 계층 구조 불러오기
+// 				if (SpawnedBlock)
+// 				{
+// 					// 부모가 기능블럭데이터를 가지고 있다면.
+// 					if (dataArray[i]->funcitonData.IsEmpty() == false)
+// 					{
+// 						// 기능 테이블 집어 넣어주기
+// 						SpawnedBlock->ComponentLoadData(dataArray[i]->funcitonData);
+// 					}
+// 					// 위치 지정
+// 					SpawnedBlock->SetActorTransform(dataArray[i]->actorTransfrom);
+// 
+// 					// 자식 을 불러오기.
+// 					for (const FPSH_Childdats& Childdats : dataArray[i]->childsData)
+// 					{
+// 						SpawnedBlock->LoadBlockHierarchy(Childdats);
+// 					}
+// 				}
+// 			}
+// 		}
+// 
+// 	}
 }
 
 void APSH_Player::ShowInterface()

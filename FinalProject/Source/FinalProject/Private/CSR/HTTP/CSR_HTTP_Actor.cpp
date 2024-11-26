@@ -277,6 +277,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     for (const TSharedPtr<FJsonValue>& Value : *JsonArray)
                     {
                         FPSH_ObjectData ObjectData;
+
                         if (FJsonObjectConverter::JsonObjectToUStruct(Value->AsObject().ToSharedRef(), &ObjectData))
                         {
                             DataTableArray.Add(ObjectData);
@@ -284,24 +285,24 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     }
 
                     // DataTableArray의 데이터로 블록 스폰
-                    for (const FPSH_ObjectData& Entry : DataTableArray)
-                    {
-                        // 루트 블록 스폰
-                        TSubclassOf<APSH_BlockActor> SpawnActor = Entry.actor;
-                        if (SpawnActor)
-                        {
-                            FActorSpawnParameters Params;
-                            FVector SpawnLocation = GetActorLocation(); // 기본 위치 또는 적절한 오프셋
-                            FRotator SpawnRotation = FRotator::ZeroRotator;
-
-                            APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, SpawnLocation, SpawnRotation, Params);
-                            if (SpawnedBlock)
-                            {
-                                // 블록 계층 로드
-                                SpawnedBlock->LoadBlockHierarchy(Entry);
-                            }
-                        }
-                    }
+//                     for (const FPSH_ObjectData& Entry : DataTableArray)
+//                     {
+//                         // 루트 블록 스폰
+//                         TSubclassOf<APSH_BlockActor> SpawnActor = Entry.actor;
+//                         if (SpawnActor)
+//                         {
+//                             FActorSpawnParameters Params;
+//                             FVector SpawnLocation = GetActorLocation(); // 기본 위치 또는 적절한 오프셋
+//                             FRotator SpawnRotation = FRotator::ZeroRotator;
+// 
+//                             APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, SpawnLocation, SpawnRotation, Params);
+//                             if (SpawnedBlock)
+//                             {
+//                                 // 블록 계층 로드
+//                                 SpawnedBlock->LoadBlockHierarchy(Entry);
+//                             }
+//                         }
+//                     }
                 }
             }
             else

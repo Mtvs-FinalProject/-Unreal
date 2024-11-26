@@ -68,7 +68,13 @@ public:
 
 	float LastLogTime = 0.0f; // 마지막으로 로그가 출력된 시간
 
+	UFUNCTION()
+	void GetDelegateBool(bool delegatebool);
+
 	FPSH_FunctionBlockData  SaveData();
 
 	void LoadData(FPSH_FunctionBlockData funtionData);
+
+	UFUNCTION(Server,Unreliable)
+	void SetOwnerRotation(const FQuat& newRotation);
 };

@@ -98,7 +98,7 @@ void APSH_PlayerController::ObjectSave()
 		if (actor)
 		{
 			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
-			FPSH_ObjectData BlockData = actor->SaveBlockHierachy();
+			FPSH_ObjectData BlockData = actor->SaveBlock();
 			dataTable->AddRow(rowName, BlockData);
 			UE_LOG(LogTemp,Warning,TEXT("Save RowNam : %d"),RowNum);
 		}
@@ -108,31 +108,31 @@ void APSH_PlayerController::ObjectSave()
 }
 void APSH_PlayerController::ObjectLoad()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Load RowNam : %d"), RowNum);
-
-	TArray<FPSH_ObjectData*> dataAraay;
-	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
-
-	for (int i = 0; i < dataAraay.Num(); i++)
-	{
-		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
-		{
-			// 루트 블럭 소환
-			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
-			if (SpawnActor)
-			{
-				FActorSpawnParameters Params;
-				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
-
-				// 블럭 계층 구조 불러오기
-				if (SpawnedBlock)
-				{
-					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
-				}
-			}
-		}
-		
-	}
+// 	UE_LOG(LogTemp, Warning, TEXT("Load RowNam : %d"), RowNum);
+// 
+// 	TArray<FPSH_ObjectData*> dataAraay;
+// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
+// 
+// 	for (int i = 0; i < dataAraay.Num(); i++)
+// 	{
+// 		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
+// 		{
+// 			// 루트 블럭 소환
+// 			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
+// 			if (SpawnActor)
+// 			{
+// 				FActorSpawnParameters Params;
+// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
+// 
+// 				// 블럭 계층 구조 불러오기
+// 				if (SpawnedBlock)
+// 				{
+// 					//SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+// 				}
+// 			}
+// 		}
+// 		
+// 	}
 // 
 // 	for (int i = RowNum; i >= 0; i--)
 // 	{

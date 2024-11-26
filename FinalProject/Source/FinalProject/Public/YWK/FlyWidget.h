@@ -22,7 +22,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UButton* Btn_UP;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UButton* Btn_Down;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))

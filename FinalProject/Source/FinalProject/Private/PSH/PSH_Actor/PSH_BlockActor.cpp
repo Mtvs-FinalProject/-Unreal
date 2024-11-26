@@ -325,6 +325,8 @@ void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // �
 	meshComp->SetCollisionResponseToChannel(ECC_WorldStatic, newResponse);
 
 
+	if(childsActors.IsEmpty()) return;
+
 	for (auto* actor : childsActors)
 	{
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(NewType);
@@ -487,158 +489,168 @@ void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, F
 
 }
 
-FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
+FPSH_ObjectData APSH_BlockActor::SaveBlock()
 {
-	if (bisSavePoint == false)
+	FPSH_ObjectData Data;
+
+	if (locationData.bisSave)
 	{
-		FPSH_ObjectData Data;
-
-		// 부모 블록 정보 저장
-		Data.actor = GetClass();
-		FTransform ActorTransform = GetActorTransform();
-		ActorTransform.SetLocation(FVector(
-			ActorTransform.GetLocation().X,
-			ActorTransform.GetLocation().Y,
-			FMath::RoundToFloat(ActorTransform.GetLocation().Z / 50.0f) * 50.0f
-		));
-
-		Data.actorTransfrom = ActorTransform;
-		Data.funcitonData = ComponentSaveData(functionObjectDataType);
-		// 스택을 이용한 비재귀적 저장
-		TArray<APSH_BlockActor*> Stack;
-		Stack.Push(this);
-
-		while (Stack.Num() > 0)
-		{
-			APSH_BlockActor* CurrentBlock = Stack.Pop();
-			if (!CurrentBlock) continue;
-
-			for (AActor* ChildActor : CurrentBlock->childsActors)
-			{
-				APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(ChildActor);
-
-				if (ChildBlock)
-				{
-
-					FPSH_ChildData ChildData;
-					ChildData.actor = ChildBlock->GetClass();
-					ChildData.actorTransfrom = ChildBlock->GetActorTransform();
-					ChildData.actorTransfrom.SetScale3D(FVector(1));
-					ChildData.funcitonData = ChildBlock->ComponentSaveData(ChildBlock->functionObjectDataType);;
-
-					FPSH_Childdats ChildWrapper;
-					ChildWrapper.childData.Add(ChildData);
-					Data.childsData.Add(ChildWrapper);
-
-					Stack.Push(ChildBlock); // 자식 블록을 스택에 추가
-				}
-			}
-		}
-
-		return Data;
-	 }
-	return locationData;
-}
-
-void APSH_BlockActor::SRPC_SaveBlockLocations_Implementation()
-{
-
-}
-void APSH_BlockActor::SaveBlockLocations()
-{
-	bisSavePoint = true;
-	// 부모 위치 정보 저장
-	locationData.actor = GetClass();
-	FTransform ActorTransform = GetActorTransform();
-	ActorTransform.SetLocation(FVector(
-		ActorTransform.GetLocation().X,
-		ActorTransform.GetLocation().Y,
-		FMath::RoundToFloat(ActorTransform.GetLocation().Z / 50.0f) * 50.0f
+		PRINTLOG(TEXT("locationData.bisSave"));
+		return locationData;
+	}
+	
+	// 부모 저장
+	Data.blockData.actor = GetClass(); // 블루프린트 사용한것 저장
+	
+	FTransform actorTransfrom = GetActorTransform();
+	actorTransfrom.SetLocation(FVector(
+		actorTransfrom.GetLocation().X,
+		actorTransfrom.GetLocation().Y,
+		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
 	));
 
-	locationData.actorTransfrom = ActorTransform;
-	locationData.funcitonData = ComponentSaveData(functionObjectDataType);
+	Data.blockData.actorTransfrom = actorTransfrom; // 위치 저장
 
-	// 스택을 이용한 비재귀적 탐색
-	TArray<APSH_BlockActor*> Stack;
-	Stack.Push(this);
-
-	while (Stack.Num() > 0)
+	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
-		APSH_BlockActor* CurrentBlock = Stack.Pop();
-		if (!CurrentBlock) continue;
+		Data.blockData.funcitonData = ComponentSaveData(blockDataType);
+	}
 
-		for (AActor* ChildActor : CurrentBlock->childsActors)
+	if(childsActors.IsEmpty()) return Data;
+
+	// 자식 블럭 반복.
+	for (AActor* actor : childsActors)
+	{
+		APSH_BlockActor * block = Cast<APSH_BlockActor>(actor);
+		
+		if (block) // 자식 블럭.
 		{
-			APSH_BlockActor* ChildBlock = Cast<APSH_BlockActor>(ChildActor);
-			if (ChildBlock)
-			{
-				FPSH_ChildData ChildLocationData;
-				ChildLocationData.actor = ChildBlock->GetClass();
-				ChildLocationData.actorTransfrom = ChildBlock->GetActorTransform();
-				ChildLocationData.actorTransfrom.SetScale3D(FVector(1)); // 스케일 초기화
-				ChildLocationData.funcitonData = ChildBlock->ComponentSaveData(ChildBlock->functionObjectDataType);
-
-				FPSH_Childdats ChildWrapper;
-				ChildWrapper.childData.Add(ChildLocationData);
-
-				locationData.childsData.Add(ChildWrapper);
-
-				Stack.Push(ChildBlock);
-			}
+			// 자식 데이터 저장.
+			Data.blockData.childData.Add(block->SaveChildBlock());
 		}
 	}
 
-
+	PRINTLOG(TEXT("Data"));
+	return Data;
 
 }
 
-void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
+FPSH_BlockData APSH_BlockActor::SaveChildBlock()
 {
-	if (Data.funcitonData.IsEmpty() == false)
+	FPSH_BlockData data;
+
+	// 내 정보 저장.
+	data.actor = GetClass();
+
+	FTransform actorTransfrom = GetActorTransform();
+	actorTransfrom.SetLocation(FVector(
+		actorTransfrom.GetLocation().X,
+		actorTransfrom.GetLocation().Y,
+		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
+	));
+
+	data.actorTransfrom = actorTransfrom; // 위치 저장
+
+	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
-		ComponentLoadData(Data.funcitonData);
+		data.funcitonData = ComponentSaveData(blockDataType);
 	}
-	SetActorTransform(Data.actorTransfrom);
-	// 자식 블럭들 생성 및 불러오기
-	for (const FPSH_Childdats& ChildrenData : Data.childsData)
+	// 비어있을경우
+	if (childsActors.IsEmpty()) return data;
+
+	for (AActor* actor : childsActors)
 	{
-		for (const FPSH_ChildData& ChildData : ChildrenData.childData)
+		APSH_BlockActor* block = Cast<APSH_BlockActor>(actor);
+
+		if (block) // 자식 블럭.
 		{
-			if (ChildData.actor)
-			{
-				APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-					ChildData.actor,
-					ChildData.actorTransfrom
-				);
+			data.childData.Add(block->SaveChildBlock());
+		}
+	}
+	
+	return data;
+}
 
-				if (ChildBlock)
-				{
-					// 부모 블럭에 자식 블럭을 붙임
-					ChildBlock->meshComp->SetSimulatePhysics(false);
-					FAttachmentTransformRules rule = FAttachmentTransformRules(
-						EAttachmentRule::KeepWorld,
-						EAttachmentRule::KeepWorld,
-						EAttachmentRule::KeepWorld,
-						true
-					);
-					ChildBlock->AttachToActor(this, rule);
-					AddChild(ChildBlock);
+void APSH_BlockActor::SaveBlockLocations()
+{
+	PRINTLOG(TEXT("SaveBlockLocations"));
+	if(locationData.bisSave) return;
 
-					if (ChildBlock->functionObjectDataType == EFunctionObjectDataType::ROTATE)
-					{
-						ChildBlock->ComponentLoadData(ChildData.funcitonData);
-					}
-					
-					// 자식의 자식 블럭도 재귀적으로 불러옴
-					ChildBlock->LoadBlockHierarchy(ChildBlock->SaveBlockHierachy());
-				}
-			}
+	locationData.bisSave = true;
+
+	// 부모 저장
+	locationData.blockData.actor = GetClass(); // 블루프린트 사용한것 저장
+
+	FTransform actorTransfrom = GetActorTransform();
+	actorTransfrom.SetLocation(FVector(
+		actorTransfrom.GetLocation().X,
+		actorTransfrom.GetLocation().Y,
+		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
+	));
+
+	locationData.blockData.actorTransfrom = actorTransfrom; // 위치 저장
+
+	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
+	{
+		locationData.blockData.funcitonData = ComponentSaveData(blockDataType);
+	}
+
+	if (childsActors.IsEmpty()) return;
+
+	// 자식 블럭 반복.
+	for (AActor* actor : childsActors)
+	{
+		APSH_BlockActor* block = Cast<APSH_BlockActor>(actor);
+
+		if (block) // 자식 블럭.
+		{
+			// 자식 데이터 저장.
+			locationData.blockData.childData.Add(block->SaveChildBlock());
 		}
 	}
 
-	
 }
+
+void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Childdats)
+{
+// 	if (Childdats.childData.IsEmpty()) return; // 자식 데이터가 없으면 종료
+// 
+// 	// 자실들의 데이터 를 확인.
+// 	for (const FPSH_ChildData& ChildData : Childdats.childData)
+// 	{
+// 		if (!ChildData.actor) continue; // Actor 클래스가 없으면 무시
+// 
+// 		// 자식 블록 스폰
+// 		APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+// 			ChildData.actor,
+// 			ChildData.actorTransfrom
+// 		);
+// 
+// 		if (ChildBlock)
+// 		{
+// 			// 부모 블록에 자식 블록 연결
+// 			ChildBlock->meshComp->SetSimulatePhysics(false);
+// 			FAttachmentTransformRules AttachRules(
+// 				EAttachmentRule::KeepWorld,
+// 				EAttachmentRule::KeepWorld,
+// 				EAttachmentRule::KeepWorld,
+// 				true
+// 			);
+// 			ChildBlock->AttachToActor(this, AttachRules);
+// 			AddChild(ChildBlock);
+// 
+// 			// 추가 데이터 로드
+// 			if (ChildBlock->functionObjectDataType == EFunctionObjectDataType::ROTATE)
+// 			{
+// 				ChildBlock->ComponentLoadData(ChildData.funcitonData);
+// 			}
+// 
+// 			// 재귀적으로 자식 데이터 처리
+// 			ChildBlock->LoadBlockHierarchy(Childdats); // 올바른 재귀 호출
+// 		}
+// 	}
+}
+
 void APSH_BlockActor::AllDestroy()
 {
 	for (auto* actor : childsActors)
@@ -718,23 +730,20 @@ void APSH_BlockActor::MRPC_StartBlockDelgate_Implementation(bool createMode)
 	}
 }
 
-TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EFunctionObjectDataType dataType)
+TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EBlockDataType dataType)
 {
-	PRINTLOG(TEXT("ComponentSaveData"));
 	TArray<FPSH_FunctionBlockData> funcionBlockData;
-	
-	if(ActorHasTag(FName("owner") ) == false) return funcionBlockData;
 
-	switch (functionObjectDataType)
+	switch (blockDataType)
 	{
-	case EFunctionObjectDataType::MOVEANDFLY:
+	case EBlockDataType::MOVEANDFLY:
 		flyComp = Cast<UMyFlyActorComponent>(GetComponentByClass(UMyFlyActorComponent::StaticClass()));
 		moveComp = Cast<UMyMoveActorComponent>(GetComponentByClass(UMyMoveActorComponent::StaticClass()));
 		if(flyComp == nullptr || moveComp == nullptr) return funcionBlockData;
 		funcionBlockData.Add(moveComp->SaveData());
 		funcionBlockData.Add(flyComp->SaveData());
 		break;
-	case EFunctionObjectDataType::ROTATE:
+	case EBlockDataType::ROTATE:
 		rotationMovementComp = Cast<UMyRotateActorComponent>(GetComponentByClass(UMyRotateActorComponent::StaticClass()));
 		if (rotationMovementComp == nullptr) return funcionBlockData;
 		funcionBlockData.Add(rotationMovementComp->SaveData());
@@ -749,17 +758,18 @@ TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EFunctionObjec
 
 void APSH_BlockActor::ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBlockData)
 {
+
 	PRINTLOG(TEXT("ComponentLoadData"));
-	switch (functionObjectDataType)
+	switch (blockDataType)
 	{
-	case EFunctionObjectDataType::MOVEANDFLY:
+	case EBlockDataType::MOVEANDFLY:
 		flyComp = Cast<UMyFlyActorComponent>(GetComponentByClass(UMyFlyActorComponent::StaticClass()));
 		moveComp = Cast<UMyMoveActorComponent>(GetComponentByClass(UMyMoveActorComponent::StaticClass()));
 		if (flyComp == nullptr || moveComp == nullptr) return;
 		moveComp->LoadData(funcionBlockData[0]);
 		flyComp->LoadData(funcionBlockData[1]);
 		break;
-	case EFunctionObjectDataType::ROTATE:
+	case EBlockDataType::ROTATE:
 		rotationMovementComp = Cast<UMyRotateActorComponent>(GetComponentByClass(UMyRotateActorComponent::StaticClass()));
 		if (rotationMovementComp == nullptr) return;
 		rotationMovementComp->LoadData(funcionBlockData[0]);
@@ -772,6 +782,7 @@ void APSH_BlockActor::ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBl
 
 void APSH_BlockActor::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	
 	if(HasAuthority() == false) return;
 
 	if(bHit == false || mapBlock) return;
@@ -790,3 +801,20 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 	if(spawnEffect == nullptr) return;
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), spawnEffect, impactPoint);
 }
+void APSH_BlockActor::SRPC_SetSimulatePhysics_Implementation(bool check)
+{
+	MRPC_SetSimulatePhysics(check);
+	meshComp->SetSimulatePhysics(check);
+}
+void APSH_BlockActor::MRPC_SetSimulatePhysics_Implementation(bool check)
+{
+	meshComp->SetSimulatePhysics(check);
+}
+
+// void APSH_BlockActor::SRPC_SatartLocation_Implementation(const FVector& startLoc)
+// {
+// 
+// 	PRINTLOG(TEXT("startLoc : %s"), *startLoc.ToString());
+// 	if(HasAuthority())
+// 	SetActorLocation(startLoc);
+// }
