@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
@@ -25,7 +25,6 @@ APSH_BlockActor::APSH_BlockActor()
 	meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	meshComp->SetIsReplicated(true);
 	meshComp->SetNotifyRigidBodyCollision(true);
-
 	
 	SetRootComponent(meshComp);
 
@@ -50,12 +49,12 @@ APSH_BlockActor::APSH_BlockActor()
 	{
 		PlaceEffect = placeNiagara.Object;
 	}
-	// ±â´É ÄÄÆ÷³ÍÆ®µé
+	// ê¸°ëŠ¥ ì»´í¬ë„ŒíŠ¸ë“¤
 	//MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
 	//MyFlyActorComponent = CreateDefaultSubobject<UMyFlyActorComponent>(TEXT("FlyComponent"));
 	//MyRotateActorComponent = CreateDefaultSubobject<UMyRotateActorComponent>(TEXT("RotateComponent"));
 
-	//// ÄÄÆ÷³ÍÆ®°¡ Æ¯Á¤ »óÈ²¿¡¼­¸¸ È°¼ºÈ­µÇµµ·Ï ¼³Á¤
+	//// ì»´í¬ë„ŒíŠ¸ê°€ íŠ¹ì • ìƒí™©ì—ì„œë§Œ í™œì„±í™”ë˜ë„ë¡ ì„¤ì •
 	//MyMoveActorComponent->SetActive(false);
 	//MyFlyActorComponent->SetActive(false);
 	//MyRotateActorComponent->SetActive(false);
@@ -95,7 +94,7 @@ void APSH_BlockActor::BeginPlay()
 	//else
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("MoveComponent is NOT active in %s"), *GetName());
-	//	MyMoveActorComponent->SetComponentTickEnabled(true);  // ÄÄÆ÷³ÍÆ® È°¼ºÈ­ ¼³Á¤
+	//	MyMoveActorComponent->SetComponentTickEnabled(true);  // ì»´í¬ë„ŒíŠ¸ í™œì„±í™” ì„¤ì •
 	//}
 
 	//if (MyFlyActorComponent && MyFlyActorComponent->IsActive())
@@ -105,7 +104,7 @@ void APSH_BlockActor::BeginPlay()
 	//else
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("FlyComponent is NOT active in %s"), *GetName());
-	//	MyFlyActorComponent->SetActive(true);  // È°¼ºÈ­ ¼³Á¤
+	//	MyFlyActorComponent->SetActive(true);  // í™œì„±í™” ì„¤ì •
 	//}
 }
 
@@ -142,8 +141,8 @@ void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* 
 void APSH_BlockActor::PickUp(class UPhysicsHandleComponent* handle)
 {
 	if (handle == nullptr) return;
-	// ºí·Ï Àâ±â
-	MRPC_Remove(); // Ç×»ó ¼­¹ö¶ó¼­
+	// ë¸”ë¡ ì¡ê¸°
+	MRPC_Remove(); // í•­ìƒ ì„œë²„ë¼ì„œ
 
 	pickedUp = true;
 	MRPC_PickUp(handle);
@@ -200,25 +199,25 @@ void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachAct
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PlaceEffect, GetActorLocation());
 	}
 
-	attachActor->AddChild(this); // ºÎ¸ğ ºí·Ï¿¡ ÀÚ½Ä ºí·ÏÀ¸·Î Ãß°¡
+	attachActor->AddChild(this); // ë¶€ëª¨ ë¸”ë¡ì— ìì‹ ë¸”ë¡ìœ¼ë¡œ ì¶”ê°€
 
 	meshComp->SetSimulatePhysics(false);
 	parent = attachActor;
 
-	// ÀÚ½Ä ºí·ÏÀÇ À§Ä¡¿Í ¹æÇâÀ» º¯°æ
+	// ìì‹ ë¸”ë¡ì˜ ìœ„ì¹˜ì™€ ë°©í–¥ì„ ë³€ê²½
 	FAttachmentTransformRules rule = FAttachmentTransformRules(
 		EAttachmentRule::KeepWorld,
 		EAttachmentRule::SnapToTarget,
 		EAttachmentRule::KeepWorld,
 		true
 	);
-	// ºÎ¸ğ ºí·°¿¡ ºÙÀÌ±â
+	// ë¶€ëª¨ ë¸”ëŸ­ì— ë¶™ì´ê¸°
 	AttachToActor(attachActor, rule);
 
 	SetActorRelativeLocation(worldTransform.GetLocation());
 	SetActorRotation(worldTransform.GetRotation());
 
-	// ºÎ¸ğºí·Ï¿¡ ³ªÀÇ ÀÚ½Ä ºí·Ïµé Àü¼Û
+	// ë¶€ëª¨ë¸”ë¡ì— ë‚˜ì˜ ìì‹ ë¸”ë¡ë“¤ ì „ì†¡
 	attachActor->TransferChildren(childsActors);
 
 
@@ -248,15 +247,15 @@ void APSH_BlockActor::MRPC_Remove_Implementation()
 {
 	if (parent == nullptr) return;
 
-	// ºÎ¸ğ¿¡¼­ ºĞ¸®
+	// ë¶€ëª¨ì—ì„œ ë¶„ë¦¬
 	FDetachmentTransformRules rule = FDetachmentTransformRules::KeepWorldTransform;
 	DetachFromActor(rule);
 
-	// ½Ã¹°·¹ÀÌ¼Ç È°¼ºÈ­
+	// ì‹œë¬¼ë ˆì´ì…˜ í™œì„±í™”
 
 	meshComp->SetSimulatePhysics(true);
 	
-	// ºÎ¸ğ¿¡¼­ ÀÚ½Ä Á¦°Å
+	// ë¶€ëª¨ì—ì„œ ìì‹ ì œê±°
 	parent->RemoveChild(this);
 	parent->RemoveChildren(childsActors);
 
@@ -268,8 +267,8 @@ void APSH_BlockActor::MRPC_Remove_Implementation()
 void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 {
 	if (actor == nullptr) return;
-	//ÀÚ½Ä ¸ñ·Ï¿¡¼­ Á¦°Å
-	if (childsActors.Contains(actor))  // ÀÚ½ÄÀÌ Á¸ÀçÇÒ ¶§¸¸ Á¦°Å
+	//ìì‹ ëª©ë¡ì—ì„œ ì œê±°
+	if (childsActors.Contains(actor))  // ìì‹ì´ ì¡´ì¬í•  ë•Œë§Œ ì œê±°
 	{
 		childsActors.Remove(actor);
 	}
@@ -277,7 +276,7 @@ void APSH_BlockActor::RemoveChild(class APSH_BlockActor* actor)
 
 void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
 {
-	if (childActor.IsEmpty()) return; // ¹è¿­ÀÌ ºñ¾îÀÖÀ¸¸é °Ë»çx
+	if (childActor.IsEmpty()) return; // ë°°ì—´ì´ ë¹„ì–´ìˆìœ¼ë©´ ê²€ì‚¬x
 
 	for (auto* actor : childActor)
 	{
@@ -288,7 +287,7 @@ void APSH_BlockActor::RemoveChildren(TArray<AActor*> childActor)
 	}
 }
 
-void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // ÀÚ½Ä Äİ¸®Àü ¾÷µ¥ÀÌÆ®
+void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // ìì‹ ì½œë¦¬ì „ ì—…ë°ì´íŠ¸
 {
 	meshComp->SetCollisionEnabled(NewType);
 	
@@ -357,10 +356,10 @@ void APSH_BlockActor::SnapApplyPriority()
 {
 	// Loop Through All Snap Points
 
-	// ÃÖ¼Ò 2°³ÀÇ ¿ì¼±¼øÀ§°¡ ÀÖ´ÂÁö È®ÀÎ
+	// ìµœì†Œ 2ê°œì˜ ìš°ì„ ìˆœìœ„ê°€ ìˆëŠ”ì§€ í™•ì¸
 	if (snapPritority.Num() < 2) return;
 
-	// ÀÓ½Ã ¹è¿­ Å©±â¸¦ ¹Ì¸® ¼³Á¤
+	// ì„ì‹œ ë°°ì—´ í¬ê¸°ë¥¼ ë¯¸ë¦¬ ì„¤ì •
 	TArray<FVector> tempSnapPoints;
 	tempSnapPoints.SetNum(snapPoints.Num());
 
@@ -375,24 +374,24 @@ void APSH_BlockActor::SnapApplyPriority()
 		int32 minIndex = 0;
 		int32 pilYoeObSeum = 0;
 
-		// ÃÖ¼Ò ¿ì¼±¼øÀ§ Ã£±â
+		// ìµœì†Œ ìš°ì„ ìˆœìœ„ ì°¾ê¸°
 		UKismetMathLibrary::MinOfIntArray(snapPritority, minIndex, pilYoeObSeum);
 
-		// ¹è¿­ Å©±â¸¦ µ¿ÀûÀ¸·Î Á¶Á¤ (Size to Fit ±â´É ±¸Çö)
+		// ë°°ì—´ í¬ê¸°ë¥¼ ë™ì ìœ¼ë¡œ ì¡°ì • (Size to Fit ê¸°ëŠ¥ êµ¬í˜„)
 		if (tempSnapPoints.Num() <= i)
 		{
-			tempSnapPoints.SetNum(i + 1);  // ¹è¿­ Å©±â ¸ÂÃß±â
+			tempSnapPoints.SetNum(i + 1);  // ë°°ì—´ í¬ê¸° ë§ì¶”ê¸°
 		}
 		if (tempSnapDirections.Num() <= i)
 		{
-			tempSnapDirections.SetNum(i + 1);  // ¹è¿­ Å©±â ¸ÂÃß±â
+			tempSnapDirections.SetNum(i + 1);  // ë°°ì—´ í¬ê¸° ë§ì¶”ê¸°
 		}
 		if (tempSnapPritority.Num() <= i)
 		{
-			tempSnapPritority.SetNum(i + 1);  // ¹è¿­ Å©±â ¸ÂÃß±â
+			tempSnapPritority.SetNum(i + 1);  // ë°°ì—´ í¬ê¸° ë§ì¶”ê¸°
 		}
 
-		// ÃÖ¼Ò°ª¿¡ ÇØ´çÇÏ´Â ½º³À Æ÷ÀÎÆ® ¹× ¹æÇâÀ» ÀÓ½Ã ¹è¿­¿¡ º¹»ç
+		// ìµœì†Œê°’ì— í•´ë‹¹í•˜ëŠ” ìŠ¤ëƒ… í¬ì¸íŠ¸ ë° ë°©í–¥ì„ ì„ì‹œ ë°°ì—´ì— ë³µì‚¬
 		if (snapPoints.IsValidIndex(minIndex))
 		{
 			tempSnapPoints[i] = snapPoints[minIndex];
@@ -406,14 +405,14 @@ void APSH_BlockActor::SnapApplyPriority()
 			tempSnapPritority[i] = snapPritority[minIndex];
 		}
 
-		// ÃÖ¼Ò°ªÀ» ÃÖ´ë°ªÀ¸·Î ¼³Á¤ÇÏ¿© ÀÌÈÄ ¹İº¹¿¡¼­ Á¦¿Ü
+		// ìµœì†Œê°’ì„ ìµœëŒ€ê°’ìœ¼ë¡œ ì„¤ì •í•˜ì—¬ ì´í›„ ë°˜ë³µì—ì„œ ì œì™¸
 		if (snapPritority.IsValidIndex(minIndex))
 		{
-			snapPritority[minIndex] = 2147483647;  // int32 ÃÖ´ë°ª
+			snapPritority[minIndex] = 2147483647;  // int32 ìµœëŒ€ê°’
 		}
 	}
 
-	// ¹è¿­ ÀçÇÒ´ç
+	// ë°°ì—´ ì¬í• ë‹¹
 	snapPoints = tempSnapPoints;
 	snapDirections = tempSnapDirections;
 	snapPritority = tempSnapPritority;
@@ -421,50 +420,50 @@ void APSH_BlockActor::SnapApplyPriority()
 
 bool APSH_BlockActor::OvelapChek()
 {
-	// °ãÄ¡´Â ¾×ÅÍµéÀ» ÀúÀåÇÒ ¹è¿­ ¼±¾ğ
+	// ê²¹ì¹˜ëŠ” ì•¡í„°ë“¤ì„ ì €ì¥í•  ë°°ì—´ ì„ ì–¸
 	TArray<AActor*> OutOverlappingActors;
 
-	// ÇÊÅÍ¸µÇÒ Å¬·¡½ºÀÇ Å¸ÀÔÀ» Á¤ÀÇ ¸ğµç ¿¢ÅÍ °Ë»ç
+	// í•„í„°ë§í•  í´ë˜ìŠ¤ì˜ íƒ€ì…ì„ ì •ì˜ ëª¨ë“  ì—‘í„° ê²€ì‚¬
 	TSubclassOf<AActor> ClassFilter = AActor::StaticClass();
 
-	// ÇöÀç ¸Ş½¬ ÄÄÆ÷³ÍÆ®¿Í °ãÄ¡´Â ¸ğµç ¾×ÅÍ¸¦ Ã£À½
+	// í˜„ì¬ ë©”ì‰¬ ì»´í¬ë„ŒíŠ¸ì™€ ê²¹ì¹˜ëŠ” ëª¨ë“  ì•¡í„°ë¥¼ ì°¾ìŒ
 	meshComp->GetOverlappingActors(OutOverlappingActors, ClassFilter);
 
-	// °ãÄ¡´Â ¾×ÅÍ°¡ ¾øÀ¸¸é À¯È¿ÇÑ ¹èÄ¡·Î °£ÁÖ
+	// ê²¹ì¹˜ëŠ” ì•¡í„°ê°€ ì—†ìœ¼ë©´ ìœ íš¨í•œ ë°°ì¹˜ë¡œ ê°„ì£¼
 	 validPlacement = OutOverlappingActors.Num() == 0;
 
-	// ÀÚ½Ä ¾×ÅÍµé¿¡ ´ëÇØ Àç±ÍÀûÀ¸·Î °ãÄ§ °Ë»ç
+	// ìì‹ ì•¡í„°ë“¤ì— ëŒ€í•´ ì¬ê·€ì ìœ¼ë¡œ ê²¹ì¹¨ ê²€ì‚¬
 	for (auto* actor : childsActors)
 	{
 		if (actor == nullptr)
 		{
-			continue;  // Null Æ÷ÀÎÅÍ°¡ ÀÖÀ» °æ¿ì °Ç³Ê¶Ü
+			continue;  // Null í¬ì¸í„°ê°€ ìˆì„ ê²½ìš° ê±´ë„ˆëœ€
 		}
 
 		APSH_BlockActor* target = Cast<APSH_BlockActor>(actor);
 
 		if (target)
 		{
-			if (target->OvelapChek()) // true°¡ ³ª¿À¸é true·Î ¾º¿öÁú °¡´É¼ºÀÌ ÀÖÀ½À¸·Î false·Î ¹Ù·Î º¯¼ö ÇÒ´ç.
+			if (target->OvelapChek()) // trueê°€ ë‚˜ì˜¤ë©´ trueë¡œ ì”Œì›Œì§ˆ ê°€ëŠ¥ì„±ì´ ìˆìŒìœ¼ë¡œ falseë¡œ ë°”ë¡œ ë³€ìˆ˜ í• ë‹¹.
 			{
 				validPlacement = false;
 			}
 		}
 	}
 
-	//return validPlacement; // ÃÖÁ¾ °á°ú ¹İÈ¯
-	return true; // ¸Å½¬ Å©±âÀÇ ¹®Á¦·Î ÇöÁ¦´Â ¹«Á¶°Ç true ¹İÈ¯, ÈÄ¿¡ º¯°æ.
+	//return validPlacement; // ìµœì¢… ê²°ê³¼ ë°˜í™˜
+	return true; // ë§¤ì‰¬ í¬ê¸°ì˜ ë¬¸ì œë¡œ í˜„ì œëŠ” ë¬´ì¡°ê±´ true ë°˜í™˜, í›„ì— ë³€ê²½.
 }
 
 
 void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
 {
-	//ÀÚ½Å¿¡°Ô ÀÚ½ÄÀ» Ãß°¡
+	//ìì‹ ì—ê²Œ ìì‹ì„ ì¶”ê°€
 	
-	if (!childsActors.Contains(childActor)) // Áßº¹ Ãß°¡ ¹æÁö
+	if (!childsActors.Contains(childActor)) // ì¤‘ë³µ ì¶”ê°€ ë°©ì§€
 	{
 		childsActors.Add(childActor);
-		childActor->parent = this;  // ÀÚ½ÄÀÇ ºÎ¸ğ ¼³Á¤
+		childActor->parent = this;  // ìì‹ì˜ ë¶€ëª¨ ì„¤ì •
 	}
 }
 
@@ -483,7 +482,7 @@ void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
 
 void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
 {
-		// ¹°¸® ÄÄÆ÷³ÍÆ®¸¦ ±ú¿ì±â (Wake Rigid Body)
+		// ë¬¼ë¦¬ ì»´í¬ë„ŒíŠ¸ë¥¼ ê¹¨ìš°ê¸° (Wake Rigid Body)
 	SleepingComponent->WakeRigidBody(BoneName);
 
 }
@@ -494,7 +493,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 	{
 		FPSH_ObjectData Data;
 
-		// ºÎ¸ğ ºí·Ï Á¤º¸ ÀúÀå
+		// ë¶€ëª¨ ë¸”ë¡ ì •ë³´ ì €ì¥
 		Data.actor = GetClass();
 		FTransform ActorTransform = GetActorTransform();
 		ActorTransform.SetLocation(FVector(
@@ -505,7 +504,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 
 		Data.actorTransfrom = ActorTransform;
 		Data.funcitonData = ComponentSaveData(functionObjectDataType);
-		// ½ºÅÃÀ» ÀÌ¿ëÇÑ ºñÀç±ÍÀû ÀúÀå
+		// ìŠ¤íƒì„ ì´ìš©í•œ ë¹„ì¬ê·€ì  ì €ì¥
 		TArray<APSH_BlockActor*> Stack;
 		Stack.Push(this);
 
@@ -531,7 +530,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlockHierachy()
 					ChildWrapper.childData.Add(ChildData);
 					Data.childsData.Add(ChildWrapper);
 
-					Stack.Push(ChildBlock); // ÀÚ½Ä ºí·ÏÀ» ½ºÅÃ¿¡ Ãß°¡
+					Stack.Push(ChildBlock); // ìì‹ ë¸”ë¡ì„ ìŠ¤íƒì— ì¶”ê°€
 				}
 			}
 		}
@@ -548,7 +547,7 @@ void APSH_BlockActor::SRPC_SaveBlockLocations_Implementation()
 void APSH_BlockActor::SaveBlockLocations()
 {
 	bisSavePoint = true;
-	// ºÎ¸ğ À§Ä¡ Á¤º¸ ÀúÀå
+	// ë¶€ëª¨ ìœ„ì¹˜ ì •ë³´ ì €ì¥
 	locationData.actor = GetClass();
 	FTransform ActorTransform = GetActorTransform();
 	ActorTransform.SetLocation(FVector(
@@ -560,7 +559,7 @@ void APSH_BlockActor::SaveBlockLocations()
 	locationData.actorTransfrom = ActorTransform;
 	locationData.funcitonData = ComponentSaveData(functionObjectDataType);
 
-	// ½ºÅÃÀ» ÀÌ¿ëÇÑ ºñÀç±ÍÀû Å½»ö
+	// ìŠ¤íƒì„ ì´ìš©í•œ ë¹„ì¬ê·€ì  íƒìƒ‰
 	TArray<APSH_BlockActor*> Stack;
 	Stack.Push(this);
 
@@ -577,7 +576,7 @@ void APSH_BlockActor::SaveBlockLocations()
 				FPSH_ChildData ChildLocationData;
 				ChildLocationData.actor = ChildBlock->GetClass();
 				ChildLocationData.actorTransfrom = ChildBlock->GetActorTransform();
-				ChildLocationData.actorTransfrom.SetScale3D(FVector(1)); // ½ºÄÉÀÏ ÃÊ±âÈ­
+				ChildLocationData.actorTransfrom.SetScale3D(FVector(1)); // ìŠ¤ì¼€ì¼ ì´ˆê¸°í™”
 				ChildLocationData.funcitonData = ChildBlock->ComponentSaveData(ChildBlock->functionObjectDataType);
 
 				FPSH_Childdats ChildWrapper;
@@ -594,20 +593,26 @@ void APSH_BlockActor::SaveBlockLocations()
 
 }
 
-void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
+void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data, AAutoRoomLevelInstance *ownerme)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
 	if (Data.funcitonData.IsEmpty() == false)
 	{
 		ComponentLoadData(Data.funcitonData);
 	}
 	SetActorTransform(Data.actorTransfrom);
-	// ÀÚ½Ä ºí·°µé »ı¼º ¹× ºÒ·¯¿À±â
+	// ìì‹ ë¸”ëŸ­ë“¤ ìƒì„± ë° ë¶ˆëŸ¬ì˜¤ê¸°
 	for (const FPSH_Childdats& ChildrenData : Data.childsData)
 	{
 		for (const FPSH_ChildData& ChildData : ChildrenData.childData)
 		{
 			if (ChildData.actor)
 			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.Owner = ownerme;  // ë ˆë²¨ ì¸ìŠ¤í„´ìŠ¤ì™€ ë™ì¼í•œ ì˜¤ë„ˆ ì„¤ì •
 				APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
 					ChildData.actor,
 					ChildData.actorTransfrom
@@ -615,7 +620,12 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 
 				if (ChildBlock)
 				{
-					// ºÎ¸ğ ºí·°¿¡ ÀÚ½Ä ºí·°À» ºÙÀÓ
+					ChildBlock->SetOwner(ownerme);
+					ChildBlock->SetReplicates(true);
+					ChildBlock->SetReplicateMovement(true);
+
+					// ë¶€ëª¨ ë¸”ëŸ­ì— ìì‹ ë¸”ëŸ­ì„ ë¶™ì„
+					ChildBlock->SetOwnedByRoomInstance(bIsOwnedByRoomInstance);
 					ChildBlock->meshComp->SetSimulatePhysics(false);
 					FAttachmentTransformRules rule = FAttachmentTransformRules(
 						EAttachmentRule::KeepWorld,
@@ -631,15 +641,14 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Data)
 						ChildBlock->ComponentLoadData(ChildData.funcitonData);
 					}
 					
-					// ÀÚ½ÄÀÇ ÀÚ½Ä ºí·°µµ Àç±ÍÀûÀ¸·Î ºÒ·¯¿È
-					ChildBlock->LoadBlockHierarchy(ChildBlock->SaveBlockHierachy());
+					// ìì‹ì˜ ìì‹ ë¸”ëŸ­ë„ ì¬ê·€ì ìœ¼ë¡œ ë¶ˆëŸ¬ì˜´
+					ChildBlock->LoadBlockHierarchy(ChildBlock->SaveBlockHierachy(), ownerme);
 				}
 			}
 		}
 	}
-
-	
 }
+
 void APSH_BlockActor::AllDestroy()
 {
 	for (auto* actor : childsActors)
@@ -796,14 +805,68 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 
 bool APSH_BlockActor::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
 {
+
+	// ë ˆë²¨ ì¸ìŠ¤í„´ìŠ¤ê°€ ì†Œìœ í•œ ì•¡í„°ì¸ ê²½ìš°
 	if (bIsOwnedByRoomInstance)
 	{
-		AAutoRoomLevelInstance* OwningLevelInstance = Cast<AAutoRoomLevelInstance>(GetOwner());
-		if (OwningLevelInstance)
+		// ë·° íƒ€ê²Ÿì˜ ì»¨íŠ¸ë¡¤ëŸ¬ íšë“
+		AController* TargetController = Cast<AController>(ViewTarget->GetInstigatorController());
+		if (!TargetController)
 		{
-			return OwningLevelInstance->IsPlayerInRoom(Cast<APlayerController>(ViewTarget->GetInstigatorController()));
+			if (const APawn* TargetPawn = Cast<APawn>(ViewTarget))
+			{
+				TargetController = TargetPawn->GetController();
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ViewTarget is null in IsNetRelevantFor"));
+			//return false;
+		}
+
+		// í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ì¸ ê²½ìš°
+		if (APlayerController* PC = Cast<APlayerController>(TargetController))
+		{
+			if (GetOwner())
+			{
+				if (AAutoRoomLevelInstance* OwningRoom = Cast<AAutoRoomLevelInstance>(GetOwner()))
+				{
+					return OwningRoom->IsPlayerInRoom(PC);
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Owner is null for %s in IsNetRelevantFor"), *GetName());
+			}
+			return false;
+		}
+		return false;
+	}
+
+	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+}
+
+void APSH_BlockActor::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (HasAuthority())
+	{
+		if (AAutoRoomLevelInstance* RoomInstance = Cast<AAutoRoomLevelInstance>(GetOwner()))
+		{
+			bIsOwnedByRoomInstance = true;
+
+			// ë„¤íŠ¸ì›Œí¬ ì„¤ì • í™•ì¸
+			if (!bReplicates)
+			{
+				SetReplicates(true);
+				SetReplicateMovement(true);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("Block %s initialized with owner %s"),
+				*GetName(),
+				*RoomInstance->GetName());
 		}
 	}
-	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
 }
 

@@ -64,11 +64,24 @@ void UModalWidget::LoadMapList()
     // 찾은 파일들을 ComboBox에 추가
     for (const FString& File : Files)
     {
-        // .json 확장자 제거
         FString MapName = FPaths::GetBaseFilename(File);
         SelectMapComboBox->AddOption(MapName);
         MapList.Add(MapName);
     }
+}
+
+FString UModalWidget::LoadJsonFromFile(const FString& MapName)
+{
+    FString JsonString;
+    FString FilePath = FPaths::ProjectSavedDir() / TEXT("MapData") / (MapName + TEXT(".json"));
+
+    if (!FFileHelper::LoadFileToString(JsonString, *FilePath))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load JSON file: %s"), *FilePath);
+        return TEXT("");
+    }
+
+    return JsonString;
 }
 
 void UModalWidget::OnCloseButtonClicked()
@@ -97,10 +110,10 @@ void UModalWidget::OnCreateButtonClicked()
     UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("선택된 맵: %s"), *SelectedMap));
 
     // 입력 검증
-    if (RoomName.IsEmpty())
+    FString ErrorMessage;
+    if (!ValidateInputs(RoomName, SelectedMap, ErrorMessage))
     {
-        UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("방 이름이 없어요")));
-        // 에러 메시지 표시
+        ShowErrorMessage(ErrorMessage);
         return;
     }
 
@@ -109,24 +122,49 @@ void UModalWidget::OnCreateButtonClicked()
     {
         if (bIsCreateRoom)
         {
-            // Create 모드
+            // Create 모드 - 빈 방 생성
             PC->ServerRequestCreateAutoRoom(RoomName);
         }
         else
         {
-            // Play 모드: 선택된 맵의 JSON 데이터와 함께 방 생성 요청
-            FString JsonFilePath = FPaths::ProjectSavedDir() / TEXT("MapData") / (SelectedMap + TEXT(".json"));
-            FString JsonString;
-
-            // JSON 파일 읽기
-            if (FFileHelper::LoadFileToString(JsonString, *JsonFilePath))
+            // Play 모드 - JSON 데이터로 방 생성
+            FString JsonString = LoadJsonFromFile(SelectedMap);
+            if (!JsonString.IsEmpty())
             {
-                // TODO: JsonString을 서버로 전달하는 RPC 함수 추가 필요
-                //PC->ServerRequestCreateAutoRoomWithData(RoomName, JsonString);
+                PC->ServerRequestCreateAutoRoom(RoomName, JsonString);
+            }
+            else
+            {
+                ShowErrorMessage(FString::Printf(TEXT("Failed to load map data: %s"), *SelectedMap));
+                return;
             }
         }
     }
 
     // 모달 닫기
     OnCloseButtonClicked();
+}
+
+bool UModalWidget::ValidateInputs(const FString& RoomName, const FString& SelectedMap, FString& OutErrorMessage)
+{
+    if (RoomName.IsEmpty())
+    {
+        OutErrorMessage = TEXT("Room name cannot be empty");
+        return false;
+    }
+
+    if (!CreateRoomCheckBox->IsChecked() && SelectedMap.IsEmpty())
+    {
+        OutErrorMessage = TEXT("Please select a map");
+        return false;
+    }
+
+    return true;
+}
+
+void UModalWidget::ShowErrorMessage(const FString& Message)
+{
+    // 여기에 에러 메시지를 표시하는 UI 로직 구현
+        // 예: 메시지 박스 표시
+    UE_LOG(LogTemp, Warning, TEXT("Modal Error: %s"), *Message);
 }

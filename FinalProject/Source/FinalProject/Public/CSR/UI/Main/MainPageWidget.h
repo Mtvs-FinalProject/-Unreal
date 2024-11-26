@@ -28,6 +28,7 @@ public:
 
     UPROPERTY(meta = (BindWidget))
     UWidgetSwitcher * SwitchWidget;
+
 protected:
     UFUNCTION()
     void OnClickServerListBTN();

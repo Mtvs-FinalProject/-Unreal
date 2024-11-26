@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -48,10 +48,10 @@ public:
 
 	//Components
 	UPROPERTY(EditDefaultsOnly)
-	class UPhysicsHandleComponent * handleComp; // ¹°¸® ÄÄÆ÷ÇÚµé ÄÄÆ÷³ÍÆ®.
+	class UPhysicsHandleComponent * handleComp; // ë¬¼ë¦¬ ì»´í¬í•¸ë“¤ ì»´í¬ë„ŒíŠ¸.
 
 	UPROPERTY(EditDefaultsOnly)
-	class USceneComponent * rotationHelper; // È¸Àü µµ¿ì¹Ì
+	class USceneComponent * rotationHelper; // íšŒì „ ë„ìš°ë¯¸
 
 	UPROPERTY()
 	class UCharacterMovementComponent* movementComp;
@@ -60,13 +60,13 @@ public:
 	class APSH_PlayerController* pc;
 	void InitPcUi();
 
-	// ÀÌµ¿
+	// ì´ë™
 	FVector Dir;
 	void Move(const FInputActionValue& value);
 
 	void Look(const FInputActionValue& value);
 
-	// ÇÃ·¹ÀÌ¾î Çàµ¿
+	// í”Œë ˆì´ì–´ í–‰ë™
 	UPROPERTY(Replicated)
 	bool bCreatingMode = true;
 
@@ -106,30 +106,30 @@ public:
 
 	void LoadTest();
 
-	// ¼³Á¤Ã¢? Ã¢ ¿­±â 
+	// ì„¤ì •ì°½? ì°½ ì—´ê¸° 
 	void ShowInterface();
 
-	void OnArtKey(); // art È®ÀÎ
+	void OnArtKey(); // art í™•ì¸
 	
-	//½ºÄÉÀÏ Á¶Á¤
+	//ìŠ¤ì¼€ì¼ ì¡°ì •
 	void OnBlockScale(const FInputActionValue & value);
 
 	bool bArtKey = false;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// ¸ŞÀÎ UI ¿¬°á
+	// ë©”ì¸ UI ì—°ê²°
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> FirstSelect;
 
-	// ÇöÀç ¿­·Á ÀÖ´Â UI À§Á¬ ÀÎ½ºÅÏ½º¸¦ ÂüÁ¶ (UI ¿­°í ´İ±â Åä±Û »óÅÂ ÃßÀû)
+	// í˜„ì¬ ì—´ë ¤ ìˆëŠ” UI ìœ„ì ¯ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ì°¸ì¡° (UI ì—´ê³  ë‹«ê¸° í† ê¸€ ìƒíƒœ ì¶”ì )
     UPROPERTY()
     UUserWidget* CurrentObjectWidget = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
 	class UMaterial * previewMat;
 
-	// Ä«¸Ş¶ó Á¶Á¤
+	// ì¹´ë©”ë¼ ì¡°ì •
 	void ToggleARmLength();
 
 	bool bShouldExtend = false;
@@ -167,20 +167,20 @@ public:
 	UFUNCTION(Server,Reliable)
 	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor> spawnActor);
 
-	// ¼­¹öÈ­¿Í ÇÔ²² ¸®ÆåÅä¸µ.
-	// 1. Àâ±â ½Ãµµ. ÀâÀº°Ô ¾ø´Ù¸é 2¹øÀ¸·Î ÀÖ´Ù¸é ¹øÀ¸·Î 
+	// ì„œë²„í™”ì™€ í•¨ê»˜ ë¦¬í™í† ë§.
+	// 1. ì¡ê¸° ì‹œë„. ì¡ì€ê²Œ ì—†ë‹¤ë©´ 2ë²ˆìœ¼ë¡œ ìˆë‹¤ë©´ ë²ˆìœ¼ë¡œ 
 	void Grab();
 
-	// 2. Àâ±â À§ÇÑ Ray ½Ãµµ.
+	// 2. ì¡ê¸° ìœ„í•œ Ray ì‹œë„.
 	void CastRay();
 
-	// ·¹ÀÌ °Å¸®
+	// ë ˆì´ ê±°ë¦¬
 	double rayPower = 1000.f;
 
-	// ¸¶¿ì½º À§Ä¡¸¦ ¹Ş¾Æ¿À´Â ÇÔ¼ö
+	// ë§ˆìš°ìŠ¤ ìœ„ì¹˜ë¥¼ ë°›ì•„ì˜¤ëŠ” í•¨ìˆ˜
 	FVector GetMouseDir();
 
-	//3. ºí·° ½ÇÁ¦ Àâ±â.
+	//3. ë¸”ëŸ­ ì‹¤ì œ ì¡ê¸°.
 	UFUNCTION(Server,Reliable)
 	void SRPC_Pickup(const FVector & startLoc, const FVector & endLoc);
 
@@ -197,20 +197,20 @@ public:
 	UFUNCTION(NetMulticast , Reliable)
 	void MRPC_PickEffect(FVector endLoc);
 	
-	//4. ºí·°ÀÇ ÀÌµ¿ -> Tick
+	//4. ë¸”ëŸ­ì˜ ì´ë™ -> Tick
 	float PositionThreshold = 10.0f;
 	FVector previousLocation;
 
-	//5. Ä«¸Ş¶ó¿Í ¸¶¿ì½ºÀÇ À§Ä¡¸¦ ÀÌ¿ëÇØ Æ®·¹ÀÌ½º °Å¸® °è»ê ¿¢ÅÍ¸¸ °Ë»çÇÔ. << ÇÏ´øÁß
+	//5. ì¹´ë©”ë¼ì™€ ë§ˆìš°ìŠ¤ì˜ ìœ„ì¹˜ë¥¼ ì´ìš©í•´ íŠ¸ë ˆì´ìŠ¤ ê±°ë¦¬ ê³„ì‚° ì—‘í„°ë§Œ ê²€ì‚¬í•¨. << í•˜ë˜ì¤‘
 	void PreTraceCheck( FVector & StartLoc,   FVector & EndLoc);
 
-	// 6. ¸¶¿ì½º À§Ä¡¿¡ µû¶ó ÀâÀº ¿¢ÅÍ¸¦ ¿òÁ÷ÀÌ°í ´Ù¸¥ ºí·Ï°ú ´ê¾ÆÀÖÀ¸¸é Æ÷ÀÎÆ®¿¡ ¸Â°Ô ¹æÇâÀ» ÀüÈ¯
+	// 6. ë§ˆìš°ìŠ¤ ìœ„ì¹˜ì— ë”°ë¼ ì¡ì€ ì—‘í„°ë¥¼ ì›€ì§ì´ê³  ë‹¤ë¥¸ ë¸”ë¡ê³¼ ë‹¿ì•„ìˆìœ¼ë©´ í¬ì¸íŠ¸ì— ë§ê²Œ ë°©í–¥ì„ ì „í™˜
 	UFUNCTION(NetMulticast,Unreliable)
 	void MRPC_HandleBlock(FVector newLoc, FRotator newRot);
 	UFUNCTION(Server,Unreliable)
 	void SRPC_HandleBlock(FHitResult hitinfo, bool hit, FVector endLoc);
 
-	// ºí·° Rotation
+	// ë¸”ëŸ­ Rotation
 	FRotator rotationOffset;
 
 	int32 snapPointIndexLength;
@@ -222,10 +222,10 @@ public:
 
 	int32 snapPointIndex = 0;
 
-	//World Helper - °íÁ¤µÈ ¾×ÅÍÀÇ ¸é ½º³À ¹æÇâ¿¡ ´ëÇÑ È¸Àü ¿ÀÇÁ¼Â °è»ê
+	//World Helper - ê³ ì •ëœ ì•¡í„°ì˜ ë©´ ìŠ¤ëƒ… ë°©í–¥ì— ëŒ€í•œ íšŒì „ ì˜¤í”„ì…‹ ê³„ì‚°
 	FRotator WorldHelperRotationOffset();
 
-	// 7. ºí·° ºÙÀÌ±â
+	// 7. ë¸”ëŸ­ ë¶™ì´ê¸°
 	void PlaceBlock(FHitResult hitInfo, bool hit);
 
 	UFUNCTION(Server,Reliable)
@@ -237,13 +237,13 @@ public:
 
 	TArray<class AActor*> actorsToIgnore;
 
-	// ºí·° ÀÌµ¿ ÃÖ´ë°Å¸® 
+	// ë¸”ëŸ­ ì´ë™ ìµœëŒ€ê±°ë¦¬ 
 	UPROPERTY(EditAnywhere)
 	float playerReach = 1000.f;
 
 	float NormalizeAxis(float Angle);
 
-	// ºí·° ¹æÇâ ÀüÈ¯
+	// ë¸”ëŸ­ ë°©í–¥ ì „í™˜
 	void HorizontalRotChange(const FInputActionValue& value);
 	
 	UFUNCTION(Server,Reliable)
@@ -260,25 +260,25 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_VerticalRotChange(const FInputActionValue& value);
 
-	// ¹æÇâÀüÈ¯
+	// ë°©í–¥ì „í™˜
 	UPROPERTY()
 	class APSH_BlockActor * GrabbedActor;
 
 	void InterpToRotation(const float& DeltaTime);
 
 	void MoisePosition(const float& DeltaTime);
-	const float MaxDistance = 300.0f;  // Ä³¸¯ÅÍ·ÎºÎÅÍÀÇ ÃÖ´ë °Å¸® Á¦ÇÑ
-	const float MinDistance = 100.0f; // Ä³¸¯ÅÍ·ÎÀÇ ÃÖ¼Ò °Å¸®
+	const float MaxDistance = 300.0f;  // ìºë¦­í„°ë¡œë¶€í„°ì˜ ìµœëŒ€ ê±°ë¦¬ ì œí•œ
+	const float MinDistance = 100.0f; // ìºë¦­í„°ë¡œì˜ ìµœì†Œ ê±°ë¦¬
 
-	// ¸¶¿ì½º ÀÌµ¿ Á¦ÇÑ ¿µ¿ª ¼³Á¤
-	const float MarginPercent = 0.05f; // 5% ¿©¹é
+	// ë§ˆìš°ìŠ¤ ì´ë™ ì œí•œ ì˜ì—­ ì„¤ì •
+	const float MarginPercent = 0.05f; // 5% ì—¬ë°±
 	
 	void SaveTest();
 	int32 RowNum = 0;
 
 	void DelegateTest();
 
-	// µ¨¸®°ÔÀÌÆ® ½ÇÇà ÇÔ¼ö
+	// ë¸ë¦¬ê²Œì´íŠ¸ ì‹¤í–‰ í•¨ìˆ˜
 	UFUNCTION(Server,Reliable,BlueprintCallable)
 	void SRPC_ModeChangeDelegate();
 	UFUNCTION(Server,Reliable)

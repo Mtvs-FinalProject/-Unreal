@@ -49,7 +49,6 @@ void APSH_PlayerController::PlayerTick(float DeltaTime)
   // HTTP Actor 스폰
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	HTTPActor = GetWorld()->SpawnActor<ACSR_HTTP_Actor>(ACSR_HTTP_Actor::StaticClass(), SpawnParams);
 }
 void APSH_PlayerController::BeginPlay()
 {
@@ -127,60 +126,31 @@ void APSH_PlayerController::ObjectSave()
 	//SaveTheGame();
 }
 
-void APSH_PlayerController::ObjectLoad()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Load RowNam : %d"), RowNum);
-
-	TArray<FPSH_ObjectData*> dataAraay;
-	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
-
-	for (int i = 0; i < dataAraay.Num(); i++)
-	{
-		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
-		{
-			// 루트 블럭 소환
-			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
-			if (SpawnActor)
-			{
-				FActorSpawnParameters Params;
-				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
-
-				// 블럭 계층 구조 불러오기
-				if (SpawnedBlock)
-				{
-					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
-				}
-			}
-		}
-		
-	}
-// 
-// 	for (int i = RowNum; i >= 0; i--)
-// 	{
-// 		FName rowName = FName(*FString::FormatAsNumber(i));
-// 		FPSH_ObjectData* data = dataTable->FindRow<FPSH_ObjectData>(rowName, TEXT("non"));
-// 		APSH_BlockActor* sapwnPartent = nullptr;
-// 
-// 		if (data && data->actor != nullptr)
-// 		{
-// 			// 루트 블럭 소환
-// 			TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
-// 			if (SpawnActor)
-// 			{
-// 				FActorSpawnParameters Params;
-// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, data->actorTransfrom, Params);
-// 
-// 				// 블럭 계층 구조 불러오기
-// 				if (SpawnedBlock)
-// 				{
-// 					SpawnedBlock->LoadBlockHierarchy(*data);
-// 				}
-// 			}
-// 		}
-// 		UE_LOG(LogTemp, Warning, TEXT("%d"), RowNum);
-// 	}
-// 	
-}
+//void APSH_PlayerController::ObjectLoad()
+//{
+//	TArray<FPSH_ObjectData*> dataAraay;
+//	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
+//
+//	for (int i = 0; i < dataAraay.Num(); i++)
+//	{
+//		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
+//		{
+//			// 루트 블럭 소환
+//			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
+//			if (SpawnActor)
+//			{
+//				FActorSpawnParameters Params;
+//				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
+//
+//				// 블럭 계층 구조 불러오기
+//				if (SpawnedBlock)
+//				{
+//					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+//				}
+//			}
+//		}
+//	}
+//}
 
 void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 {
@@ -269,33 +239,32 @@ void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FSt
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ServerRequestCreateAutoRoom: No Authority"));
 		return;
 	}
 
-	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
-	if (!GameState)
+	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
 	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestCreateAutoRoom: GameState not found"));
-		return;
-	}
-
-	if (!GameState->AutoRoomManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ServerRequestCreateAutoRoom: AutoRoomManager not found in GameState"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("ServerRequestCreateAutoRoom: Creating room %s"), *RoomName);
-	if (JsonData.IsEmpty())
-	{
-		// 새로운 맵 생성 모드
-		GameState->AutoRoomManager->CreateAutoRoom(RoomName, this);
+		if (AAutoRoomManager* RoomManager = GameState->AutoRoomManager)
+		{
+			if (JsonData.IsEmpty())
+			{
+				// Create 모드 - 빈 방 생성
+				RoomManager->CreateAutoRoom(RoomName, this);
+			}
+			else
+			{
+				// Play 모드 - JSON 데이터로 방 생성
+				RoomManager->CreateAutoRoomWithData(RoomName, JsonData, this);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AutoRoomManager not found in GameState"));
+		}
 	}
 	else
 	{
-		// 기존 맵 데이터로 방 생성
-		GameState->AutoRoomManager->CreateAutoRoomWithData(RoomName, JsonData, this);
+		UE_LOG(LogTemp, Error, TEXT("GameState not found"));
 	}
 }
 
@@ -349,21 +318,52 @@ void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FStr
 	GameState->AutoRoomManager->LeaveAutoRoom(RoomName, this);
 }
 
-void APSH_PlayerController::ShowMapSaveUI()
+TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FString& JsonString)
 {
-	if (HasAuthority()) {
-		return ;
-	}
-	if (!MapCreateWidget && CreateWidgetClass)
+	TArray<FPSH_ObjectData*> DataArray;
+
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (FJsonSerializer::Deserialize(Reader, JsonObject))
 	{
-		MapCreateWidget = CreateWidget<UWBP_CreateWidget>(this, CreateWidgetClass);
+		const TArray<TSharedPtr<FJsonValue>>* DataTableArray;
+		if (JsonObject->TryGetArrayField(TEXT("data_table"), DataTableArray))
+		{
+			for (const auto& Value : *DataTableArray)
+			{
+				FPSH_ObjectData* ObjectData = new FPSH_ObjectData();
+				const TSharedPtr<FJsonObject>* RowObject;
+
+				if (Value->TryGetObject(RowObject))
+				{
+					if (FJsonObjectConverter::JsonObjectToUStruct((*RowObject).ToSharedRef(), ObjectData))
+					{
+						DataArray.Add(ObjectData);
+					}
+				}
+			}
+		}
 	}
 
-	if (MapCreateWidget)
-	{
-		MapCreateWidget->AddToViewport();
-	}
+	return DataArray;
 }
 
-#pragma endregion
-
+//void APSH_PlayerController::ShowMapSaveUI()
+//{
+//	if (HasAuthority()) {
+//		return ;
+//	}
+//	if (!MapCreateWidget && CreateWidgetClass)
+//	{
+//		MapCreateWidget = CreateWidget<UWBP_CreateWidget>(this, CreateWidgetClass);
+//	}
+//
+//	if (MapCreateWidget)
+//	{
+//		MapCreateWidget->AddToViewport();
+//	}
+//}
+//
+//#pragma endregion
+//

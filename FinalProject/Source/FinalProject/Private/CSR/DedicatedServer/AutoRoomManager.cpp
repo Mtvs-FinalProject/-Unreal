@@ -14,31 +14,22 @@ AAutoRoomManager::AAutoRoomManager()
 
     // 기본 설정
     MaxRooms = 10;
-    SpaceBetweenRooms = 100000.0f;
+    SpaceBetweenRooms = 10000.0f;
 }
 
 
 void AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
-    if (!HasAuthority() || !RequestingPlayer)
+    if (!ValidateRoomCreation(RoomName, RequestingPlayer))
     {
-        UE_LOG(LogTemp, Warning, TEXT("CreateAutoRoom: Invalid state or player"));
         return;
     }
-
-    // 같은 이름의 방이 이미 있는지 확인
-    if (FindAutoRoomByName(RoomName))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Room with name %s already exists"), *RoomName);
-        return;
-    }
-
     AAutoRoomLevelInstance* AvailableRoom = FindAvailableAutoRoom();
     if (AvailableRoom)
     {
         UE_LOG(LogTemp, Log, TEXT("Creating room %s for player %s"),
             *RoomName, *RequestingPlayer->GetName());
-        AvailableRoom->ServerAssignAutoRoom(RoomName);
+        AvailableRoom->ServerAssignAutoRoom(RoomName, TEXT(""));
         AvailableRoom->ServerJoinRoom(RequestingPlayer);
     }
     else
@@ -73,11 +64,11 @@ void AAutoRoomManager::JoinAutoRoom(const FString& RoomName, APlayerController* 
 
 void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
-    if (!HasAuthority() || !RequestingPlayer)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("LeaveAutoRoom: Invalid state or player"));
-        return;
-    }
+	if (!HasAuthority() || !RequestingPlayer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LeaveAutoRoom: Invalid state or player"));
+		return;
+	}
 
     AAutoRoomLevelInstance* Room = FindAutoRoomByName(RoomName);
     if (Room)
@@ -93,28 +84,19 @@ void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController*
 
 void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer)
 {
-    // 이미 존재하는 방인지 확인
-    if (FindAutoRoomByName(RoomName))
+    if (!ValidateRoomCreation(RoomName, RequestingPlayer))
     {
-        // 에러 처리
         return;
     }
 
-    // 사용 가능한 LevelInstance 찾기
     AAutoRoomLevelInstance* AvailableRoom = FindAvailableAutoRoom();
-    if (!AvailableRoom)
+    if (AvailableRoom)
     {
-        return;
+        UE_LOG(LogTemp, Log, TEXT("Creating room %s with data for player %s"),
+            *RoomName, *RequestingPlayer->GetName());
+        AvailableRoom->ServerAssignAutoRoom(RoomName, JsonData);
+        AvailableRoom->ServerJoinRoom(RequestingPlayer);
     }
-
-    // 방 생성 및 설정
-    AvailableRoom->ServerAssignAutoRoom(RoomName);
-
-    // JsonData 파싱 및 액터 스폰 처리를 위한 함수 호출
-    //AvailableRoom->InitializeRoomWithData(JsonData);
-
-    // 플레이어 입장
-    AvailableRoom->ServerJoinRoom(RequestingPlayer);
 }
 
 AAutoRoomLevelInstance* AAutoRoomManager::FindAvailableAutoRoom() const
@@ -220,4 +202,27 @@ void AAutoRoomManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(AAutoRoomManager, AutoRoomPool);
+}
+
+bool AAutoRoomManager::ValidateRoomCreation(const FString& RoomName, APlayerController* RequestingPlayer) const
+{
+    if (!HasAuthority())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CreateAutoRoom: No Authority"));
+        return false;
+    }
+
+    if (!RequestingPlayer)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CreateAutoRoom: Invalid player"));
+        return false;
+    }
+
+    if (FindAutoRoomByName(RoomName))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Room with name %s already exists"), *RoomName);
+        return false;
+    }
+
+    return true;
 }

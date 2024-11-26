@@ -6,6 +6,10 @@
 #include "LevelInstance/LevelInstanceSubsystem.h"
 #include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "JsonObjectConverter.h"
+#include "GameFramework/GameModeBase.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+#include "PSH/PSH_Player/PSH_Player.h"
 
 
 AAutoRoomLevelInstance::AAutoRoomLevelInstance()
@@ -18,19 +22,20 @@ AAutoRoomLevelInstance::AAutoRoomLevelInstance()
 
     // 초기에는 WorldAsset을 설정하지 않음
     //SetWorldAsset(nullptr);
-
+    
     // 레벨 경로 설정 (프로젝트에 맞게 수정 필요)
-    LevelPath = TEXT("/Game/Alpha/NewFolder/runningmap_alpha.runningmap_alpha");
+    LevelPath = TEXT("/Game/PSH/PSH_Map/PSH_Level.PSH_Level");
 }
 
 void AAutoRoomLevelInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
     DOREPLIFETIME(AAutoRoomLevelInstance, bIsRoomAssigned);
     DOREPLIFETIME(AAutoRoomLevelInstance, RuntimeWorldAsset);
     // ConnectedPlayers가 변경될 때마다 알림을 받도록 수정
     DOREPLIFETIME_CONDITION_NOTIFY(AAutoRoomLevelInstance, ConnectedPlayers, COND_None, REPNOTIFY_Always);
+    DOREPLIFETIME(AAutoRoomLevelInstance, CurrentRoomName);
+
 }
 
 
@@ -120,12 +125,13 @@ void AAutoRoomLevelInstance::BeginPlay()
     }
 }
 
-void AAutoRoomLevelInstance::ServerAssignAutoRoom_Implementation(const FString& NewRoomName)
+void AAutoRoomLevelInstance::ServerAssignAutoRoom_Implementation(const FString& NewRoomName, const FString& JsonData)
 {
     if (HasAuthority() && !bIsRoomAssigned)
     {
         UE_LOG(LogTemp, Log, TEXT("Server: Assigning auto room %s"), *NewRoomName);
 
+        PendingJsonData = JsonData;
         bIsRoomAssigned = true;
         SetCurrentRoomName(NewRoomName);
         SetRuntimeWorldAsset(TSoftObjectPtr<UWorld>(FSoftObjectPath(LevelPath)));
@@ -141,8 +147,10 @@ void AAutoRoomLevelInstance::ServerUnassignAutoRoom_Implementation()
 {
     if (HasAuthority() && bIsRoomAssigned)
     {
-        UE_LOG(LogTemp, Log, TEXT("Server: Unassigning auto room %s"), *GetCurrentRoomName());
-
+        UE_LOG(LogTemp, Log, TEXT("Unassigning room %s, cleaning up %d actors"),
+            *GetCurrentRoomName(), SpawnedActors.Num());
+        
+        CleanupSpawnedActors();
         // 방 상태 초기화
         bIsRoomAssigned = false;
         ConnectedPlayers.Empty();
@@ -170,6 +178,7 @@ void AAutoRoomLevelInstance::ServerJoinRoom_Implementation(APlayerController* Jo
 
             // 서버에서 레벨 로드 상태 갱신
             HandleWorldAssetChanged();
+            SpawnAndSetupCharacter(JoiningPlayer);
         }
     }
 }
@@ -180,22 +189,17 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
 
     if (HasAuthority() && bIsRoomAssigned && LeavingPlayer)
     {
-        // 해당 플레이어만 제거
-        if (ConnectedPlayers.Remove(LeavingPlayer))
+        if (ConnectedPlayers.Remove(LeavingPlayer) > 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("Player %s left room"), *LeavingPlayer->GetName());
+            ClientOnLeaveRoom(LeavingPlayer);
 
-            // 서버의 레벨은 다른 플레이어가 있으면 유지
             if (ConnectedPlayers.Num() == 0)
             {
-                // 마지막 플레이어가 나갔을 때만 방을 정리
-                //UE_LOG(LogTemp, Warning, TEXT("%s"))
                 ServerUnassignAutoRoom();
             }
             else
             {
-                // 나간 플레이어의 클라이언트에게만 레벨 언로드 요청
-                ClientOnLeaveRoom(LeavingPlayer);
+                HandleWorldAssetChanged();
             }
         }
     }
@@ -255,3 +259,139 @@ void AAutoRoomLevelInstance::OnRep_RoomState()
         *CurrentRoomName,
         !GetWorldAsset().IsNull());
 }
+
+// 레벨 스폰 관련
+#pragma region 
+void AAutoRoomLevelInstance::OnLevelInstanceLoaded()
+{
+    Super::OnLevelInstanceLoaded();
+
+    if (!HasAuthority() || PendingJsonData.IsEmpty())
+    {
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Level loaded for room %s, spawning actors..."), *this->GetCurrentRoomName());
+    UE_LOG(LogTemp, Log, TEXT("Level loaded for room %s, spawning actors..."), *this->PendingJsonData);
+    // JSON 데이터로 액터 스폰
+    SpawnActorsFromJson();
+}
+
+void AAutoRoomLevelInstance::SpawnActorsFromJson()
+{
+    if (!HasAuthority() || PendingJsonData.IsEmpty())
+    {
+        return;
+    }
+
+    // 임시 데이터 테이블 생성 및 JSON 데이터 로드
+    UDataTable* TempDataTable = NewObject<UDataTable>(this);
+    TempDataTable->RowStruct = FPSH_ObjectData::StaticStruct();
+
+    // JSON 문자열을 데이터 테이블로 변환
+    TempDataTable->CreateTableFromJSONString(PendingJsonData);
+
+    // 데이터 로드 및 액터 스폰
+    TArray<FPSH_ObjectData*> DataArray;
+    TempDataTable->GetAllRows<FPSH_ObjectData>(TEXT(""), DataArray);
+
+    FVector SpawnOrigin = GetActorLocation();
+
+    for (FPSH_ObjectData* Data : DataArray)
+    {
+        if (Data && Data->actor)
+        {
+            FTransform SpawnTransform = Data->actorTransfrom;
+            SpawnTransform.SetLocation(SpawnTransform.GetLocation() + SpawnOrigin);
+            FActorSpawnParameters SpawnParams;
+            //SpawnParams.bDeferConstruction = true;  // 추가
+            SpawnParams.Owner = this;
+            SpawnParams.bNoFail = true;
+
+            if (APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+                Data->actor, SpawnTransform, SpawnParams))
+            {
+                SpawnedBlock->SetOwner(this);
+                SpawnedBlock->SetReplicates(true);
+                SpawnedBlock->SetReplicateMovement(true);
+                SpawnedBlock->SetOwnedByRoomInstance(true);
+                SpawnedBlock->LoadBlockHierarchy(*Data, this);
+                SpawnedActors.Add(SpawnedBlock);
+                // PostInitializeComponents 전에 필요한 설정
+                //SpawnedBlock->SetOwnedByRoomInstance(true);
+                //if (SpawnedBlock->meshComp)
+                //{
+                //    SpawnedBlock->meshComp->SetSimulatePhysics(false);
+                //}
+                UE_LOG(LogTemp, Log, TEXT("Spawned root block: %s, Owner: %s"),
+                    *SpawnedBlock->GetName(),
+                    *SpawnedBlock->GetOwner()->GetName());
+            }
+        }
+    }
+
+    // 정리
+    TempDataTable->RemoveFromRoot();
+    TempDataTable = nullptr;
+
+    // 플레이어 캐릭터 스폰
+    for (APlayerController* PC : ConnectedPlayers)
+    {
+        SpawnAndSetupCharacter(PC);
+    }
+
+    PendingJsonData.Empty();
+}
+
+void AAutoRoomLevelInstance::SpawnAndSetupCharacter(APlayerController* PlayerController)
+{
+    if (!PlayerController || !HasAuthority())
+    {
+        return;
+    }
+
+    FVector SpawnLocation = GetActorLocation() + FVector(0, 0, 200);
+    FRotator SpawnRotation = FRotator::ZeroRotator;
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = PlayerController;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+    TSubclassOf<APSH_Player> CharacterClass = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode())->PlayerBasicClass;
+    if (CharacterClass == nullptr) {
+        UE_LOG(LogTemp, Warning, TEXT("csr _ fail"));
+        return ;
+    }
+    if (APSH_Player* SpawnedCharacter = GetWorld()->SpawnActor<APSH_Player>(
+        CharacterClass,
+        SpawnLocation,
+        SpawnRotation,
+        SpawnParams))
+    {
+        SpawnedActors.Add(SpawnedCharacter);
+        PlayerController->Possess(SpawnedCharacter);
+    }
+}
+
+void AAutoRoomLevelInstance::CleanupSpawnedActors()
+{
+    for (AActor* Actor : SpawnedActors)
+    {
+        if (IsValid(Actor))
+        {
+            if (APawn* Pawn = Cast<APawn>(Actor))
+            {
+                if (AController* Controller = Pawn->GetController())
+                {
+                    Controller->UnPossess();
+                }
+            }
+            Actor->Destroy();
+        }
+    }
+    SpawnedActors.Empty();
+}
+
+#pragma endregion
+
+

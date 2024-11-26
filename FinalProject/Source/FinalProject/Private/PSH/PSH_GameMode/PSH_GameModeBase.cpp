@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
@@ -11,12 +11,12 @@ AActor* APSH_GameModeBase::SpawnFunctionObject()
 
 	if (BP_FunctionObjectClass && GetWorld())
 	{
-		// »õ·Î¿î ±â´É ¿ÀºêÁ§Æ® »ı¼º
+		// ìƒˆë¡œìš´ ê¸°ëŠ¥ ì˜¤ë¸Œì íŠ¸ ìƒì„±
 		AActor* NewObject = GetWorld()->SpawnActor<AActor>(BP_FunctionObjectClass);
 
 		if (NewObject)
 		{
-			// ¿ÀºêÁ§Æ® »ı¼º ÈÄ µ¨¸®°ÔÀÌÆ® È£Ãâ
+			// ì˜¤ë¸Œì íŠ¸ ìƒì„± í›„ ë¸ë¦¬ê²Œì´íŠ¸ í˜¸ì¶œ
 			OnObjectCreated.Broadcast(NewObject);
 		}
 		return NewObject;
@@ -53,7 +53,7 @@ void APSH_GameModeBase::MRPC_StartBlcok_Implementation()
 	if (onStartBlock.IsBound())
 	{
 		bCreateMode = !bCreateMode;
-		onStartBlock.Broadcast(bCreateMode); // µ¨¸®°ÔÀÌÆ® È£Ãâ
+		onStartBlock.Broadcast(bCreateMode); // ë¸ë¦¬ê²Œì´íŠ¸ í˜¸ì¶œ
 	}
 }
 

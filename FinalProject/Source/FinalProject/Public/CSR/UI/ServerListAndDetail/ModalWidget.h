@@ -50,6 +50,10 @@ private:
     UFUNCTION()
     void LoadMapList();
     
+     // JSON 파일 로드
+    UFUNCTION()
+    FString LoadJsonFromFile(const FString& MapName);
+
     // 맵 리스트 저장
     UPROPERTY()
     TArray<FString> MapList;
@@ -61,4 +65,11 @@ private:
     // Create 버튼 클릭 이벤트
     UFUNCTION()
     void OnCreateButtonClicked();
+
+    // 유효성 검사
+    bool ValidateInputs(const FString& RoomName, const FString& SelectedMap, FString& OutErrorMessage);
+
+    // 에러 메시지 표시
+    void ShowErrorMessage(const FString& Message);
+
 };

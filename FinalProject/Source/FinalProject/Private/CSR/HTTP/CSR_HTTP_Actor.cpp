@@ -298,7 +298,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                             if (SpawnedBlock)
                             {
                                 // 블록 계층 로드
-                                SpawnedBlock->LoadBlockHierarchy(Entry);
+                                //SpawnedBlock->LoadBlockHierarchy(Entry);
                             }
                         }
                     }

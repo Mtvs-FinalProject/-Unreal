@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -34,25 +34,25 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	//µ¨¸®°ÔÀÌÆ® µî·Ï
+	//ë¸ë¦¬ê²Œì´íŠ¸ ë“±ë¡
 	FComponentCreateBoolDelegate componentCreateBoolDelegate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UStaticMeshComponent * meshComp;
 
-	/// ºí·° ÀÚ½Ä ¿ÀºêÁ§Æ® ¹è¿­
+	/// ë¸”ëŸ­ ìì‹ ì˜¤ë¸Œì íŠ¸ ë°°ì—´
 	UPROPERTY(EditAnywhere)
 	TArray<class AActor*> childsActors;
 
-	// ºÎÂø À§Ä¡
+	// ë¶€ì°© ìœ„ì¹˜
 	UPROPERTY(EditAnywhere)
 	TArray<FVector> snapPoints;
 
 	UPROPERTY(EditAnywhere)
-	TArray<FRotator> snapDirections; // ºí·° Áöµµ.?
+	TArray<FRotator> snapDirections; // ë¸”ëŸ­ ì§€ë„.?
 
 	UPROPERTY(EditAnywhere)
-	TArray<int32> snapPritority; // ºí·° ¿ì¼±»çÇ×
+	TArray<int32> snapPritority; // ë¸”ëŸ­ ìš°ì„ ì‚¬í•­
 
 	int32 connectionsize =0;
 
@@ -117,13 +117,13 @@ public:
 	FPSH_ObjectData SaveBlockHierachy();
 
 /*	void LoadBlockHierarchy(const FPSH_ObjectData& Data , TSet<APSH_BlockActor*>& ProcessedBlocks);*/
-	void LoadBlockHierarchy(const FPSH_ObjectData& Data);
+	void LoadBlockHierarchy(const FPSH_ObjectData& Data, class AAutoRoomLevelInstance* ownerme);
 
 	void AllDestroy();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// Æ¯Á¤ ±â´É ÄÄÆ÷³ÍÆ® Ãß°¡
+	// íŠ¹ì • ê¸°ëŠ¥ ì»´í¬ë„ŒíŠ¸ ì¶”ê°€
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	//class UMyFlyActorComponent* MyFlyActorComponent;
 
@@ -133,7 +133,7 @@ public:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	//class UMyRotateActorComponent* MyRotateActorComponent;
 
-	// ÇÃ·¹ÀÌ¾î Áßº¹Àâ±â ¹æÁö¸¦ À§ÇØ ¿À³Ê Á¤ÇØÁÖ±â ( Net¿¡¼­ »ç¿ëÇÏ´Â GetSetOwner°ú ´Ù¸£°Ô ÀÛµ¿À» À§ÇØ Á÷Á¢ »ı¼º)
+	// í”Œë ˆì´ì–´ ì¤‘ë³µì¡ê¸° ë°©ì§€ë¥¼ ìœ„í•´ ì˜¤ë„ˆ ì •í•´ì£¼ê¸° ( Netì—ì„œ ì‚¬ìš©í•˜ëŠ” GetSetOwnerê³¼ ë‹¤ë¥´ê²Œ ì‘ë™ì„ ìœ„í•´ ì§ì ‘ ìƒì„±)
 	void SetMaster(class APSH_Player* owner);
 
 	APSH_Player * GetMaster();
@@ -148,7 +148,7 @@ public:
 
 	FVector scale = FVector(1.f);
 
-	// Àâ¾ÒÀ»¶§ ÀÌÆåÆ® »ı¼º
+	// ì¡ì•˜ì„ë•Œ ì´í™íŠ¸ ìƒì„±
 	UPROPERTY(EditDefaultsOnly)
 	class UMaterial * outLineMat;
 
@@ -207,15 +207,28 @@ private:
 	class APSH_Player * master = nullptr;
 
 
-// ¼º¶ô ÄÚµå
+// ì„±ë½ ì½”ë“œ
 #pragma region 
 public:
-	 // Ä¿½ºÅÒ ³×Æ®¿öÅ© °¡½Ã¼ºÀ» À§ÇÑ ÇÁ·ÎÆÛÆ¼
-    UPROPERTY(Replicated)
-    bool bIsOwnedByRoomInstance;
 
-    // ³×Æ®¿öÅ© °ü·Ã¼º ÇÔ¼ö ¿À¹ö¶óÀÌµå
+    // ë„¤íŠ¸ì›Œí¬ ê´€ë ¨ì„± í•¨ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ
     virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+
+public:
+	// ë ˆë²¨ ì¸ìŠ¤í„´ìŠ¤ ì†Œìœ ê¶Œ ì„¤ì •
+	void SetOwnedByRoomInstance(bool bInIsOwnedByRoomInstance)
+	{
+		bIsOwnedByRoomInstance = bInIsOwnedByRoomInstance;
+	}
+
+	// ë ˆë²¨ ì¸ìŠ¤í„´ìŠ¤ ì†Œìœ  ì—¬ë¶€ í™•ì¸
+	bool IsOwnedByRoomInstance() const { return bIsOwnedByRoomInstance; }
+
+protected:
+	virtual void PostInitializeComponents() override;
+private:
+	UPROPERTY(Replicated)
+    bool bIsOwnedByRoomInstance;
 #pragma endregion
 
 

@@ -18,7 +18,7 @@ public:
 
 public:
     // 방 할당 여부
-    UPROPERTY(Replicated)
+    UPROPERTY(Replicated)   
     bool bIsRoomAssigned;
 
     // 현재 방에 있는 플레이어 컨트롤러들을 추적
@@ -45,8 +45,8 @@ public:
 	}
 
     // 서버에서만 호출되는 방 관리 함수들
-    UFUNCTION(Server, Reliable) 
-    void ServerAssignAutoRoom(const FString& NewRoomName);
+	UFUNCTION(Server, Reliable)
+	void ServerAssignAutoRoom(const FString& NewRoomName, const FString& JsonData);
 
     UFUNCTION(Server, Reliable)
     void ServerUnassignAutoRoom();
@@ -57,8 +57,9 @@ public:
     UFUNCTION(Server, Reliable)
     void ServerLeaveRoom(APlayerController* LeavingPlayer);
 
-	UFUNCTION(Client, Reliable)
-	void ClientOnLeaveRoom(APlayerController* LeavingPlayer);
+    // 클라이언트 통지
+    UFUNCTION(Client, Reliable)
+    void ClientOnLeaveRoom(APlayerController* LeavingPlayer);
 
     // WorldAsset 관련 오버라이드
     UFUNCTION()
@@ -71,15 +72,15 @@ protected:
     virtual void BeginPlay() override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+    // WorldAsset이 변경될 때 호출될 함수
+    void HandleWorldAssetChanged();
+    bool ShouldLoadLevelLocally() const;
+
     UFUNCTION()
     void OnRep_RuntimeWorldAsset();
 
     UFUNCTION()
     void OnRep_ConnectedPlayers();
-
-    // WorldAsset이 변경될 때 호출될 함수
-    void HandleWorldAssetChanged();
-    bool ShouldLoadLevelLocally() const;
 
     UFUNCTION()
     void OnRep_RoomState();
@@ -91,4 +92,30 @@ protected:
     // WorldAsset 경로
     UPROPERTY()
     FString LevelPath;	
+
+// 레벨 스폰 관련
+#pragma region 
+    public:
+	// ILevelInstanceInterface 오버라이드
+	virtual void OnLevelInstanceLoaded() override;
+    private:
+		// JSON 데이터 저장
+		UPROPERTY()
+		FString PendingJsonData;
+
+		// JSON 데이터로부터 액터 스폰
+		void SpawnActorsFromJson();
+
+		// 캐릭터 스폰 및 설정
+		void SpawnAndSetupCharacter(APlayerController* PlayerController);
+
+        // 모든 엑터를 추적하여 삭제한다.
+        void CleanupSpawnedActors();
+
+        // 스폰된 액터들 추적
+		UPROPERTY()
+		TArray<AActor*> SpawnedActors;
+
+#pragma endregion
+
 };

@@ -21,14 +21,14 @@ public:
     // 방 생성 함수
     void CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
+    // JSON 데이터를 포함한 방 생성 함수
+    void CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer);
+
     // 방 참가 함수
     void JoinAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
     // 방 나가기 함수 
     void LeaveAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
-
-    // 방 생성 함수 (플레이 맵)
-    void CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer);
 
 	UFUNCTION(BlueprintCallable, Category = "Room")
    // 사용 가능한 방 찾기
@@ -50,4 +50,7 @@ protected:
    // 방 사이 간격
    UPROPERTY(EditAnywhere, Category = "Room Configuration")
    float SpaceBetweenRooms;
+private:
+    // 방 생성 전 유효성 검사
+    bool ValidateRoomCreation(const FString& RoomName, APlayerController* RequestingPlayer) const;
 };

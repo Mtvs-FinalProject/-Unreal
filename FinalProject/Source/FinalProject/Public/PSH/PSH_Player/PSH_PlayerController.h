@@ -36,8 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ObjectSave();
 
-	UFUNCTION(BlueprintCallable)
-	void ObjectLoad();
+	//UFUNCTION(BlueprintCallable)
+	//void ObjectLoad();
 
 	// 선택된 오브젝트와 연동된 ui 연결 함수
 	UFUNCTION()
@@ -93,40 +93,46 @@ public:
 
 // 서버에 룸 관련 요청 - 성락
 #pragma region
-	UFUNCTION(Server, Reliable)
-	void ServerRequestCreateAutoRoom(const FString& RoomName, const FString& JsonData = TEXT(""));
+public:
+    // 방 생성 관련 RPC 함수
+    UFUNCTION(Server, Reliable)
+    void ServerRequestCreateAutoRoom(const FString& RoomName, const FString& JsonData = TEXT(""));
 
-	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void ServerRequestJoinAutoRoom(const FString& RoomName);
+    UFUNCTION(Server, Reliable)
+    void ServerRequestJoinAutoRoom(const FString& RoomName);
 
-	UFUNCTION(Server, Reliable, BlueprintCallable)
-	void ServerRequestLeaveAutoRoom(const FString& RoomName);
+    UFUNCTION(Server, Reliable)
+    void ServerRequestLeaveAutoRoom(const FString& RoomName);
+
+protected:
+    // ObjectLoad 로직을 분리하여 재사용 가능한 함수로 만듦
+    TArray<FPSH_ObjectData*> ParseJsonToObjectData(const FString& JsonString);
 #pragma endregion
 
 // 맵 저장 필요 로직 - 성락
 #pragma region
-    // HTTP Actor 참조
-    UPROPERTY()
-    ACSR_HTTP_Actor* HTTPActor;
+    //// HTTP Actor 참조
+    //UPROPERTY()
+    //ACSR_HTTP_Actor* HTTPActor;
 
-	UPROPERTY()
-	FString CurrentLevel = "Main";
+	//UPROPERTY()
+	//FString CurrentLevel = "Main";
 
     // 맵 저장 UI 팩토리
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<class UWBP_CreateWidget> CreateWidgetClass;
 
-    // 맵 저장 UI 인스턴스
-    UPROPERTY()
-    class UWBP_CreateWidget* MapCreateWidget;
+ //   // 맵 저장 UI 인스턴스
+ //   UPROPERTY()
+ //   class UWBP_CreateWidget* MapCreateWidget;
 
-	// 맵 저장 UI 팩토리
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<class UWBP_CreateWidget> MainWidgetClass;
+	//// 맵 저장 UI 팩토리
+ //   UPROPERTY(EditDefaultsOnly, Category = "UI")
+ //   TSubclassOf<class UWBP_CreateWidget> MainWidgetClass;
 
-    // UI 표시 함수
-    UFUNCTION(BlueprintCallable)
-    void ShowMapSaveUI();
+ //   // UI 표시 함수
+ //   UFUNCTION(BlueprintCallable)
+ //   void ShowMapSaveUI();
 #pragma endregion
 
 };
