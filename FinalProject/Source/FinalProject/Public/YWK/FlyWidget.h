@@ -114,6 +114,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 
+	UFUNCTION()
+	UWidget* GenerateComboBoxItem(FString Item);
+
 	//------------------------------------------------------------------------------------
 	// ¿Õº¹ ÇÔ¼ö
 	UFUNCTION(BlueprintCallable)

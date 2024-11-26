@@ -34,13 +34,6 @@ void UActionChoice::NativeConstruct()
 	{
 		End_Button->OnClicked.AddDynamic(this, &UActionChoice::OnEndClicked);
 	}
-
-	// Start 버튼 눌렀을 때
-	if (Btn_StartAction)
-	{
-		Btn_StartAction->OnClicked.AddDynamic(this, &UActionChoice::OnStartActionClicked);
-	}
-
 }
 
 void UActionChoice::OnMoveClicked()
@@ -127,7 +120,3 @@ void UActionChoice::SetControlledActor(AActor* NewActor)
 	ControlledActor = NewActor;
 }
 
-void UActionChoice::OnStartActionClicked()
-{
-
-}
