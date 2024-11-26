@@ -10,6 +10,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "PSH/PSH_Player/PSH_Player.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
 
 
 AAutoRoomLevelInstance::AAutoRoomLevelInstance()
@@ -20,9 +21,6 @@ AAutoRoomLevelInstance::AAutoRoomLevelInstance()
     SetReplicatingMovement(true);
     bAlwaysRelevant = true;
 
-    // 초기에는 WorldAsset을 설정하지 않음
-    //SetWorldAsset(nullptr);
-    
     // 레벨 경로 설정 (프로젝트에 맞게 수정 필요)
     LevelPath = TEXT("/Game/PSH/PSH_Map/PSH_Level.PSH_Level");
 }
@@ -39,6 +37,35 @@ void AAutoRoomLevelInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 }
 
 
+void AAutoRoomLevelInstance::ReturnAllPlayersToLobby()
+{
+    // 현재 접속한 모든 플레이어들에 대해
+    for (APlayerController* PC : ConnectedPlayers)
+    {
+        if (PC)
+        {
+            // 현재 Possess중인 Pawn 저장
+            APawn* CurrentPawn = PC->GetPawn();
+
+            // Unpossess
+            PC->UnPossess();
+
+            // Pawn 제거
+            if (CurrentPawn)
+            {
+                CurrentPawn->Destroy();
+            }
+
+            // MainUI 표시 RPC 호출
+            APSH_PlayerController* PSH_PC = Cast<APSH_PlayerController>(PC);
+            if (PSH_PC)
+            {
+                //PSH_PC->Client_ShowMainUI();
+            }
+        }
+    }
+}
+
 void AAutoRoomLevelInstance::OnRep_RuntimeWorldAsset()
 {
     SetWorldAsset(RuntimeWorldAsset);
@@ -52,7 +79,7 @@ void AAutoRoomLevelInstance::OnRep_RuntimeWorldAsset()
 
 void AAutoRoomLevelInstance::HandleWorldAssetChanged()
 {
-
+    
     UE_LOG(LogTemp, Log, TEXT("HandleLevelLoadingState - IsAssigned: %d, LoadedLocally: %d"),
         bIsRoomAssigned, bIsLevelLoadedLocally);
 
@@ -79,6 +106,9 @@ void AAutoRoomLevelInstance::HandleWorldAssetChanged()
                 *GetName(), HasAuthority());
             LevelInstanceSubsystem->RequestUnloadLevelInstance(this);
             bIsLevelLoadedLocally = false;
+        }
+        else {
+            UE_LOG(LogTemp,Warning, TEXT("scr Im null"));
         }
     }
 }
@@ -166,6 +196,28 @@ void AAutoRoomLevelInstance::ServerUnassignAutoRoom_Implementation()
     }
 }
 
+void AAutoRoomLevelInstance::ServerGetOutAll_Implementation()
+{
+    if (HasAuthority() && bIsRoomAssigned)
+    {
+        // 모든 플레이어를 로비로 되돌림
+        ReturnAllPlayersToLobby();
+
+        // 스폰된 엑터들 정리
+        CleanupSpawnedActors();
+
+        // 방 상태 초기화
+        bIsRoomAssigned = false;
+        ConnectedPlayers.Empty();
+        SetCurrentRoomName(TEXT(""));
+
+        // WorldAsset 제거
+        SetRuntimeWorldAsset(nullptr);
+
+        OnRep_RoomState();
+    }
+}
+
 void AAutoRoomLevelInstance::ServerJoinRoom_Implementation(APlayerController* JoiningPlayer)
 {
     if (HasAuthority() && bIsRoomAssigned && JoiningPlayer)
@@ -222,7 +274,6 @@ void AAutoRoomLevelInstance::ClientOnLeaveRoom_Implementation(APlayerController*
             }
         }
     }
-
 }
 
 bool AAutoRoomLevelInstance::SetRuntimeWorldAsset(TSoftObjectPtr<UWorld> InWorldAsset)
@@ -283,7 +334,7 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
     {
         return;
     }
-
+    UE_LOG(LogTemp, Warning, TEXT("csr hello"));
     // 임시 데이터 테이블 생성 및 JSON 데이터 로드
     UDataTable* TempDataTable = NewObject<UDataTable>(this);
     TempDataTable->RowStruct = FPSH_ObjectData::StaticStruct();
@@ -345,11 +396,18 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
 
 void AAutoRoomLevelInstance::SpawnAndSetupCharacter(APlayerController* PlayerController)
 {
-    if (!PlayerController || !HasAuthority())
+    // 서버에서만 실행되도록 체크
+    if (!PlayerController || !HasAuthority() || GetNetMode() == NM_Client)
     {
         return;
     }
 
+    // 이미 폰을 가지고 있는지 체크
+    if (PlayerController->GetPawn() != nullptr)
+    {
+        return;
+    }
+    UE_LOG(LogTemp, Warning, TEXT("csr who %s"), *PlayerController->GetName());
     FVector SpawnLocation = GetActorLocation() + FVector(0, 0, 200);
     FRotator SpawnRotation = FRotator::ZeroRotator;
 

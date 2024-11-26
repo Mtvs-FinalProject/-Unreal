@@ -18,6 +18,7 @@ void UImageTemp::OnAddImageButtonClicked()
 TArray<FString> UImageTemp::GetImageList() const
 {
     TArray<FString> ImgList;
+    UE_LOG(LogTemp, Warning, TEXT("csr %s, %d"), *LastSelectedFilePath, ImgList.Num());
     ImgList.Add(LastSelectedFilePath);
     return (ImgList);
 }
