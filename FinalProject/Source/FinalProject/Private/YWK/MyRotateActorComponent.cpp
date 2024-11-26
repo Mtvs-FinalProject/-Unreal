@@ -6,6 +6,7 @@
 #include "Math/Quat.h"
 #include "../FinalProject.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
+#include "Net/UnrealNetwork.h"
 
 UMyRotateActorComponent::UMyRotateActorComponent()
 {
@@ -151,18 +152,15 @@ FPSH_FunctionBlockData UMyRotateActorComponent::SaveData()
     PRINTLOG(TEXT("UMyRotateActorComponent::SaveData()"));
   
     funtionData.floatArray.Add(RotateSpeed);
-    funtionData.intArray.Add(RotateNum);
     funtionData.frotatorArray.Add(RotateDirection);
-    funtionData.boolArray.Add(bLoopMode);
 
     return funtionData;
 }
 void UMyRotateActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
 {
     RotateSpeed = funtionData.floatArray[0]; //float
-    RotateNum = funtionData.intArray[0];//(È¸Àü È½¼ö)->int32
     RotateDirection = funtionData.frotatorArray[0]; //FRotator
-    bLoopMode = funtionData.boolArray[0];//bool
+  
 }
 
 void UMyRotateActorComponent::SetOwnerRotation_Implementation(const FQuat& newRotation)
@@ -173,3 +171,12 @@ void UMyRotateActorComponent::SetOwnerRotation_Implementation(const FQuat& newRo
 
     PRINTLOG(TEXT("SetOwnerLocation_Implementation"));
 }
+
+void UMyRotateActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+// 
+//     DOREPLIFETIME(UMyRotateActorComponent, RotateDirection);
+//     DOREPLIFETIME(UMyRotateActorComponent, RotateSpeed);
+//     DOREPLIFETIME(UMyRotateActorComponent, bShouldRot);
+ }

@@ -490,7 +490,7 @@ void APSH_BlockActor::OnComponentSleep(UPrimitiveComponent* SleepingComponent, F
 
 }
 
-FPSH_ObjectData APSH_BlockActor::SaveBlock()
+FPSH_ObjectData APSH_BlockActor::SaveBlock() // 클라 서버 2번 불림
 {
 	FPSH_ObjectData Data;
 
@@ -536,7 +536,7 @@ FPSH_ObjectData APSH_BlockActor::SaveBlock()
 
 }
 
-FPSH_BlockData APSH_BlockActor::SaveChildBlock()
+FPSH_BlockData APSH_BlockActor::SaveChildBlock() // 서버 클라
 {
 	FPSH_BlockData data;
 
@@ -572,7 +572,7 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock()
 	return data;
 }
 
-void APSH_BlockActor::SaveBlockLocations()
+void APSH_BlockActor::SaveBlockLocations() // 클라이언트만.
 {
 	PRINTLOG(TEXT("SaveBlockLocations"));
 	if(locationData.bisSave) return;

@@ -16,15 +16,15 @@ public:
 	UMyRotateActorComponent();
 
 	// 회전 속도 (도/초)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	float RotateSpeed;
 
 	// 회전 방향
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	FRotator RotateDirection;
 
 	// 회전 상태
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	bool bShouldRot;
 
 	// 초기 회전 값
@@ -77,4 +77,6 @@ public:
 
 	UFUNCTION(Server,Unreliable)
 	void SetOwnerRotation(const FQuat& newRotation);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

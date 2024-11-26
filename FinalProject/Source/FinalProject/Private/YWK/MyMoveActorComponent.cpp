@@ -5,6 +5,7 @@
 #include "YWK/Movewidget.h"
 #include "PSH/PSH_Actor/PSH_BlockActor.h"
 #include "../FinalProject.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UMyMoveActorComponent::UMyMoveActorComponent()
@@ -160,16 +161,9 @@ FPSH_FunctionBlockData UMyMoveActorComponent::SaveData()
         FPSH_FunctionBlockData funtionData;
 	    funtionData.floatArray.Add(MoveSpeed);
 	    funtionData.floatArray.Add(MaxDistance);
-	    funtionData.fvectorArray.Add(MoveDirection);
-	    funtionData.intArray.Add(LoopCount);
+		funtionData.fvectorArray.Add(MoveDirection);
 	    funtionData.boolArray.Add(bLoopMode);
 	    funtionData.boolArray.Add(bSingleDirection);
-
-//         MoveSpeed; // float
-// 		MoveDistance; // float
-//         MoveDirection; //FVector
-//         LoopCount; //int32
-//         bLoopMode; //bool
 
         return funtionData;
 }
@@ -178,16 +172,9 @@ void UMyMoveActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
         MoveSpeed = funtionData.floatArray[0]; // float
         MaxDistance = funtionData.floatArray[1]; // float
         MoveDirection = funtionData.fvectorArray[0]; //FVector
-        LoopCount = funtionData.intArray[0]; //int32
         bLoopMode = funtionData.boolArray[0]; //bool
         bSingleDirection = funtionData.boolArray[1]; //bool
-  
-        PRINTLOG(TEXT("MoveSpeed: %f"), MoveSpeed);
-        PRINTLOG(TEXT("MaxDistance: %f"), MaxDistance);
-        PRINTLOG(TEXT("MoveDirection: %s"), *MoveDirection.ToString());
-        PRINTLOG(TEXT("LoopCount: %d"), LoopCount);
-        PRINTLOG(TEXT("bLoopMode: %s"), bLoopMode ? TEXT("True") : TEXT("False"));
-       
+
 }
 
 void UMyMoveActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& newLocation)
@@ -195,4 +182,15 @@ void UMyMoveActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& 
     if (GetOwner() == nullptr) return;
 
     GetOwner()->SetActorLocation(newLocation);
+}
+void UMyMoveActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+// 
+//     DOREPLIFETIME(UMyMoveActorComponent, MoveSpeed);
+//     DOREPLIFETIME(UMyMoveActorComponent, MaxDistance);
+//     DOREPLIFETIME(UMyMoveActorComponent, MoveDirection);
+//     DOREPLIFETIME(UMyMoveActorComponent, bLoopMode);
+//     DOREPLIFETIME(UMyMoveActorComponent, bSingleDirection);
+//     DOREPLIFETIME(UMyMoveActorComponent, bShouldMove);
 }

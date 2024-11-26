@@ -46,7 +46,7 @@ public:
 	bool bLoopMode;
 
 	// ´Ü¼ø ÀÌµ¿ ¸ðµå
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Fly")
 	bool bSingleDirection;
 
 	// ¿Õº¹ È½¼ö
