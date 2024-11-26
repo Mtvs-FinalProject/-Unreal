@@ -288,7 +288,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     for (const FPSH_ObjectData& Entry : DataTableArray)
                     {
                         // 루트 블록 스폰
-                        TSubclassOf<APSH_BlockActor> SpawnActor = Entry.actor;
+                        TSubclassOf<APSH_BlockActor> SpawnActor = Entry.blockData.actor;
                         if (SpawnActor)
                         {
                             FActorSpawnParameters Params;

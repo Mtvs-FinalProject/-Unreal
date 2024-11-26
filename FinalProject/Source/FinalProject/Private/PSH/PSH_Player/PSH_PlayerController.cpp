@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PSH/PSH_Player/PSH_PlayerController.h"
@@ -13,10 +13,12 @@
 #include "CSR/UI/CSR_Proto_StartUI.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "../FinalProject.h"
+#include "CSR/DedicatedServer/AutoGameState.h"
+#include "CSR/DedicatedServer/AutoRoomManager.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
-	// »ı¼ºÀÚ¿¡ ºí·çÇÁ¸°Æ® Å¬·¡½º ·Îµå
+	// ìƒì„±ìì— ë¸”ë£¨í”„ë¦°íŠ¸ í´ë˜ìŠ¤ ë¡œë“œ
 	static ConstructorHelpers::FClassFinder<UMyChoiceActionWidget> WidgetClassFinder(TEXT("/Game/YWK/UI/WBP_Choice.WBP_Choice_C"));
 	if (WidgetClassFinder.Succeeded())
 	{
@@ -53,7 +55,7 @@ void APSH_PlayerController::LookMouseCursor()
 	FHitResult hit;
 	GetHitResultUnderCursor(ECC_Visibility,false,hit);
 
-	if (hit.bBlockingHit) // ¶óÀÎ Æ®·¹ÀÌ½º°¡ ¹°Ã¼¿Í ºÎ‹HÇûÀ» °æ¿ì
+	if (hit.bBlockingHit) // ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ê°€ ë¬¼ì²´ì™€ ë¶€ë”«í˜”ì„ ê²½ìš°
 	{
 		APawn * MyPawn = GetPawn();
 		if (MyPawn)
@@ -61,7 +63,7 @@ void APSH_PlayerController::LookMouseCursor()
 			FVector WorldLoc;
 			FVector WorldDir;
 
-			DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ¸¶¿ì½º ÁÂÇ¥ º¯È¯
+			DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ë§ˆìš°ìŠ¤ ì¢Œí‘œ ë³€í™˜
 // 			WorldLoc.Normalize();
 // 			WorldDir.Normalize();
 
@@ -117,14 +119,14 @@ void APSH_PlayerController::ObjectLoad()
 // 	{
 // 		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
 // 		{
-// 			// ·çÆ® ºí·° ¼ÒÈ¯
+// 			// ë£¨íŠ¸ ë¸”ëŸ­ ì†Œí™˜
 // 			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
 // 			if (SpawnActor)
 // 			{
 // 				FActorSpawnParameters Params;
 // 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
 // 
-// 				// ºí·° °èÃş ±¸Á¶ ºÒ·¯¿À±â
+// 				// ë¸”ëŸ­ ê³„ì¸µ êµ¬ì¡° ë¶ˆëŸ¬ì˜¤ê¸°
 // 				if (SpawnedBlock)
 // 				{
 // 					//SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
@@ -142,14 +144,14 @@ void APSH_PlayerController::ObjectLoad()
 // 
 // 		if (data && data->actor != nullptr)
 // 		{
-// 			// ·çÆ® ºí·° ¼ÒÈ¯
+// 			// ë£¨íŠ¸ ë¸”ëŸ­ ì†Œí™˜
 // 			TSubclassOf<APSH_BlockActor> SpawnActor = data->actor;
 // 			if (SpawnActor)
 // 			{
 // 				FActorSpawnParameters Params;
 // 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, data->actorTransfrom, Params);
 // 
-// 				// ºí·° °èÃş ±¸Á¶ ºÒ·¯¿À±â
+// 				// ë¸”ëŸ­ ê³„ì¸µ êµ¬ì¡° ë¶ˆëŸ¬ì˜¤ê¸°
 // 				if (SpawnedBlock)
 // 				{
 // 					SpawnedBlock->LoadBlockHierarchy(*data);
@@ -167,7 +169,7 @@ void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 
 	//APSH_BlockActor* BlockActor = Cast<APSH_BlockActor>(SelectedActor);
 
-	//// ¼±ÅÃÇÑ ¾×ÅÍ°¡ BlockActorÀÌ°í, ÇÊ¿äÇÑ ÄÄÆ÷³ÍÆ®¸¦ °¡Áö°í ÀÖÀ» ¶§¸¸ UI ¿­±â
+	//// ì„ íƒí•œ ì•¡í„°ê°€ BlockActorì´ê³ , í•„ìš”í•œ ì»´í¬ë„ŒíŠ¸ë¥¼ ê°€ì§€ê³  ìˆì„ ë•Œë§Œ UI ì—´ê¸°
 	//if (BlockActor)
 	//{
 	//	UMyMoveActorComponent* MoveComponent = BlockActor->FindComponentByClass<UMyMoveActorComponent>();
@@ -187,11 +189,11 @@ void APSH_PlayerController::SelectObject(AActor* SelectedActor)
 	//				UE_LOG(LogTemp, Warning, TEXT("MyChoiceActionWidget set to Visible and added to viewport"));
 	//			}
 	//		}
-	//		return; // UI°¡ ¿­·ÈÀ¸¹Ç·Î ÇÔ¼ö Á¾·á
+	//		return; // UIê°€ ì—´ë ¸ìœ¼ë¯€ë¡œ í•¨ìˆ˜ ì¢…ë£Œ
 	//	}
 	//}
 
-	//// Á¶°ÇÀÌ ÃæÁ·µÇÁö ¾ÊÀ» °æ¿ì UI¸¦ ´İ±â
+	//// ì¡°ê±´ì´ ì¶©ì¡±ë˜ì§€ ì•Šì„ ê²½ìš° UIë¥¼ ë‹«ê¸°
 	//if (MyChoiceActionWidget && MyChoiceActionWidget->IsInViewport())
 	//{
 	//	MyChoiceActionWidget->RemoveFromParent();
@@ -239,4 +241,139 @@ void APSH_PlayerController::CRPC_ObjectWidgetVisible_Implementation(bool check)
 		}
 	}
 	
-}	
+}
+
+// ì„œë²„ì— ë£¸ ê´€ë ¨ ìš”ì²­ - ì„±ë½
+#pragma region
+void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FString& RoomName, const FString& JsonData)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
+	{
+		if (AAutoRoomManager* RoomManager = GameState->AutoRoomManager)
+		{
+			if (JsonData.IsEmpty())
+			{
+				// Create ëª¨ë“œ - ë¹ˆ ë°© ìƒì„±
+				RoomManager->CreateAutoRoom(RoomName, this);
+			}
+			else
+			{
+				// Play ëª¨ë“œ - JSON ë°ì´í„°ë¡œ ë°© ìƒì„±
+				RoomManager->CreateAutoRoomWithData(RoomName, JsonData, this);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AutoRoomManager not found in GameState"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GameState not found"));
+	}
+}
+
+void APSH_PlayerController::ServerRequestJoinAutoRoom_Implementation(const FString& RoomName)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
+		return;
+	}
+
+	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
+		return;
+	}
+
+	if (!GameState->AutoRoomManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Joining room %s"), *RoomName);
+	GameState->AutoRoomManager->JoinAutoRoom(RoomName, this);
+}
+
+void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FString& RoomName)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ServerRequestJoinAutoRoom: No Authority"));
+		return;
+	}
+
+	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: GameState not found"));
+		return;
+	}
+
+	if (!GameState->AutoRoomManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ServerRequestJoinAutoRoom: AutoRoomManager not found in GameState"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerRequestJoinAutoRoom: Leaving room %s"), *RoomName);
+	GameState->AutoRoomManager->LeaveAutoRoom(RoomName, this);
+}
+
+TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FString& JsonString)
+{
+	TArray<FPSH_ObjectData*> DataArray;
+
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (FJsonSerializer::Deserialize(Reader, JsonObject))
+	{
+		const TArray<TSharedPtr<FJsonValue>>* DataTableArray;
+		if (JsonObject->TryGetArrayField(TEXT("data_table"), DataTableArray))
+		{
+			for (const auto& Value : *DataTableArray)
+			{
+				FPSH_ObjectData* ObjectData = new FPSH_ObjectData();
+				const TSharedPtr<FJsonObject>* RowObject;
+
+				if (Value->TryGetObject(RowObject))
+				{
+					if (FJsonObjectConverter::JsonObjectToUStruct((*RowObject).ToSharedRef(), ObjectData))
+					{
+						DataArray.Add(ObjectData);
+					}
+				}
+			}
+		}
+	}
+
+	return DataArray;
+}
+
+//void APSH_PlayerController::ShowMapSaveUI()
+//{
+//	if (HasAuthority()) {
+//		return ;
+//	}
+//	if (!MapCreateWidget && CreateWidgetClass)
+//	{
+//		MapCreateWidget = CreateWidget<UWBP_CreateWidget>(this, CreateWidgetClass);
+//	}
+//
+//	if (MapCreateWidget)
+//	{
+//		MapCreateWidget->AddToViewport();
+//	}
+//}
+//
+//#pragma endregion
+//

@@ -299,9 +299,9 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
 
     for (FPSH_ObjectData* Data : DataArray)
     {
-        if (Data && Data->actor)
+        if (Data && Data->blockData.actor)
         {
-            FTransform SpawnTransform = Data->actorTransfrom;
+            FTransform SpawnTransform = Data->blockData.actorTransfrom;
             SpawnTransform.SetLocation(SpawnTransform.GetLocation() + SpawnOrigin);
             FActorSpawnParameters SpawnParams;
             //SpawnParams.bDeferConstruction = true;  // 추가
@@ -309,13 +309,13 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
             SpawnParams.bNoFail = true;
 
             if (APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-                Data->actor, SpawnTransform, SpawnParams))
+                Data->blockData.actor, SpawnTransform, SpawnParams))
             {
                 SpawnedBlock->SetOwner(this);
                 SpawnedBlock->SetReplicates(true);
                 SpawnedBlock->SetReplicateMovement(true);
                 SpawnedBlock->SetOwnedByRoomInstance(true);
-                SpawnedBlock->LoadBlockHierarchy(*Data, this);
+                SpawnedBlock->LoadBlockHierarchy(*Data);
                 SpawnedActors.Add(SpawnedBlock);
                 // PostInitializeComponents 전에 필요한 설정
                 //SpawnedBlock->SetOwnedByRoomInstance(true);
