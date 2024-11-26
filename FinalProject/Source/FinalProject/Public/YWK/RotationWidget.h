@@ -108,6 +108,9 @@ public:
     UFUNCTION(BlueprintCallable)
     void UpdateComponentSettings(UMyRotateActorComponent* RotateComponent);
 
+    UFUNCTION()
+	UWidget* GenerateComboBoxItem(FString Item);
+
     // 회전 시작
     UFUNCTION()
     void StartRotation();

@@ -10,6 +10,7 @@
 #include "Components/EditableText.h"
 #include "Components/ComboBoxString.h"
 #include "Components/CheckBox.h"
+#include "Components/TextBlock.h"
 
 void UMovewidget::NativeConstruct()
 {
@@ -93,6 +94,13 @@ void UMovewidget::NativeConstruct()
 	{
 		Chk_SingleDirectionMode->OnCheckStateChanged.AddDynamic(this, &UMovewidget::OnSingleDirectionCheckChanged);
 	}
+
+	// 콤보박스 글자 색 바꾸기
+	if (MoveBoxList)
+	{
+		MoveBoxList->OnGenerateWidgetEvent.BindDynamic(this, &UMovewidget::GenerateComboBoxItem);
+	}
+	
 }
 
 // 앞으로 가기
@@ -358,9 +366,14 @@ void UMovewidget::InitializeFunctionObjects()
 					MoveBoxList->AddOption(FunctionObject->GetName());
 				}
 			}
+
 			// 콤보박스 선택 변경 시 이벤트 바인딩
 			MoveBoxList->OnSelectionChanged.AddDynamic(this, &UMovewidget::OnFunctionObjectSelected);
+
+			// **OnGenerateWidget 이벤트 설정**
+			MoveBoxList->OnGenerateWidgetEvent.BindDynamic(this, &UMovewidget::GenerateComboBoxItem);
 		}
+
 		// 배열의 첫 번째 오브젝트를 기본 선택
 		if (AllFunctionObject.Num() > 0)
 		{
@@ -368,6 +381,7 @@ void UMovewidget::InitializeFunctionObjects()
 		}
 	}
 }
+
 
 void UMovewidget::AddObjectToComboBox(AActor* NewObject)
 {
@@ -413,7 +427,17 @@ void UMovewidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Ty
 	}
 }
 
-
+UWidget* UMovewidget::GenerateComboBoxItem(FString Item)
+{
+	UTextBlock* TextBlock = NewObject<UTextBlock>(this);  // TextBlock 생성
+	if (TextBlock)
+	{
+		TextBlock->SetText(FText::FromString(Item));  // 텍스트 설정
+		TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // 텍스트 색상
+		TextBlock->Font.Size = 16;  // 텍스트 크기 설정
+	}
+	return TextBlock;  // UWidget 반환
+}
 
 void UMovewidget::OnLoopModeCheckChanged(bool bIsChecked)
 {

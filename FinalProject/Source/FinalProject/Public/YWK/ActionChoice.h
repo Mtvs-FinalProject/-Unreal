@@ -32,9 +32,6 @@ class UButton* Btn_Fly;
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 class UButton* End_Button;
 
-UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-class UButton* Btn_StartAction;
-
 UFUNCTION()
 void OnMoveClicked();
 
@@ -46,9 +43,6 @@ void OnEndClicked();
 
 UFUNCTION()
 void OnFlyClicked();
-
-UFUNCTION()
-void OnStartActionClicked();
 
 // 액터를 설정할 수 있는 함수
 UFUNCTION()
