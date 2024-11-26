@@ -82,12 +82,6 @@ public:
 	UPROPERTY()
     TSubclassOf<UUserWidget> ChoiceWidgetClass;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<class UCSR_Proto_StartUI> StartUIFac; 
-
-	UPROPERTY()
-	class UCSR_Proto_StartUI *StartUI;
-
 	UFUNCTION(BlueprintImplementableEvent)
 	void SaveTheGame();
 
@@ -108,7 +102,18 @@ protected:
     // ObjectLoad 로직을 분리하여 재사용 가능한 함수로 만듦
     TArray<FPSH_ObjectData*> ParseJsonToObjectData(const FString& JsonString);
 #pragma endregion
+public:
+	UPROPERTY()
+	class UMainPageWidget* MainUI;
 
+	UFUNCTION(Client, Reliable)
+    void Client_ShowMainUI();
+
+	UFUNCTION(Server, Reliable)
+    void ServerRequestCleanupCurrentRoom();
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<class UMainPageWidget> MainUIClass;
 // 맵 저장 필요 로직 - 성락
 #pragma region
     //// HTTP Actor 참조

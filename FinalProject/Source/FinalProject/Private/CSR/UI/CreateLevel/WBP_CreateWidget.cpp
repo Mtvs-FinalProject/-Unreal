@@ -5,6 +5,8 @@
 #include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "JsonObjectConverter.h"
 #include "CSR/Auth/AuthSubsystem.h"
+#include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
 
 void UWBP_CreateWidget::NativeConstruct()
 {
@@ -106,7 +108,12 @@ void UWBP_CreateWidget::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
         {
             UE_LOG(LogTemp, Log, TEXT("Map upload successful: %s"), *ResponseString);
 
-            // UI 닫기
+            // 레벨 인스턴스 찾기
+            if (APSH_PlayerController* PC = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController()))
+            {
+                PC->ServerRequestCleanupCurrentRoom();
+            }
+
             RemoveFromParent();
         }
         else

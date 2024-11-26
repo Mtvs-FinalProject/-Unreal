@@ -17,7 +17,6 @@ AAutoRoomManager::AAutoRoomManager()
     SpaceBetweenRooms = 10000.0f;
 }
 
-
 void AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)
 {
     if (!ValidateRoomCreation(RoomName, RequestingPlayer))
@@ -29,8 +28,16 @@ void AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController
     {
         UE_LOG(LogTemp, Log, TEXT("Creating room %s for player %s"),
             *RoomName, *RequestingPlayer->GetName());
+        AvailableRoom->RoomMode = ERoomMode::Create;
         AvailableRoom->ServerAssignAutoRoom(RoomName, TEXT(""));
         AvailableRoom->ServerJoinRoom(RequestingPlayer);
+        UE_LOG(LogTemp, Warning, TEXT("csr %s"), *RoomName);
+        if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())
+        {
+            UE_LOG(LogTemp, Warning, TEXT("csr hh %s"), *RoomName);
+
+            GS->UpdateRoomList();
+        }
     }
     else
     {
@@ -54,6 +61,10 @@ void AAutoRoomManager::JoinAutoRoom(const FString& RoomName, APlayerController* 
             *RequestingPlayer->GetName(), *RoomName);
         Room->ServerJoinRoom(RequestingPlayer);
         // 여기서 추가적인 입장 로직 구현 가능
+        if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())
+        {
+            GS->UpdateRoomList();
+        }
     }
     else
     {
@@ -78,6 +89,10 @@ void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController*
         // 마지막 플레이어가 나가면 방을 해제하는 로직 추가 가능
         //Room->ServerUnassignAutoRoom();
         Room->ServerLeaveRoom(RequestingPlayer);
+        if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())
+        {
+            GS->UpdateRoomList();
+        }
     }
 }
 
@@ -94,8 +109,13 @@ void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FSt
     {
         UE_LOG(LogTemp, Log, TEXT("Creating room %s with data for player %s"),
             *RoomName, *RequestingPlayer->GetName());
+        AvailableRoom->RoomMode = ERoomMode::Play;
         AvailableRoom->ServerAssignAutoRoom(RoomName, JsonData);
         AvailableRoom->ServerJoinRoom(RequestingPlayer);
+        if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())
+        {
+            GS->UpdateRoomList();
+        }
     }
 }
 

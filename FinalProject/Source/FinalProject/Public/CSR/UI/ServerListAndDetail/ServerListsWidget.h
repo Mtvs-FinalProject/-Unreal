@@ -6,7 +6,10 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
 #include "ModalWidget.h"
+#include "Delegates/DelegateCombinations.h"
+#include "ServerListItem/OpenServerList.h"
 #include "ServerListsWidget.generated.h"
+
 
 /**
  * 
@@ -25,6 +28,13 @@ public:
     UPROPERTY(meta = (BindWidget))
     UButton* Create_BTN;
 
+    UPROPERTY(meta = (BindWidget))
+    UButton* Join_BTN;
+
+    UPROPERTY(meta = (BindWidget))
+    UOpenServerList * WBP_Open_Server_List;
+
+
     // 모달 위젯 클래스 (Blueprint 설정 가능)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
     TSubclassOf<UModalWidget> ModalWidgetClass;
@@ -36,4 +46,12 @@ public:
     // "Create" 버튼 클릭 이벤트 핸들러
     UFUNCTION(BlueprintCallable, Category = "ServerList")
     void OnCreateButtonClicked();
+
+    UFUNCTION(BlueprintCallable, Category = "ServerList")
+    void OnJoinButtonClicked();
+
+protected:
+
+    UPROPERTY()
+    FString SelectedRoomName;
 };

@@ -56,9 +56,6 @@ void OnDestroyClicked();
 UFUNCTION()
 void OnBtn_SaveClicked();
 
-UFUNCTION(BlueprintImplementableEvent)
-void MapSave();
-
 UFUNCTION()
 void CreateSaveDataTable();
 

@@ -4,8 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "AutoRoomLevelInstance.h"
 #include "AutoRoomManager.generated.h"
+
+class AutoRoomLevelInstance;
 
 UCLASS()
 class FINALPROJECT_API AAutoRoomManager : public AActor

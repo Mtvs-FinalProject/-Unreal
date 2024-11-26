@@ -11,6 +11,7 @@
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
+#include "CSR/DedicatedServer/AutoGameState.h"
 
 
 AAutoRoomLevelInstance::AAutoRoomLevelInstance()
@@ -60,7 +61,10 @@ void AAutoRoomLevelInstance::ReturnAllPlayersToLobby()
             APSH_PlayerController* PSH_PC = Cast<APSH_PlayerController>(PC);
             if (PSH_PC)
             {
-                //PSH_PC->Client_ShowMainUI();
+                PSH_PC->Client_ShowMainUI();
+            }
+            else {
+                UE_LOG(LogTemp, Warning, TEXT("sibal"));
             }
         }
     }
@@ -182,6 +186,7 @@ void AAutoRoomLevelInstance::ServerUnassignAutoRoom_Implementation()
         
         CleanupSpawnedActors();
         // 방 상태 초기화
+		RoomMode = ERoomMode::NoMode;
         bIsRoomAssigned = false;
         ConnectedPlayers.Empty();
         SetCurrentRoomName(TEXT(""));

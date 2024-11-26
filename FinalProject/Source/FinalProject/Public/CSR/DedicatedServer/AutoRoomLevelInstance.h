@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "LevelInstance/LevelInstanceActor.h"
+#include "AutoGameState.h"
 #include "AutoRoomLevelInstance.generated.h"
 
 /**
@@ -31,6 +32,9 @@ public:
 
 	UPROPERTY(Replicated)
 	FString CurrentRoomName;
+    
+	UPROPERTY(Replicated)
+	ERoomMode RoomMode = ERoomMode::NoMode;
 
 	UFUNCTION(BlueprintCallable, Category = "Room")
 	FString GetCurrentRoomName() const {

@@ -15,6 +15,7 @@
 #include "../FinalProject.h"
 #include "CSR/DedicatedServer/AutoGameState.h"
 #include "CSR/DedicatedServer/AutoRoomManager.h"
+#include "CSR/UI/Main/MainPageWidget.h"
 
 APSH_PlayerController::APSH_PlayerController()
 {
@@ -357,6 +358,55 @@ TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FStr
 	}
 
 	return DataArray;
+}
+
+void APSH_PlayerController::Client_ShowMainUI_Implementation()
+{
+	// 이전 UI가 있다면 제거
+	if (MainUI)
+	{
+		MainUI->RemoveFromParent();
+		MainUI = nullptr;
+	}
+
+	// MainUI 생성 및 표시
+	if (MainUIClass)
+	{
+		MainUI = CreateWidget<UMainPageWidget>(this, MainUIClass);
+		if (MainUI)
+		{
+			MainUI->AddToViewport();
+		}
+	}
+
+	// 입력 모드 설정
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+}
+
+void APSH_PlayerController::ServerRequestCleanupCurrentRoom_Implementation()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// 서버의 GameState를 통해 RoomManager 접근
+	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
+	{
+		if (AAutoRoomManager* RoomManager = GameState->AutoRoomManager)
+		{
+			// RoomManager가 관리하는 풀에서 이 플레이어가 있는 방을 찾아서 정리
+			for (AAutoRoomLevelInstance* Room : RoomManager->AutoRoomPool)
+			{
+				if (Room && Room->IsPlayerInRoom(this))
+				{
+					Room->ServerGetOutAll();
+					break;
+				}
+			}
+		}
+	}
 }
 
 //void APSH_PlayerController::ShowMapSaveUI()

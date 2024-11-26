@@ -4,6 +4,9 @@
 #include "CSR/UI/ServerListAndDetail/ServerListsWidget.h"
 #include "CSR/UI/ServerListAndDetail/ModalWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "CSR/UI/ServerListAndDetail/ServerListItem/OpenServerList.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
+#include "CSR/UI/ServerListAndDetail/ServerListItem/OpenServerItem.h"
 
 void UServerListsWidget::NativeConstruct()
 {
@@ -13,9 +16,14 @@ void UServerListsWidget::NativeConstruct()
         return;
     }
 
-    if (UButton* CreateButton = Cast<UButton>(GetWidgetFromName(TEXT("Create_BTN"))))
+    if (Create_BTN)
     {
-        CreateButton->OnClicked.AddDynamic(this, &UServerListsWidget::OnCreateButtonClicked);
+        Create_BTN->OnClicked.AddDynamic(this, &UServerListsWidget::OnCreateButtonClicked);
+    }
+
+    if (Join_BTN)
+    {
+        Join_BTN->OnClicked.AddDynamic(this, &UServerListsWidget::OnJoinButtonClicked);
     }
 }
 
@@ -51,3 +59,20 @@ void UServerListsWidget::OnCreateButtonClicked()
         }
     }
 }
+
+void UServerListsWidget::OnJoinButtonClicked()
+{
+    UOpenServerItem * Item = WBP_Open_Server_List->GetSelectedItem();
+    if (Item) {
+        FString RoomName = Item->GetRoomName();
+        if (APSH_PlayerController* PC = Cast<APSH_PlayerController>(GetOwningPlayer()))
+        {
+            PC->ServerRequestJoinAutoRoom(RoomName);
+            RemoveFromParent();
+        }
+    }
+    else {
+        UE_LOG(LogTemp, Warning, TEXT("yet select any things"));
+    }
+}
+
