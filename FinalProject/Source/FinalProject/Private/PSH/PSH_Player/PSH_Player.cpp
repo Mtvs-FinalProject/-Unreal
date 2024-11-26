@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PSH/PSH_Player/PSH_Player.h"
@@ -54,18 +54,18 @@ APSH_Player::APSH_Player()
 		GetMesh()->SetAnimClass(tempAnim.Class);
 	}
 
-	// ½ºÇÁ¸µ ÄÄÆ÷³ÍÆ®
+	// ìŠ¤í”„ë§ ì»´í¬ë„ŒíŠ¸
 	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	springArm->SetupAttachment(RootComponent);
 
-	// Ä«¸Ş¶ó ÄÄÆ÷³ÍÆ®
+	// ì¹´ë©”ë¼ ì»´í¬ë„ŒíŠ¸
 	rotationHelper = CreateDefaultSubobject<USceneComponent>(TEXT("RotationHelper"));
 	rotationHelper->SetupAttachment(RootComponent);
 
 	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	cameraComp->SetupAttachment(springArm);
 
-	// ÇÇÁ÷½º ÇÚµé ÄÄÆ÷³ÍÆ®
+	// í”¼ì§ìŠ¤ í•¸ë“¤ ì»´í¬ë„ŒíŠ¸
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 
 
@@ -74,8 +74,8 @@ APSH_Player::APSH_Player()
 	if (movementComp)
 	{
 		movementComp->GetNavAgentPropertiesRef().bCanCrouch = true;
-		movementComp->MaxFlySpeed = 500.0f;  // ºñÇà ÃÖ´ë ¼Óµµ ¼³Á¤
-		movementComp->BrakingDecelerationFlying = 2000.0f;  // °¨¼Óµµ ¼³Á¤
+		movementComp->MaxFlySpeed = 500.0f;  // ë¹„í–‰ ìµœëŒ€ ì†ë„ ì„¤ì •
+		movementComp->BrakingDecelerationFlying = 2000.0f;  // ê°ì†ë„ ì„¤ì •
 	}
 
 	
@@ -111,7 +111,7 @@ void APSH_Player::BeginPlay()
 
 	}
 
-	// ¸¶¿ì½º À§Á¬ »ç¿ë 
+	// ë§ˆìš°ìŠ¤ ìœ„ì ¯ ì‚¬ìš© 
 	if (IsLocallyControlled())
 	{
 		pc = Cast<APSH_PlayerController>(GetController());
@@ -128,7 +128,7 @@ void APSH_Player::BeginPlay()
 void APSH_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// ¸ñÇ¥ ±æÀÌ¸¦ ¼³Á¤ (300 ¶Ç´Â 500)
+	// ëª©í‘œ ê¸¸ì´ë¥¼ ì„¤ì • (300 ë˜ëŠ” 500)
 
 	if (bFlyTimer)
 	{
@@ -142,21 +142,21 @@ void APSH_Player::Tick(float DeltaTime)
 
 	float TargetLength = bShouldExtend ? 500.0f : 300.0f;
 
-	// ÇöÀç SpringArmÀÇ ±æÀÌ¸¦ ¸ñÇ¥ ±æÀÌ·Î ºÎµå·´°Ô º¸°£
-	springArm->TargetArmLength = FMath::FInterpTo(springArm->TargetArmLength, TargetLength, DeltaTime, 3.0f); // 3.0f´Â º¸°£ ¼Óµµ Á¶Á¤
+	// í˜„ì¬ SpringArmì˜ ê¸¸ì´ë¥¼ ëª©í‘œ ê¸¸ì´ë¡œ ë¶€ë“œëŸ½ê²Œ ë³´ê°„
+	springArm->TargetArmLength = FMath::FInterpTo(springArm->TargetArmLength, TargetLength, DeltaTime, 3.0f); // 3.0fëŠ” ë³´ê°„ ì†ë„ ì¡°ì •
 
-	if (GrabbedActor && pc != nullptr) // ¹°Ã¼¸¦ ÀâÀº »óÅÂÀÎÁö È®ÀÎ
+	if (GrabbedActor && pc != nullptr) // ë¬¼ì²´ë¥¼ ì¡ì€ ìƒíƒœì¸ì§€ í™•ì¸
 	{
 		MoisePosition(DeltaTime);
 	}
 
 	if (pc && pc->IsLocalController())
 	{
-		// ÀâÀº°Ô ¾ø´Ù¸é 
+		// ì¡ì€ê²Œ ì—†ë‹¤ë©´ 
 		
 		if(handleComp->GetGrabbedComponent() == nullptr) return;
 
-		// ÀâÀº¾Ö ºí·°ÀÌ ÀÖ´Ù¸é
+		// ì¡ì€ì•  ë¸”ëŸ­ì´ ìˆë‹¤ë©´
 		if (handleComp->GetGrabbedComponent()->GetOwner() != nullptr)
 		{
 			FVector EffectEndLoc = handleComp->GetGrabbedComponent()->GetOwner()->GetActorLocation();
@@ -199,9 +199,9 @@ void APSH_Player::InterpToRotation(const float & DeltaTime)
 {
 	FVector PlayerLocation = GetActorLocation();
 	FVector ObjectLocation = GrabbedActor->GetActorLocation();
-	// ÇÃ·¹ÀÌ¾î°¡ ¹°Ã¼¸¦ ¹Ù¶óº¸µµ·Ï È¸Àü °è»ê
+	// í”Œë ˆì´ì–´ê°€ ë¬¼ì²´ë¥¼ ë°”ë¼ë³´ë„ë¡ íšŒì „ ê³„ì‚°
 	FRotator TargetRotation = FRotationMatrix::MakeFromX(ObjectLocation - PlayerLocation).Rotator();
-	// ºÎµå·´°Ô È¸ÀüÇÏµµ·Ï InterpTo Àû¿ë
+	// ë¶€ë“œëŸ½ê²Œ íšŒì „í•˜ë„ë¡ InterpTo ì ìš©
 	FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.0f);
 
 	if (bFly)
@@ -209,15 +209,15 @@ void APSH_Player::InterpToRotation(const float & DeltaTime)
 		NewRotation.Pitch = 0;
 	}
 
-	// È­¸é È¸Àü: ControlRotationÀÇ Yaw¸¦ ´ë»ó È¸ÀüÀÇ Yaw¿¡ ¸ÂÃß¾î ºÎµå·´°Ô È¸Àü
+	// í™”ë©´ íšŒì „: ControlRotationì˜ Yawë¥¼ ëŒ€ìƒ íšŒì „ì˜ Yawì— ë§ì¶”ì–´ ë¶€ë“œëŸ½ê²Œ íšŒì „
 	SetActorRotation(NewRotation);
 
 	FRotator CurrentControlRotation = GetControlRotation();
-	// Yaw¸¦ 360µµ·Î °¨½Î±â À§ÇÑ DeltaYaw °è»ê
+	// Yawë¥¼ 360ë„ë¡œ ê°ì‹¸ê¸° ìœ„í•œ DeltaYaw ê³„ì‚°
 	float DeltaYaw = FMath::UnwindDegrees(TargetRotation.Yaw - CurrentControlRotation.Yaw);
-	if (FMath::Abs(DeltaYaw) > 60.0f && FMath::Abs(DeltaYaw) <= 90.0f) // ÀÏÁ¤ ÀÌ»ó Â÷ÀÌ³¯ °æ¿ì È¸Àü ½ÃÀÛ
+	if (FMath::Abs(DeltaYaw) > 60.0f && FMath::Abs(DeltaYaw) <= 90.0f) // ì¼ì • ì´ìƒ ì°¨ì´ë‚  ê²½ìš° íšŒì „ ì‹œì‘
 	{
-		CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // ºÎµå·¯¿î È¸Àü
+		CurrentControlRotation.Yaw = FMath::FInterpTo(CurrentControlRotation.Yaw, CurrentControlRotation.Yaw + DeltaYaw, DeltaTime, 0.5f); // ë¶€ë“œëŸ¬ìš´ íšŒì „
 		pc->SetControlRotation(CurrentControlRotation);
 	}
 }
@@ -230,32 +230,32 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 	FVector2D ViewportSize;
 	GEngine->GameViewport->GetViewportSize(ViewportSize);
 
-	// ¸¶¿ì½º ÀÌµ¿ Á¦ÇÑ ¿µ¿ª ¼³Á¤
-	const float TopMargin = ViewportSize.Y * MarginPercent;  // »ó´Ü¿¡¼­ 5%
-	const float BottomMargin = ViewportSize.Y * (1.0f - MarginPercent);  // ÇÏ´Ü¿¡¼­ 5%
-	const float LeftMargin = ViewportSize.X * MarginPercent;  // ÁÂÃø¿¡¼­ 5%
-	const float RightMargin = ViewportSize.X * (1.0f - MarginPercent);  // ¿ìÃø¿¡¼­ 5%
+	// ë§ˆìš°ìŠ¤ ì´ë™ ì œí•œ ì˜ì—­ ì„¤ì •
+	const float TopMargin = ViewportSize.Y * MarginPercent;  // ìƒë‹¨ì—ì„œ 5%
+	const float BottomMargin = ViewportSize.Y * (1.0f - MarginPercent);  // í•˜ë‹¨ì—ì„œ 5%
+	const float LeftMargin = ViewportSize.X * MarginPercent;  // ì¢Œì¸¡ì—ì„œ 5%
+	const float RightMargin = ViewportSize.X * (1.0f - MarginPercent);  // ìš°ì¸¡ì—ì„œ 5%
 
-	// Ä³¸¯ÅÍÀÇ È­¸é Áß½É À§Ä¡ °è»ê
+	// ìºë¦­í„°ì˜ í™”ë©´ ì¤‘ì‹¬ ìœ„ì¹˜ ê³„ì‚°
 	FVector2D CharacterScreenPosition;
 	if (pc && pc->ProjectWorldLocationToScreen(GetActorLocation(), CharacterScreenPosition))
 	{
-		// ÇöÀç ¸¶¿ì½º À§Ä¡ È®ÀÎ
+		// í˜„ì¬ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ í™•ì¸
 		float MouseX, MouseY;
-		if (pc->GetMousePosition(MouseX, MouseY)) // veiwport ¾È¿¡¼­ ¸¶¿ì½ºÀÇ À§Ä¡°¡ È®ÀÎ ‰çÀ»¶§
+		if (pc->GetMousePosition(MouseX, MouseY)) // veiwport ì•ˆì—ì„œ ë§ˆìš°ìŠ¤ì˜ ìœ„ì¹˜ê°€ í™•ì¸ ë¬ì„ë•Œ
 		{
-			// Ä³¸¯ÅÍ¿¡¼­ ¸¶¿ì½º À§Ä¡±îÁöÀÇ º¤ÅÍ (2D)
+			// ìºë¦­í„°ì—ì„œ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ê¹Œì§€ì˜ ë²¡í„° (2D)
 			FVector2D CharacterToMouse = FVector2D(MouseX, MouseY) - CharacterScreenPosition;
 
 			InterpToRotation(DeltaTime);
 
-			// Ä³¸¯ÅÍ È­¸é À§Ä¡¿Í ¸¶¿ì½º À§Ä¡ °£ °Å¸® °è»ê
+			// ìºë¦­í„° í™”ë©´ ìœ„ì¹˜ì™€ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ ê°„ ê±°ë¦¬ ê³„ì‚°
 			float DistanceToCharacter = FVector2D::Distance(CharacterScreenPosition, FVector2D(MouseX, MouseY));
 
 			bool needsRepositioning = false;
 			FVector2D newMousePosition(MouseX, MouseY);
 
-			// Ä³¸¯ÅÍ¿ÍÀÇ ÃÖ¼Ò °Å¸® Ã¼Å©
+			// ìºë¦­í„°ì™€ì˜ ìµœì†Œ ê±°ë¦¬ ì²´í¬
 			if (DistanceToCharacter < MinDistance)
 			{
 				FVector2D DirectionToCharacter = CharacterToMouse.GetSafeNormal();
@@ -263,7 +263,7 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 				needsRepositioning = true;
 			}
 
-			// È­¸é °æ°è Ã¼Å© ¹× Á¦ÇÑµÈ ¿µ¿ªÀ¸·Î Å¬·¥ÇÎ
+			// í™”ë©´ ê²½ê³„ ì²´í¬ ë° ì œí•œëœ ì˜ì—­ìœ¼ë¡œ í´ë¨í•‘
 			if (MouseX <= LeftMargin || MouseX >= RightMargin ||
 				MouseY <= TopMargin || MouseY >= BottomMargin)
 			{
@@ -272,13 +272,13 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 				needsRepositioning = true;
 			}
 
-			// ¸¶¿ì½º À§Ä¡ ¾÷µ¥ÀÌÆ®°¡ ÇÊ¿äÇÑ °æ¿ì¿¡¸¸ ½ÇÇà
+			// ë§ˆìš°ìŠ¤ ìœ„ì¹˜ ì—…ë°ì´íŠ¸ê°€ í•„ìš”í•œ ê²½ìš°ì—ë§Œ ì‹¤í–‰
 			if (needsRepositioning)
 			{
 				pc->SetMouseLocation(newMousePosition.X, newMousePosition.Y);
 			}
 
-			// µğ¹ö±× Ç¥½Ã (°³¹ß Áß¿¡¸¸ »ç¿ë)
+			// ë””ë²„ê·¸ í‘œì‹œ (ê°œë°œ ì¤‘ì—ë§Œ ì‚¬ìš©)
 			if (GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow,
@@ -287,19 +287,19 @@ void APSH_Player::MoisePosition(const float& DeltaTime)
 					FString::Printf(TEXT("Bottom Margin: %.1f"), BottomMargin));
 			}
 		}
-		else // GetMousePosition ½ÇÆĞ ½Ã
+		else // GetMousePosition ì‹¤íŒ¨ ì‹œ
 		{
-			// ¾ÈÀüÇÑ À§Ä¡ °è»ê
+			// ì•ˆì „í•œ ìœ„ì¹˜ ê³„ì‚°
 			FVector2D SafePosition = CharacterScreenPosition;
-			// Á¦ÇÑµÈ ¿µ¿ª ³»·Î Å¬·¥ÇÎ
+			// ì œí•œëœ ì˜ì—­ ë‚´ë¡œ í´ë¨í•‘
 			SafePosition.X = FMath::Clamp(SafePosition.X, LeftMargin, RightMargin);
 			SafePosition.Y = FMath::Clamp(SafePosition.Y, TopMargin, BottomMargin);
 
-			// ÃÖ¼Ò °Å¸® À¯Áö¸¦ À§ÇÑ ¿ÀÇÁ¼Â
+			// ìµœì†Œ ê±°ë¦¬ ìœ ì§€ë¥¼ ìœ„í•œ ì˜¤í”„ì…‹
 			FVector2D Offset(MinDistance * 0.707f, MinDistance * 0.707f);
 			SafePosition += Offset;
 
-			// ´Ù½Ã ÇÑ¹ø Á¦ÇÑµÈ ¿µ¿ªÀ¸·Î Å¬·¥ÇÎ
+			// ë‹¤ì‹œ í•œë²ˆ ì œí•œëœ ì˜ì—­ìœ¼ë¡œ í´ë¨í•‘
 			SafePosition.X = FMath::Clamp(SafePosition.X, LeftMargin, RightMargin);
 			SafePosition.Y = FMath::Clamp(SafePosition.Y, TopMargin, BottomMargin);
 
@@ -313,7 +313,7 @@ void APSH_Player::DelegateTest()
 	SRPC_ModeChangeDelegate();
 }
 
-// µ¨¸®°ÔÀÌÆ® ¿äÃ»
+// ë¸ë¦¬ê²Œì´íŠ¸ ìš”ì²­
 void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 {
 	APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -324,7 +324,7 @@ void APSH_Player::SRPC_ModeChangeDelegate_Implementation()
 	}
 }
 
-// µ¨¸®°ÔÀÌÆ® µî·Ï
+// ë¸ë¦¬ê²Œì´íŠ¸ ë“±ë¡
 void APSH_Player::SRPC_Delegate_Implementation()
 {
 	APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
@@ -335,12 +335,12 @@ void APSH_Player::SRPC_Delegate_Implementation()
 	}
 }
 
-// µ¨¸®°ÔÀÌÆ® µî·Ï ÇÔ¼ö
+// ë¸ë¦¬ê²Œì´íŠ¸ ë“±ë¡ í•¨ìˆ˜
 void APSH_Player::Delegatebool(bool createMode)
 {
 	 bCreatingMode = createMode;
 
-	 if (bCreatingMode == false) // ÇÃ·¹ÀÌ¸ğµå
+	 if (bCreatingMode == false) // í”Œë ˆì´ëª¨ë“œ
 	 {
 		 bFly = false;
 
@@ -352,7 +352,6 @@ void APSH_Player::Delegatebool(bool createMode)
 		 NRPC_SetUiVisible(bCreatingMode);
 	 }
 }
-
 
 void APSH_Player::NRPC_SetUiVisible_Implementation(bool check)
 {
@@ -396,7 +395,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	if (EnhancedInputComponent != nullptr)
 	{
-		// ÇÃ·¹ÀÌ¾î Çàµ¿
+		// í”Œë ˆì´ì–´ í–‰ë™
 		EnhancedInputComponent->BindAction(inputActions[0], ETriggerEvent::Triggered, this, &APSH_Player::Move);
 		EnhancedInputComponent->BindAction(inputActions[1], ETriggerEvent::Triggered, this, &APSH_Player::Look);
 		EnhancedInputComponent->BindAction(inputActions[2], ETriggerEvent::Started, this, &APSH_Player::Grab);
@@ -407,34 +406,34 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(inputActions[4], ETriggerEvent::Completed, this, &APSH_Player::PlayerUnCrouch);
 
 		EnhancedInputComponent->BindAction(inputActions[5], ETriggerEvent::Triggered, this, &APSH_Player::PlayerFly);
-		// ÂÉ±×·Á ¾É±â
+		// ìª¼ê·¸ë ¤ ì•‰ê¸°
 		// \
-		// ´Ş¸®±â / °È±â
+		// ë‹¬ë¦¬ê¸° / ê±·ê¸°
 		
-		// ÀÎÅÍÆäÀÌ½º °ü·Ã
+		// ì¸í„°í˜ì´ìŠ¤ ê´€ë ¨
 		EnhancedInputComponent->BindAction(inputActions[6], ETriggerEvent::Started, this, &APSH_Player::ShowInterface);
 
-		// ÁÂ ¿ì·Î 45µµ µ¹¸®±â
+		// ì¢Œ ìš°ë¡œ 45ë„ ëŒë¦¬ê¸°
 		EnhancedInputComponent->BindAction(inputActions[7], ETriggerEvent::Started, this, &APSH_Player::HorizontalRotChange);
 		
-		// À§ ¾Æ·¡·Î 45µµ µ¹¸®±â
+		// ìœ„ ì•„ë˜ë¡œ 45ë„ ëŒë¦¬ê¸°
 		EnhancedInputComponent->BindAction(inputActions[8], ETriggerEvent::Started, this, &APSH_Player::VerticalRotChange);
 		
-		// ArtÈ®ÀÎ
+		// Artí™•ì¸
 		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Started, this, &APSH_Player::OnArtKey);
 		EnhancedInputComponent->BindAction(inputActions[9], ETriggerEvent::Completed, this, &APSH_Player::OnArtKey);
 
-		// bot ¸ğµå¿Í ÀÌµ¿ °ü¸®
+		// bot ëª¨ë“œì™€ ì´ë™ ê´€ë¦¬
 		EnhancedInputComponent->BindAction(inputActions[10], ETriggerEvent::Started, this, &APSH_Player::BotMoveAndModeChange);
 
-		// ºí·° Å©±â Á¶Á¤
+		// ë¸”ëŸ­ í¬ê¸° ì¡°ì •
 		EnhancedInputComponent->BindAction(inputActions[11], ETriggerEvent::Started, this, &APSH_Player::OnBlockScale);
 
-		// µ¥ÀÌÅÍ Å×ÀÌºí ½ºÆù ºí·°
+		// ë°ì´í„° í…Œì´ë¸” ìŠ¤í° ë¸”ëŸ­
 		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
 		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
 
-		// ¸ğµå º¯°æ
+		// ëª¨ë“œ ë³€ê²½
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
 		
 	}
@@ -480,7 +479,7 @@ void APSH_Player::InitPcUi()
 
 void APSH_Player::Move(const FInputActionValue& value)
 {
-	if (bFly) return; // ºñÇà ¸ğµåÀÏ ¶§¸¸ ÀÛµ¿
+	if (bFly) return; // ë¹„í–‰ ëª¨ë“œì¼ ë•Œë§Œ ì‘ë™
 	
 	FVector2D input2D = value.Get<FVector2D>();
 
@@ -545,7 +544,7 @@ void APSH_Player::PlayerFly(const FInputActionValue& value)
 
 	FVector forwardVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVec = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
-	FVector UpVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Z); // »ó½Â·Â Áõ°¡
+	FVector UpVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Z); // ìƒìŠ¹ë ¥ ì¦ê°€
 
 	AddMovementInput(forwardVec, Value.X);
 	AddMovementInput(rightVec, Value.Y);
@@ -604,7 +603,7 @@ void APSH_Player::Grab()
 			return;
 	}
 
-	if (handleComp->GetGrabbedComponent() != nullptr) // ÀâÀº °Ô ÀÖ´Ù¸é
+	if (handleComp->GetGrabbedComponent() != nullptr) // ì¡ì€ ê²Œ ìˆë‹¤ë©´
 	{
 		FVector startLoc;
 		FVector EndLoc;
@@ -628,9 +627,9 @@ void APSH_Player::Grab()
 			4
 		);
 		
-		PlaceBlock(OutHit, hit); // ¸ÖÆ¼ , ¼­¹öÈ­ ¾ÈµÇ¾î ÀÖÀ½.
+		PlaceBlock(OutHit, hit); // ë©€í‹° , ì„œë²„í™” ì•ˆë˜ì–´ ìˆìŒ.
 	}
-	else // ÀâÀº°Ô ¾ø´Ù¸é
+	else // ì¡ì€ê²Œ ì—†ë‹¤ë©´
 	{
 		CastRay();
 	}
@@ -643,12 +642,12 @@ FVector APSH_Player::GetMouseDir()
 
 	if (pc == nullptr) return WorldDir;
 
-	pc->DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ¸¶¿ì½º ÁÂÇ¥ º¯È¯
+	pc->DeprojectMousePositionToWorld(WorldLoc, WorldDir); // ë§ˆìš°ìŠ¤ ì¢Œí‘œ ë³€í™˜
 
 	return WorldDir;
 }
 
-void APSH_Player::CastRay() // Àâ±âÀ§ÇÑ ·¹ÀÌ 
+void APSH_Player::CastRay() // ì¡ê¸°ìœ„í•œ ë ˆì´ 
 {
 	FVector worldDir = GetMouseDir();
 
@@ -662,7 +661,7 @@ void APSH_Player::CastRay() // Àâ±âÀ§ÇÑ ·¹ÀÌ
 
 void APSH_Player::SRPC_Pickup_Implementation(const FVector& startLoc, const FVector& endLoc)
 {
-	// Å¬¶óµç ¾îµğµç ¼­¹ö¿¡¼­ ºÒ¸®´Â ÇÔ¼ö.
+	// í´ë¼ë“  ì–´ë””ë“  ì„œë²„ì—ì„œ ë¶ˆë¦¬ëŠ” í•¨ìˆ˜.
 	FHitResult hitInfo;
 
 	FCollisionQueryParams prams;
@@ -716,7 +715,7 @@ void APSH_Player::PreTraceCheck( FVector& StartLoc,  FVector& EndLoc) //
 {
 	if (handleComp->GetGrabbedComponent() == nullptr) return;
 
-	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Array¿¡ ÀúÀå
+	APSH_BlockActor* ChildBlcak = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // Arrayì— ì €ì¥
 
 	if(ChildBlcak == nullptr) return;
 
@@ -739,7 +738,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		snapPointIndexLength = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapPoints().Num();
 	}
 
-	// ¸Å ÇÁ·¹ÀÓ¸¶´Ù ¾÷µ¥ÀÌÆ®µÈ ¸ñÇ¥ À§Ä¡ °è»ê
+	// ë§¤ í”„ë ˆì„ë§ˆë‹¤ ì—…ë°ì´íŠ¸ëœ ëª©í‘œ ìœ„ì¹˜ ê³„ì‚°
 	FVector targetLoc;
 	FRotator targetRot;
 	FTransform worldTransfrom;
@@ -749,18 +748,18 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		FVector localLocation = hitinfo.Location;
 		FVector localNormal = hitinfo.Normal;
 
-		auto* hitActor = Cast<APSH_BlockActor>(hitinfo.GetActor()); // ray¿¡ Ãæµ¹ÇÑ ¿¢ÅÍ
+		auto* hitActor = Cast<APSH_BlockActor>(hitinfo.GetActor()); // rayì— ì¶©ëŒí•œ ì—‘í„°
 		FTransform hitActorTransform = hitinfo.GetActor()->GetActorTransform();
 
-		TArray<FVector> snapPoints; // Á¶ÀÎÆ® À§Ä¡°ª
-		TArray<FRotator> snapDirection; // Á¶ÀÎÆ® ¹æÇâ
+		TArray<FVector> snapPoints; // ì¡°ì¸íŠ¸ ìœ„ì¹˜ê°’
+		TArray<FRotator> snapDirection; // ì¡°ì¸íŠ¸ ë°©í–¥
 
 		FVector closestPoint = FVector::ZeroVector;
 		float distance = 0;
 		int32 ClosestSnapPointIndex = 0;
 
-		auto* heldActor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // ÀâÀº ¿¢ÅÍ
-		if (Cast<APSH_BlockActor>(hitActor)) // ¹üÀ§ ¾È¿¡ ÀÖ´Â »óÅÂ
+		auto* heldActor = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner()); // ì¡ì€ ì—‘í„°
+		if (Cast<APSH_BlockActor>(hitActor)) // ë²”ìœ„ ì•ˆì— ìˆëŠ” ìƒíƒœ
 		{
 			if (hitActor->GetSnapPoints().IsEmpty() == false) 
 			{
@@ -785,7 +784,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 		if (!andChek)
 		{
-			if (snapPoints.IsEmpty()) // ºñ¾ú´Ù¸é
+			if (snapPoints.IsEmpty()) // ë¹„ì—ˆë‹¤ë©´
 			{
 				targetLoc = localLocation + (heldActor->GetActorLocation() - heldActor->GetActorTransform().GetLocation());
 				targetRot = UKismetMathLibrary::MakeRotFromZ(localNormal);
@@ -799,7 +798,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 		}
 		else
 		{
-			if (snapPoints.IsEmpty()) // ºñ¾ú´Ù¸é
+			if (snapPoints.IsEmpty()) // ë¹„ì—ˆë‹¤ë©´
 			{
 				targetLoc = hitActorTransform.GetLocation() + heldActor->GetActorTransform().GetLocation();
 				targetRot = hitActorTransform.GetRotation().Rotator();
@@ -847,10 +846,10 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 	}
 	else
 	{
-		FVector newLoc = FMath::VInterpTo(rotationHelper->GetComponentLocation(), endLoc, GetWorld()->DeltaTimeSeconds, 5.0f); // ¼Óµµ¸¦ ³ô¿© ºü¸£°Ô ÀÌµ¿
+		FVector newLoc = FMath::VInterpTo(rotationHelper->GetComponentLocation(), endLoc, GetWorld()->DeltaTimeSeconds, 5.0f); // ì†ë„ë¥¼ ë†’ì—¬ ë¹ ë¥´ê²Œ ì´ë™
 		rotationHelper->SetWorldLocation(newLoc);
 
-		// ºÎµå·¯¿î º¸°£À¸·Î ¸ñÇ¥ È¸ÀüÀ¸·Î ÀÌµ¿
+		// ë¶€ë“œëŸ¬ìš´ ë³´ê°„ìœ¼ë¡œ ëª©í‘œ íšŒì „ìœ¼ë¡œ ì´ë™
 		FRotator newRot = FMath::RInterpTo(rotationHelper->GetComponentRotation(), rotationOffset, GetWorld()->DeltaTimeSeconds, 5.0f);
 		rotationHelper->SetWorldRotation(newRot);	
 	}
@@ -860,7 +859,7 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 }
 
-FRotator APSH_Player::WorldHelperRotationOffset() // Ãß°¡º¸Á¤
+FRotator APSH_Player::WorldHelperRotationOffset() // ì¶”ê°€ë³´ì •
 {
 	
 	TArray<FRotator> snapDir = Cast<APSH_BlockActor>(handleComp->GetGrabbedComponent()->GetOwner())->GetSnapDirections();
@@ -895,7 +894,7 @@ void APSH_Player::ClosestPoint(TArray<FVector> pointArray, FVector testLocation,
 
 	closetPointIndex = 0; //
 		
-	for (int32 i = 0 ; i < pointArray.Num(); i++) // °¡Àå °¡±î¿î Æ÷ÀÎÆ® Ã£±â
+	for (int32 i = 0 ; i < pointArray.Num(); i++) // ê°€ì¥ ê°€ê¹Œìš´ í¬ì¸íŠ¸ ì°¾ê¸°
 	{
 		float currentDist = (FVector::Dist(pointArray[i], testLoc));
 		if  (currentDist < dist)
@@ -977,14 +976,14 @@ void APSH_Player::SRPC_PlaceBlock_Implementation(FHitResult hitInfo, bool hit)
 			{
 				if (heldBlock->OvelapChek())
 				{
-					if (heldBlock->mapBlock && actor->mapBlock) // ¸Ê ¿ÀºêÁ§Æ® ¿Í ¸Ê ¿ÀºêÁ§Æ®
+					if (heldBlock->mapBlock && actor->mapBlock) // ë§µ ì˜¤ë¸Œì íŠ¸ ì™€ ë§µ ì˜¤ë¸Œì íŠ¸
 					{
 						PRINTLOG(TEXT("heldBlock->mapBlock && actor->mapBlock"));
 						heldBlock->Place(actor, worldTransfrom);
 						DropBlcok();
 						snapPointIndex = 0;
 					}
-					else if(heldBlock->mapBlock || actor->mapBlock) // ¸Ê ¿ÀºêÁ§Æ®°¡ ¾Æ´Ô °ú ¸Ê ¿ÀºêÁ§Æ®
+					else if(heldBlock->mapBlock || actor->mapBlock) // ë§µ ì˜¤ë¸Œì íŠ¸ê°€ ì•„ë‹˜ ê³¼ ë§µ ì˜¤ë¸Œì íŠ¸
 					{
 						DropBlcok();
 						snapPointIndex = 0;
@@ -1076,15 +1075,15 @@ void APSH_Player::SRPC_SpawnBotMoveTo_Implementation()
 void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
 {
 	if(bSpawn == false) return;
-	// Ä³¸¯ÅÍÀÇ À§Ä¡¿Í ¹æÇâÀ» ±âÁØÀ¸·Î »ó´ëÀû À§Ä¡¸¦ ¼³Á¤
+	// ìºë¦­í„°ì˜ ìœ„ì¹˜ì™€ ë°©í–¥ì„ ê¸°ì¤€ìœ¼ë¡œ ìƒëŒ€ì  ìœ„ì¹˜ë¥¼ ì„¤ì •
 	FVector CharacterLocation = GetActorLocation();
-	FVector upVector = GetActorUpVector();  // Ä³¸¯ÅÍÀÇ ¿À¸¥ÂÊ ¹æÇâ
-	FVector ForwardVector = GetActorForwardVector();  // Ä³¸¯ÅÍÀÇ ¾ÕÂÊ ¹æÇâ
+	FVector upVector = GetActorUpVector();  // ìºë¦­í„°ì˜ ì˜¤ë¥¸ìª½ ë°©í–¥
+	FVector ForwardVector = GetActorForwardVector();  // ìºë¦­í„°ì˜ ì•ìª½ ë°©í–¥
 
-	// »ó´ëÀû ¿ÀÇÁ¼Â ¼³Á¤ (¿À¸¥ÂÊÀ¸·Î 200, ¾ÕÂÊÀ¸·Î ¾à°£ ¶³¾îÁø À§Ä¡)
+	// ìƒëŒ€ì  ì˜¤í”„ì…‹ ì„¤ì • (ì˜¤ë¥¸ìª½ìœ¼ë¡œ 200, ì•ìª½ìœ¼ë¡œ ì•½ê°„ ë–¨ì–´ì§„ ìœ„ì¹˜)
 	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 300);
 
-	// ½ºÆù ÆÄ¶ó¹ÌÅÍ ¼³Á¤ ¹× ¿¢ÅÍ ¼ÒÈ¯
+	// ìŠ¤í° íŒŒë¼ë¯¸í„° ì„¤ì • ë° ì—‘í„° ì†Œí™˜
 	FActorSpawnParameters SpawnParams;
 	
 	APSH_BlockActor* SpawnActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
@@ -1120,7 +1119,7 @@ void APSH_Player::SRPC_GarbageBotSetState_Implementation(EState state)
 
 void APSH_Player::BotMoveAndModeChange()
 {
-	if (bArtKey) // art ´­¸²
+	if (bArtKey) // art ëˆŒë¦¼
 	{
 		FHitResult hitresult;
 		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
@@ -1130,7 +1129,7 @@ void APSH_Player::BotMoveAndModeChange()
 			SRPC_GabageBotMovePoint(hitresult.ImpactPoint);
 		}
 	}
-	else // art ¾È´­¸²
+	else // art ì•ˆëˆŒë¦¼
 	{
 		FHitResult hitresult;
 		bool hit = pc->GetHitResultUnderCursor(ECC_Camera, false, hitresult);
@@ -1145,7 +1144,7 @@ void APSH_Player::BotMoveAndModeChange()
 				}
 			}
 		}
-		// ¿ÀºêÁ§Æ® ¼±ÅÃÇßÀ» ¶§ ÄÄÆ÷³ÍÆ®°¡ ÀÖÀ¸¸é UI¿­¸®±â
+		// ì˜¤ë¸Œì íŠ¸ ì„ íƒí–ˆì„ ë•Œ ì»´í¬ë„ŒíŠ¸ê°€ ìˆìœ¼ë©´ UIì—´ë¦¬ê¸°
 		AActor* SelectedActor = hitresult.GetActor();
 		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
 		{
@@ -1153,7 +1152,7 @@ void APSH_Player::BotMoveAndModeChange()
 		}
 		else
 		{
-			// ¼±ÅÃµÈ ¿ÀºêÁ§Æ®°¡ ¾ø°Å³ª Æ¯Á¤ ÄÄÆ÷³ÍÆ®°¡ ¾ø´Â°æ¿ì UI ´İ±â
+			// ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ê°€ ì—†ê±°ë‚˜ íŠ¹ì • ì»´í¬ë„ŒíŠ¸ê°€ ì—†ëŠ”ê²½ìš° UI ë‹«ê¸°
 			if (pc->MyChoiceActionWidget)
 			{
 				pc->MyChoiceActionWidget->RemoveFromParent();
@@ -1165,18 +1164,16 @@ void APSH_Player::BotMoveAndModeChange()
 
 void APSH_Player::SaveTest()
 {
-	SRPC_Save();
-}
+	/*SRPC_Save();*/
 
-void APSH_Player::LoadTest()
-{
-	SRPC_Load();
-}
+	if (!IsValid(dataTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
+		return;
+	}
 
-void APSH_Player::SRPC_Save_Implementation()
-{
 	TArray<AActor*> blockArray;
-	// "owner" ÅÂ±×°¡ ´Ş¸° ¸ğµç ºí·ÏÀ» °¡Á®¿È
+	// "owner" íƒœê·¸ê°€ ë‹¬ë¦° ëª¨ë“  ë¸”ë¡ì„ ê°€ì ¸ì˜´
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
 
 	for (AActor* arrayActor : blockArray)
@@ -1187,66 +1184,164 @@ void APSH_Player::SRPC_Save_Implementation()
 		{
 			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
 
-			// °èÃş ±¸Á¶ ÀúÀå
-			FPSH_ObjectData BlockData = blockActor->SaveBlockHierachy();
+			// ê³„ì¸µ êµ¬ì¡° ì €ì¥
+			FPSH_ObjectData BlockData = blockActor->SaveBlock();
 
-			// µ¥ÀÌÅÍ Å×ÀÌºí¿¡ Ãß°¡
+			// ë°ì´í„° í…Œì´ë¸”ì— ì¶”ê°€
 			if (dataTable)
 			{
+				FString JsonT;
+				dataTable->CreateTableFromJSONString(JsonT);
+				PRINTLOG(TEXT("csr %s"), *JsonT);
 				dataTable->AddRow(rowName, BlockData);
 			}
 		}
 	}
 }
+
+void APSH_Player::LoadTest()
+{
+	SRPC_Load();
+}
+
+
+void APSH_Player::SRPC_Save_Implementation()
+{
+
+}
+
 void APSH_Player::SRPC_Load_Implementation()
 {
 
-	if (!dataTable)
+// 	if (!IsValid(dataTable))
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
+// 		return;
+// 	}
+// 
+// // 	// ë°ì´í„° í…Œì´ë¸”ì—ì„œ ëª¨ë“  í–‰ ê°€ì ¸ì˜¤ê¸°
+// 	TArray<FPSH_ObjectData*> dataArray;
+// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
+// 
+// 	if (dataArray.IsEmpty())
+// 	{
+// 		PRINTLOG(TEXT("dataArray.IsEmpty()"));
+// 		return;
+// 	}
+// 
+// 	for (FPSH_ObjectData * data : dataArray)
+// 	{
+// 		
+// 		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor; //ë¶€ëª¨ ëª¸ì²´ í• ë‹¹
+// 
+// 		if (spawnActor)
+// 		{
+// 			FActorSpawnParameters Params;
+// 			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, data->blockData.actorTransform, Params);
+// 			
+// 			if (spawnBlock)
+// 			{
+// 				if (data->blockData.funcitonData.IsEmpty() == false) // ê¸°ëŠ¥ ë¸”ëŸ­ ë°ì´í„°ê°€ ì¡´ì¬í•¨ìœ¼ë¡œ ê¸°ëŠ¥ ë¸”ëŸ­
+// 				{
+// 					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
+// 					spawnBlock->LoadBlockHierarchy(*data);
+// 					spawnBlock->SetOwner(this);
+// 				}
+// 				
+// 				spawnBlock->SetActorTransform(data->blockData.actorTransform); // ë¸”ëŸ­ ìœ„ì¹˜ ì§€ì •
+// 				
+// 			}
+// 		}
+// 	}
+	if (!IsValid(dataTable))
 	{
-		UE_LOG(LogTemp, Error, TEXT("DataTable is null!"));
+		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
 		return;
 	}
-	if (!dataTable) return;
 
+	TArray<FPSH_ObjectData*> dataArray;
+	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ¸ğµç Çà °¡Á®¿À±â
-	TArray<FPSH_ObjectData*> dataAraay;
-	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataAraay);
-
-	for (int i = 0; i < dataAraay.Num(); i++)
+	if (dataArray.IsEmpty())
 	{
-		if (!dataAraay.IsEmpty() && dataAraay[i]->actor != nullptr)
+		PRINTLOG(TEXT("dataArray.IsEmpty()"));
+		return;
+	}
+
+	for (FPSH_ObjectData* data : dataArray)
+	{
+		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor;
+		if (spawnActor)
 		{
-			// ·çÆ® ºí·° ¼ÒÈ¯
-			TSubclassOf<APSH_BlockActor> SpawnActor = dataAraay[i]->actor;
-			if (SpawnActor)
+			FActorSpawnParameters Params;
+			Params.Owner = this;
+
+			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+				spawnActor,
+				data->blockData.actorTransform,
+				Params
+			);
+
+			if (spawnBlock)
 			{
-				FActorSpawnParameters Params;
-
-				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataAraay[i]->actorTransfrom, Params);
-
-				// ºí·° °èÃş ±¸Á¶ ºÒ·¯¿À±â
-				if (SpawnedBlock)
+				if (!data->blockData.funcitonData.IsEmpty())
 				{
-					SpawnedBlock->LoadBlockHierarchy(*dataAraay[i]);
+					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
 				}
+
+				// ê³„ì¸µ êµ¬ì¡° ë¡œë“œ
+				spawnBlock->LoadBlockHierarchy(*data);
 			}
 		}
-
 	}
+// 	for (int i = 0; i < dataArray.Num(); i++)
+// 	{
+// 		if (!dataArray.IsEmpty() && dataArray[i]->actor != nullptr) // ë¹„ì–´ìˆì§€ ì•Šê³  ë°ì´í„°í…Œì´ë¸”ì— ì—‘í„° í´ë ˆìŠ¤ê°€ ì •í™•í•˜ê²Œ ë“¤ì–´ìˆì„ë•Œ ë°˜ë³µ
+// 		{
+// 			// ë£¨íŠ¸ ë¸”ëŸ­ ì†Œí™˜
+// 			TSubclassOf<APSH_BlockActor> SpawnActor = dataArray[i]->actor; //ë¶€ëª¨ í• ë‹¹
+// 			if (SpawnActor)
+// 			{
+// 				FActorSpawnParameters Params;
+// 
+// 				// ë¶€ëª¨ ì†Œí™˜
+// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataArray[i]->actorTransfrom, Params);
+// 
+// 				// ë¸”ëŸ­ ê³„ì¸µ êµ¬ì¡° ë¶ˆëŸ¬ì˜¤ê¸°
+// 				if (SpawnedBlock)
+// 				{
+// 					// ë¶€ëª¨ê°€ ê¸°ëŠ¥ë¸”ëŸ­ë°ì´í„°ë¥¼ ê°€ì§€ê³  ìˆë‹¤ë©´.
+// 					if (dataArray[i]->funcitonData.IsEmpty() == false)
+// 					{
+// 						// ê¸°ëŠ¥ í…Œì´ë¸” ì§‘ì–´ ë„£ì–´ì£¼ê¸°
+// 						SpawnedBlock->ComponentLoadData(dataArray[i]->funcitonData);
+// 					}
+// 					// ìœ„ì¹˜ ì§€ì •
+// 					SpawnedBlock->SetActorTransform(dataArray[i]->actorTransfrom);
+// 
+// 					// ìì‹ ì„ ë¶ˆëŸ¬ì˜¤ê¸°.
+// 					for (const FPSH_Childdats& Childdats : dataArray[i]->childsData)
+// 					{
+// 						SpawnedBlock->LoadBlockHierarchy(Childdats);
+// 					}
+// 				}
+// 			}
+// 		}
+// 
+// 	}
 }
 
 void APSH_Player::ShowInterface()
 {
 	if(!bCreatingMode) return;
-	// UI°¡ ÀÌ¹Ì ¿­·ÁÀÖ´Ù¸é ´İ±â
+	// UIê°€ ì´ë¯¸ ì—´ë ¤ìˆë‹¤ë©´ ë‹«ê¸°
 	if (CurrentObjectWidget)
 	{
 		CurrentObjectWidget->RemoveFromParent();
 		CurrentObjectWidget = nullptr;
 		UE_LOG(LogTemp, Warning, TEXT("UI Widget closed"));
 	}
-	else // UI°¡ ¿­·ÁÀÖÁö ¾Ê´Ù¸é ¿­±â
+	else // UIê°€ ì—´ë ¤ìˆì§€ ì•Šë‹¤ë©´ ì—´ê¸°
 	{
 		if (FirstSelect)
 		{
@@ -1353,5 +1448,5 @@ void APSH_Player::OnBlockScale(const FInputActionValue& value)
 	float axis = value.Get<float>();
 
 	GrabbedActor->SRPC_BlockScale(axis);
-	//Å©±â Á¶Á¤ +=
+	//í¬ê¸° ì¡°ì • +=
 }

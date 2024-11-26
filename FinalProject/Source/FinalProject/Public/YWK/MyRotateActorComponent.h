@@ -16,15 +16,15 @@ public:
 	UMyRotateActorComponent();
 
 	// 회전 속도 (도/초)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	float RotateSpeed;
 
 	// 회전 방향
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	FRotator RotateDirection;
 
 	// 회전 상태
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotate")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Rotate")
 	bool bShouldRot;
 
 	// 초기 회전 값
@@ -68,7 +68,17 @@ public:
 
 	float LastLogTime = 0.0f; // 마지막으로 로그가 출력된 시간
 
+	UFUNCTION()
+	void GetDelegateBool(bool delegatebool);
+
 	FPSH_FunctionBlockData  SaveData();
 
 	void LoadData(FPSH_FunctionBlockData funtionData);
+
+	UFUNCTION(Server,Unreliable)
+	void SetOwnerRotation(const FQuat& newRotation);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetOwnerSync(FRotator CRotateDirection, float CRotateSpeed);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

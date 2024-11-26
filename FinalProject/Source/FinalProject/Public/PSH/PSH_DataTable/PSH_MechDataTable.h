@@ -30,7 +30,7 @@ struct FPSH_FunctionBlockData // 자식 데이터 베이스 저장할 공간.
 };
 
 USTRUCT(Atomic, BlueprintType)
-struct FPSH_ChildData // 자식 데이터 베이스 저장할 공간.
+struct FPSH_BlockData // 자식 데이터 베이스 저장할 공간.
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -41,16 +41,10 @@ struct FPSH_ChildData // 자식 데이터 베이스 저장할 공간.
 	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
 
 	UPROPERTY(EditAnywhere)
-	FTransform actorTransfrom; // 블럭의 위치
-};
+	FTransform actorTransform; // 블럭의 위치
+	
+	TArray<FPSH_BlockData> childData;
 
-USTRUCT(Atomic, BlueprintType)
-struct  FPSH_Childdats
-{
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY(EditAnywhere)
-	TArray<FPSH_ChildData> childData; // 자식 블럭의 정보들
 };
 
 USTRUCT(Atomic, BlueprintType)
@@ -59,17 +53,10 @@ struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere)
-	TArray<FPSH_FunctionBlockData> funcitonData; // funciton 블럭에 저장된 변수들
-
+	FPSH_BlockData blockData;
+	
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class APSH_BlockActor> actor; // 블럭의 외형
-
-	UPROPERTY(EditAnywhere)
-	FTransform actorTransfrom; // 블럭의 위치
-
-	UPROPERTY(EditAnywhere)
-	TArray<FPSH_Childdats> childsData; // 자식 블럭의 정보들
-	// 개별 이름
+	bool bisSave = false;
 };
 
 UCLASS()

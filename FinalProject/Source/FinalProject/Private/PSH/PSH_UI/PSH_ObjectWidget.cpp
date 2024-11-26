@@ -262,7 +262,7 @@ void UPSH_ObjectWidget::OnClickedLoad()
 
 	if (player == nullptr) return;
 
-	player->pc->ObjectLoad();
+	//player->pc->ObjectLoad();
 
 }
 

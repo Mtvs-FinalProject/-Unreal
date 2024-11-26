@@ -277,6 +277,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     for (const TSharedPtr<FJsonValue>& Value : *JsonArray)
                     {
                         FPSH_ObjectData ObjectData;
+
                         if (FJsonObjectConverter::JsonObjectToUStruct(Value->AsObject().ToSharedRef(), &ObjectData))
                         {
                             DataTableArray.Add(ObjectData);
@@ -287,7 +288,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                     for (const FPSH_ObjectData& Entry : DataTableArray)
                     {
                         // 루트 블록 스폰
-                        TSubclassOf<APSH_BlockActor> SpawnActor = Entry.actor;
+                        TSubclassOf<APSH_BlockActor> SpawnActor = Entry.blockData.actor;
                         if (SpawnActor)
                         {
                             FActorSpawnParameters Params;
@@ -298,7 +299,7 @@ void ACSR_HTTP_Actor::Res_DownMap(FHttpRequestPtr Request, FHttpResponsePtr Resp
                             if (SpawnedBlock)
                             {
                                 // 블록 계층 로드
-                                SpawnedBlock->LoadBlockHierarchy(Entry);
+                                //SpawnedBlock->LoadBlockHierarchy(Entry);
                             }
                         }
                     }

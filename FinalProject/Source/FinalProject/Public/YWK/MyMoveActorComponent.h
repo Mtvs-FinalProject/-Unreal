@@ -18,15 +18,15 @@ public:
 	UMyMoveActorComponent();
 
 	// 이동속도 변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
 	float MoveSpeed;
 
 	// 이동방향 변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
 	FVector MoveDirection;
 
 	// 이동 상태 변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
 	bool bShouldMove;
 
 	// 이동 시작 위치
@@ -36,14 +36,14 @@ public:
 	float MoveDistance;
 
 	// 최대 이동거리 변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
 	float MaxDistance;	
 
 	// 왕복 방향 반전 플래그
 	bool bReverseDirection;
 
 	// 무한 왕복 모드(check box 사용 시 true)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
 	bool bLoopMode;
 
 	// 왕복 횟수 설정(체크박스가 비활성화된 경우 사용)
@@ -51,7 +51,7 @@ public:
 	int32 LoopCount;
 
 	// 단순 이동 모드
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Movement")
     bool bSingleDirection;
 
 	int32 CurrentLoop;
@@ -84,6 +84,11 @@ public:
 	void LoadData(FPSH_FunctionBlockData funtionData);
 	
 	UFUNCTION(Server,Unreliable)
-	void SetOwnerLocation(const FVector & newLocation);
+	void SRPC_SetOwnerLocation(const FVector & newLocation);
+
+	UFUNCTION(Server,Reliable)
+	void SRPC_SetOwnerSync(FVector CMoveDirection, float CMoveDistance, float CMoveSpeed, bool CbLoopMode, bool CbSingleDirection);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 };

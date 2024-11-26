@@ -1,9 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
+#include "CSR/HTTP/CSR_HTTP_Actor.h"
 #include "PSH_PlayerController.generated.h"
 
 /**
@@ -37,7 +39,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ObjectLoad();
 
-	// ¼±ÅÃµÈ ¿ÀºêÁ§Æ®¿Í ¿¬µ¿µÈ ui ¿¬°á ÇÔ¼ö
+	// ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ì™€ ì—°ë™ëœ ui ì—°ê²° í•¨ìˆ˜
 	UFUNCTION()
 	void SelectObject(AActor* SelectedActor);
 
@@ -59,19 +61,21 @@ public:
 
 	UFUNCTION(Client,Reliable)
 	void CRPC_ShowObjectWidget();
+
 	UFUNCTION(Client,Reliable)
 	void CRPC_CloseObjectWidget();
+
 	UFUNCTION(Client,Reliable)
 	void CRPC_ObjectWidgetVisible(bool check);
 
 	UPROPERTY()
 	class APSH_Player * curPlayer;
 
-	// URotationwidget Å¬·¡½º¿¡ ´ëÇÑ Æ÷ÀÎÅÍ (UI ÀÎ½ºÅÏ½º)
+	// URotationwidget í´ë˜ìŠ¤ì— ëŒ€í•œ í¬ì¸í„° (UI ì¸ìŠ¤í„´ìŠ¤)
 	UPROPERTY()
 	class URotationWidget* RotationWidget;
 
-	//UMyChoiceActionWidget Å¬·¡½º¿¡ ´ëÇÑ Æ÷ÀÎÅÍ(UI ÀÎ½ºÅÏ½º)
+	//UMyChoiceActionWidget í´ë˜ìŠ¤ì— ëŒ€í•œ í¬ì¸í„°(UI ì¸ìŠ¤í„´ìŠ¤)
 	UPROPERTY()
 	class UMyChoiceActionWidget* MyChoiceActionWidget;
 
@@ -86,4 +90,49 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void SaveTheGame();
+
+// ì„œë²„ì— ë£¸ ê´€ë ¨ ìš”ì²­ - ì„±ë½
+#pragma region
+public:
+    // ë°© ìƒì„± ê´€ë ¨ RPC í•¨ìˆ˜
+    UFUNCTION(Server, Reliable)
+    void ServerRequestCreateAutoRoom(const FString& RoomName, const FString& JsonData = TEXT(""));
+
+    UFUNCTION(Server, Reliable)
+    void ServerRequestJoinAutoRoom(const FString& RoomName);
+
+    UFUNCTION(Server, Reliable)
+    void ServerRequestLeaveAutoRoom(const FString& RoomName);
+
+protected:
+    // ObjectLoad ë¡œì§ì„ ë¶„ë¦¬í•˜ì—¬ ì¬ì‚¬ìš© ê°€ëŠ¥í•œ í•¨ìˆ˜ë¡œ ë§Œë“¦
+    TArray<FPSH_ObjectData*> ParseJsonToObjectData(const FString& JsonString);
+#pragma endregion
+
+// ë§µ ì €ì¥ í•„ìš” ë¡œì§ - ì„±ë½
+#pragma region
+    //// HTTP Actor ì°¸ì¡°
+    //UPROPERTY()
+    //ACSR_HTTP_Actor* HTTPActor;
+
+	//UPROPERTY()
+	//FString CurrentLevel = "Main";
+
+    // ë§µ ì €ì¥ UI íŒ©í† ë¦¬
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<class UWBP_CreateWidget> CreateWidgetClass;
+
+ //   // ë§µ ì €ì¥ UI ì¸ìŠ¤í„´ìŠ¤
+ //   UPROPERTY()
+ //   class UWBP_CreateWidget* MapCreateWidget;
+
+	//// ë§µ ì €ì¥ UI íŒ©í† ë¦¬
+ //   UPROPERTY(EditDefaultsOnly, Category = "UI")
+ //   TSubclassOf<class UWBP_CreateWidget> MainWidgetClass;
+
+ //   // UI í‘œì‹œ í•¨ìˆ˜
+ //   UFUNCTION(BlueprintCallable)
+ //   void ShowMapSaveUI();
+#pragma endregion
+
 };

@@ -12,6 +12,8 @@
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
+#include "CSR/UI/CreateLevel/WBP_CreateWidget.h"
+#include "Engine/DataTable.h"
 
 void UFirstSelect::NativeConstruct()
 {
@@ -169,7 +171,56 @@ void UFirstSelect::OnDestroyClicked()
 
 void UFirstSelect::OnBtn_SaveClicked()
 {
-    MapSave();
+    if (GetWorld()->GetNetMode() == NM_DedicatedServer)
+    {
+        return;
+    }
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC || !PC->IsLocalController())
+    {
+        return;
+    }
+    CreateSaveDataTable();
+
+    if (CreateWidgetClass)
+    {
+        UWBP_CreateWidget* SaveWidget = CreateWidget<UWBP_CreateWidget>(GetWorld()->GetFirstPlayerController(), CreateWidgetClass);
+        if (SaveWidget)
+        {
+            // 데이터테이블 로드
+            UDataTable* DataTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, TEXT("/Game/PSH/PSH_DataTable/DT_PSH_SaveData.DT_PSH_saveData")));
+            if (DataTable)
+            {
+                SaveWidget->SetDataTable(DataTable);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to load DT_PSH_SaveData"));
+            }
+
+            SaveWidget->AddToViewport();
+        }
+    }
+
+    //if (CreateWidgetClass)
+    //{
+    //    if (UWBP_CreateWidget* SaveWidget = CreateWidget<UWBP_CreateWidget>(PC, CreateWidgetClass))
+    //    {
+    //        SaveWidget->AddToViewport();
+
+    //        // UI 입력 모드 설정
+    //        PC->SetInputMode(FInputModeUIOnly());
+    //        PC->bShowMouseCursor = true;
+
+    //        // UI 표시 후 현재 UI는 숨김 처리
+    //        RemoveFromParent();
+    //    }
+    //}
 }
 
+
+void UFirstSelect::CreateSaveDataTable()
+{
+
+}
 

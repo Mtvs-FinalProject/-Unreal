@@ -350,15 +350,15 @@ void URotationWidget::StartRotation()
 {
     UE_LOG(LogTemp, Warning, TEXT("Starting rotation for all controlled components."));
 
-    for (auto& Entry : RotateDirectionMap)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("DirectionMap Entry - Component: %s, Direction: %s"), *Entry.Key->GetOwner()->GetName(), *Entry.Value.ToString());
-    }
-
-    for (auto& Entry : RotateSpeedMap)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("SpeedMap Entry - Component: %s, Speed: %f"), *Entry.Key->GetOwner()->GetName(), Entry.Value);
-    }
+//     for (auto& Entry : RotateDirectionMap)
+//     {
+//         UE_LOG(LogTemp, Warning, TEXT("DirectionMap Entry - Component: %s, Direction: %s"), *Entry.Key->GetOwner()->GetName(), *Entry.Value.ToString());
+//     }
+// 
+//     for (auto& Entry : RotateSpeedMap)
+//     {
+//         UE_LOG(LogTemp, Warning, TEXT("SpeedMap Entry - Component: %s, Speed: %f"), *Entry.Key->GetOwner()->GetName(), Entry.Value);
+//     }
 
     for (UMyRotateActorComponent* RotateComponent : ControlledRotateComponents)
     {
@@ -367,10 +367,10 @@ void URotationWidget::StartRotation()
             RotateComponent->RotateDirection = RotateDirectionMap[RotateComponent];
             RotateComponent->RotateSpeed = RotateSpeedMap[RotateComponent];
 
-            UE_LOG(LogTemp, Warning, TEXT("Starting rotation for %s with speed: %f and direction: %s"),
-                *RotateComponent->GetOwner()->GetName(),
-                RotateComponent->RotateSpeed,
-                *RotateComponent->RotateDirection.ToString());
+//            UE_LOG(LogTemp, Warning, TEXT("Starting rotation for %s with speed: %f and direction: %s"),
+//                 *RotateComponent->GetOwner()->GetName(),
+//                 RotateComponent->RotateSpeed,
+//                 *RotateComponent->RotateDirection.ToString());
 
             RotateComponent->StartRolling();
         }

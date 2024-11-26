@@ -1,9 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CSR/UI/CreateLevel/WBP_CreateWidget.h"
-#include "Interfaces/IHttpRequest.h"
-#include "HttpModule.h"
+#include "PSH/PSH_DataTable/PSH_MechDataTable.h"
+#include "JsonObjectConverter.h"
+#include "CSR/Auth/AuthSubsystem.h"
 
 void UWBP_CreateWidget::NativeConstruct()
 {
@@ -13,72 +14,162 @@ void UWBP_CreateWidget::NativeConstruct()
 
 void UWBP_CreateWidget::CreateMapHTTP()
 {
-    FString Title = FString::Printf(TEXT("%s"), *this->WBP_Title_Box->GetTitle().ToString());
-	FString Sub_Title = FString::Printf(TEXT("%s"), *this->WBP_Sum_Title->GetSumTitle().ToString());
-	FString Main_List = FString::Printf(TEXT("%s"), *this->WBP_Create_Level_Main_Input->GetMainText().ToString());
-    TArray<FString> ImagePaths = this->WBP_Image_Temp->GetImageList();
-	FString JsonString = MakeJson(Title, Sub_Title, Main_List, ImagePaths);
+    // ê¸°ì¡´ì˜ JSON ìƒì„±
+    FString JsonString = CreateBaseJson();
 
-    // HTTP ¸ğµâ°ú ¿äÃ» °´Ã¼¸¦ »ı¼º
-    FHttpModule* Http = &FHttpModule::Get();
-    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = Http->CreateRequest();
+    // ì´ë¯¸ì§€ ê²½ë¡œ ê°€ì ¸ì˜¤ê¸°
+    TArray<FString> ImagePaths = WBP_Image_Temp->GetImageList();
 
-    // ¿äÃ» URL, ¸Ş¼­µå ¹× Çì´õ ¼³Á¤
-    Request->SetURL(TEXT("http://yourserver.com/api/upload"));  // ¼­¹ö URLÀ» ¿©±â¿¡ ¼³Á¤
-    Request->SetVerb(TEXT("POST"));
-    Request->SetHeader(TEXT("content-type"), TEXT("application/json"));
+    // ë©€í‹°íŒŒíŠ¸ í¼ ë°ì´í„° ìƒì„±
+    TArray<uint8> FormData = CreateMultipartFormData(ImagePaths, JsonString);
 
-    // JSON µ¥ÀÌÅÍ¸¦ º»¹®¿¡ ¼³Á¤
-    Request->SetContentAsString(JsonString);
-
-    // ¿äÃ» ¿Ï·á Äİ¹é ¼³Á¤
-    Request->OnProcessRequestComplete().BindUObject(this, &UWBP_CreateWidget::RP_Report);
-
-    // ¿äÃ» Àü¼Û
-    Request->ProcessRequest();
+    // HTTP ìš”ì²­ ì „ì†¡
+    SendHttpRequest(FormData);
 }
 
 void UWBP_CreateWidget::CancleThisUI()
 {
-	this->SetVisibility(ESlateVisibility::Hidden);
+    RemoveFromParent();
+    if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+    {
+        PC->SetInputMode(FInputModeGameAndUI());
+        PC->bShowMouseCursor = true;
+    }
 }
 
-FString UWBP_CreateWidget::MakeJson(const FString &Title, const FString &Sub_Title, const FString &Main_List, const TArray<FString>& ImagePaths) const
+TArray<uint8> UWBP_CreateWidget::CreateMultipartFormData(const TArray<FString>& ImagePaths, const FString& JsonString) const
 {
-    TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-    JsonObject->SetStringField("title", Title);
-    JsonObject->SetStringField("sub", Sub_Title);
-    JsonObject->SetStringField("main", Main_List);
+    TArray<uint8> Content;
+    FString BeginBoundary = TEXT("--") + BOUNDARY + TEXT("\r\n");
+    FString EndBoundary = TEXT("\r\n--") + BOUNDARY + TEXT("--\r\n");
 
-    // Base64 ÀÌ¹ÌÁö ¹è¿­ Ãß°¡
-    TArray<TSharedPtr<FJsonValue>> ImageArray;
-    for (const FString &ImagePath : ImagePaths) // Àü´ŞµÈ ImagePaths ¹è¿­À» »ç¿ë
+    // JSON ë°ì´í„° íŒŒíŠ¸ ì¶”ê°€
+    FString JsonPartHeader = BeginBoundary +
+        TEXT("Content-Disposition: form-data; name=\"data\"\r\n\r\n") +
+        JsonString + TEXT("\r\n");
+        
+    FTCHARToUTF8 JsonPartHeaderUtf8(*JsonPartHeader);
+    Content.Append((uint8*)JsonPartHeaderUtf8.Get(), JsonPartHeaderUtf8.Length());
+
+    // ì´ë¯¸ì§€ íŒŒì¼ë“¤ ì¶”ê°€
+    for (int32 i = 0; i < ImagePaths.Num(); i++)
     {
-        TArray<uint8> ImageData;
-        if (FFileHelper::LoadFileToArray(ImageData, *ImagePath))
+        const FString& ImagePath = ImagePaths[i];
+        FString FileName = FPaths::GetCleanFilename(ImagePath);
+
+        // ì´ë¯¸ì§€ íŒŒíŠ¸ í—¤ë”
+        FString FilePartHeader = BeginBoundary +
+            TEXT("Content-Disposition: form-data; name=\"images\"; filename=\"") + FileName + TEXT("\"\r\n") +
+            TEXT("Content-Type: image/png\r\n\r\n");
+
+        FTCHARToUTF8 FilePartHeaderUtf8(*FilePartHeader);
+        Content.Append((uint8*)FilePartHeaderUtf8.Get(), FilePartHeaderUtf8.Length());
+
+        // ì´ë¯¸ì§€ íŒŒì¼ ë°ì´í„° ì¶”ê°€
+        TArray<uint8> FileData;
+        if (FFileHelper::LoadFileToArray(FileData, *ImagePath))
         {
-            FString Base64Image = FBase64::Encode(ImageData);
-            ImageArray.Add(MakeShareable(new FJsonValueString(Base64Image)));
+            Content.Append(FileData);
         }
     }
-    JsonObject->SetArrayField("images", ImageArray);
 
-    // JSON °´Ã¼¸¦ JSON ¹®ÀÚ¿­·Î Á÷·ÄÈ­
-    FString JsonString;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
-    FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+    // ì¢…ë£Œ ë°”ìš´ë”ë¦¬ ì¶”ê°€
+    FTCHARToUTF8 EndBoundaryUtf8(*EndBoundary);
+    Content.Append((uint8*)EndBoundaryUtf8.Get(), EndBoundaryUtf8.Length());
 
-    return JsonString;
+    return Content;
 }
 
-void UWBP_CreateWidget::RP_Report(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UWBP_CreateWidget::SendHttpRequest(const TArray<uint8>& FormData)
 {
-    if (bWasSuccessful && Response.IsValid())
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+    Request->SetURL(TEXT("http://www.mtvs.store:1818/api/v1/map/upload"));
+    Request->SetVerb(TEXT("POST"));
+    UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>();
+    FString Token = AuthSubsystem->GetAuthToken();
+    Token = TEXT("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzMyNjA4Mzc5LCJleHAiOjE3MzMyMTMxNzl9.Nu-F64GuhEeJQZgU3BMpqNjdmRdlbc5ssfS08hVfPVQ");
+    Request->SetHeader("Authorization", FString::Printf(TEXT("Bearer %s"), *Token));
+    Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *BOUNDARY));
+    Request->SetContent(FormData);
+    Request->OnProcessRequestComplete().BindUObject(this, &UWBP_CreateWidget::OnHttpRequestComplete);
+    Request->ProcessRequest();
+}
+
+void UWBP_CreateWidget::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSucceeded)
+{
+    if (bSucceeded && Response.IsValid())
     {
-        UE_LOG(LogTemp, Log, TEXT("Request succeeded: %s"), *Response->GetContentAsString());
+        int32 ResponseCode = Response->GetResponseCode();
+        FString ResponseString = Response->GetContentAsString();
+
+        if (ResponseCode == 200)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Map upload successful: %s"), *ResponseString);
+
+            // UI ë‹«ê¸°
+            RemoveFromParent();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Map upload failed with code %d: %s"), ResponseCode, *ResponseString);
+        }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Request failed"));
+        UE_LOG(LogTemp, Error, TEXT("HTTP Request failed"));
     }
 }
+
+FString UWBP_CreateWidget::CreateBaseJson() const
+{
+    TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+    // ê³ ì •ê°’ ì„¤ì •
+    JsonObject->SetNumberField(TEXT("price"), 0);
+    JsonObject->SetNumberField(TEXT("num_of_player"), 4);
+
+    // UIì—ì„œ ê°€ì ¸ì˜¨ ê°’ë“¤ ì„¤ì •
+    JsonObject->SetStringField(TEXT("summary"), WBP_Sum_Title->GetSumTitle().ToString());
+    JsonObject->SetStringField(TEXT("content"), WBP_Create_Level_Main_Input->GetMainText().ToString());
+    JsonObject->SetStringField(TEXT("map_name"), WBP_Title_Box->GetTitle().ToString());
+    JsonObject->SetStringField(TEXT("editable"), TEXT("ABLE"));
+
+    // tags ë°°ì—´ ì„¤ì •
+    TArray<TSharedPtr<FJsonValue>> TagsArray;
+    TagsArray.Add(MakeShareable(new FJsonValueString(TEXT("art"))));
+    JsonObject->SetArrayField(TEXT("tags"), TagsArray);
+
+    // data_table í•„ë“œì— ë°ì´í„°í…Œì´ë¸” JSON ì¶”ê°€
+    JsonObject->SetArrayField(TEXT("data_table"), GetDataTableJson());
+
+    // JSON ë¬¸ìì—´ë¡œ ë³€í™˜
+    FString OutputString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+    FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+
+    return OutputString;
+}
+
+TArray<TSharedPtr<FJsonValue>> UWBP_CreateWidget::GetDataTableJson() const
+{
+    TArray<TSharedPtr<FJsonValue>> DataTableArray;
+
+    if (!DT_PSH_SaveData)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("DT_PSH_SaveData is null"));
+        return DataTableArray;
+    }
+
+    TArray<FPSH_ObjectData*> DataArray;
+    DT_PSH_SaveData->GetAllRows<FPSH_ObjectData>(TEXT(""), DataArray);
+
+    for (const FPSH_ObjectData* Data : DataArray)
+    {
+        TSharedPtr<FJsonObject> RowObject = MakeShareable(new FJsonObject);
+        FJsonObjectConverter::UStructToJsonObject(FPSH_ObjectData::StaticStruct(), Data, RowObject.ToSharedRef(), 0, 0);
+        DataTableArray.Add(MakeShareable(new FJsonValueObject(RowObject)));
+    }
+
+    return DataTableArray;
+}
+

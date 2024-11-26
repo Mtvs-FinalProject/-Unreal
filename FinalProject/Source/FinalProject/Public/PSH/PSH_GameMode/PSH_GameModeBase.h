@@ -1,13 +1,14 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Delegates/Delegate.h"
+#include "../PSH_Player/PSH_Player.h"
 #include "PSH_GameModeBase.generated.h"
 
- // µ¨¸®°ÔÀÌÆ® ¼±¾ğ
+ // ë¸ë¦¬ê²Œì´íŠ¸ ì„ ì–¸
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnObjectCreated, AActor*, NewObject);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStartBlock, bool, createMode);
 
@@ -25,18 +26,18 @@ class FINALPROJECT_API APSH_GameModeBase : public AGameModeBase
 	GENERATED_BODY()
 
 public:
-	// ¿ÀºêÁ§Æ® »ı¼º½Ã È£ÃâµÉ µ¨¸®°ÔÀÌÆ®
+	// ì˜¤ë¸Œì íŠ¸ ìƒì„±ì‹œ í˜¸ì¶œë  ë¸ë¦¬ê²Œì´íŠ¸
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnObjectCreated OnObjectCreated;
 
 	UPROPERTY(BlueprintAssignable, Category = "Block  Event")
 	FOnStartBlock onStartBlock;
 
-	// ¿ÀºêÁ§Æ® »ı¼º ÇÔ¼ö ¼±¾ğ
+	// ì˜¤ë¸Œì íŠ¸ ìƒì„± í•¨ìˆ˜ ì„ ì–¸
 	UFUNCTION(BlueprintCallable, Category = "Object Management")
 	AActor* SpawnFunctionObject();
 
-	// ¹Ù²Ù°í ½ÍÀº °Í Àû´Â °÷.
+	// ë°”ê¾¸ê³  ì‹¶ì€ ê²ƒ ì ëŠ” ê³³.
 	void SetMode(ECreateMode changeMode);
 
 	ECreateMode GetMode();
@@ -48,7 +49,9 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_StartBlcok();
 
-
+		// **í”Œë ˆì´ì–´ ìºë¦­í„° í´ë˜ìŠ¤ ì €ì¥**
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	TSubclassOf<APSH_Player> PlayerBasicClass;
 private:
 	bool bCreateMode = true;
 	ECreateMode mode;
