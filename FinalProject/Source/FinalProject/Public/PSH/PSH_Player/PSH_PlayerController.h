@@ -71,13 +71,8 @@ public:
 	UPROPERTY()
 	class APSH_Player * curPlayer;
 
-	// URotationwidget 클래스에 대한 포인터 (UI 인스턴스)
-	UPROPERTY()
-	class URotationWidget* RotationWidget;
-
+	
 	//UMyChoiceActionWidget 클래스에 대한 포인터(UI 인스턴스)
-	UPROPERTY()
-	class UMyChoiceActionWidget* MyChoiceActionWidget;
 
 	UPROPERTY()
     TSubclassOf<UUserWidget> ChoiceWidgetClass;
@@ -87,6 +82,18 @@ public:
 
 	UPROPERTY()
 	class UCSR_Proto_StartUI *StartUI;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class UMyChoiceActionWidget> MyChoiceActionWidgetFac;
+	UPROPERTY()
+	class UMyChoiceActionWidget* MyChoiceActionWidget;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class URotationWidget> RotationWidgetFac;
+// URotationwidget 클래스에 대한 포인터 (UI 인스턴스)
+	UPROPERTY()
+	class URotationWidget* RotationWidget;
+
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void SaveTheGame();

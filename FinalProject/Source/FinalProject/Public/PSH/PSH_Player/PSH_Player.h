@@ -163,7 +163,43 @@ public:
 
 	void BotMoveAndModeChange();
 
+	// 제이슨 변환
+	FString ConvertBlockDataToJson(const FPSH_ObjectData& BlockData);
 
+	// 데이터를 제이슨데이터로 변환
+	TSharedPtr<FJsonObject> ConvertBlockDataToJsonObject(const FPSH_BlockData& BlockData);
+
+	TArray<TSharedPtr<FJsonValue>> ConvertIntArrayToJson(const TArray<int32>& IntArray);
+
+	TArray<TSharedPtr<FJsonValue>> ConvertFloatArrayToJson(const TArray<float>& FloatArray);
+
+	TArray<TSharedPtr<FJsonValue>> ConvertVectorArrayToJson(const TArray<FVector>& VectorArray);
+
+	TArray<TSharedPtr<FJsonValue>> ConvertRotatorArrayToJson(const TArray<FRotator>& RotatorArray);
+
+	TArray<TSharedPtr<FJsonValue>> ConvertBoolArrayToJson(const TArray<bool>& BoolArray);
+
+	// 제이슨 파일 저장
+	bool SaveJsonToFile(const FString& JsonString, const FString& FileName)
+	{
+		// 저장할 파일 경로
+		FString FilePath = FPaths::ProjectSavedDir() / FileName;
+
+		// 파일 저장
+		return FFileHelper::SaveStringToFile(JsonString, *FilePath);
+	}
+
+	//받은 제이슨 변환
+	FPSH_ObjectData ParseJsonToBlockData(const FString& JsonString);
+
+	FPSH_BlockData ParseJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject);
+
+	void SpawnBlocksFromJson(const FString& JsonString);
+
+	APSH_BlockActor* SpawnBlock(const FPSH_BlockData& BlockData, APSH_BlockActor* Parent);
+
+	// 테스트 스트링
+	FString jsonString;
 	UFUNCTION(Server,Reliable)
 	void SRPC_SpawnBlock(TSubclassOf<class APSH_BlockActor> spawnActor);
 
@@ -287,11 +323,11 @@ public:
 	UFUNCTION()
 	void Delegatebool(bool createMode);
 
-	UFUNCTION(Server,Reliable)
-	void SRPC_Save();
+// 	UFUNCTION(Server,Reliable)
+// 	void SRPC_Save();
 
 	UFUNCTION(Server,Reliable)
-	void SRPC_Load();
+	void SRPC_Load(const FString& JsonString);
 
 	// Effect
 

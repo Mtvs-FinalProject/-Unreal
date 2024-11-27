@@ -33,6 +33,8 @@
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+#include "YWK/RotationWidget.h"
+#include "JsonObjectConverter.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -99,7 +101,7 @@ void APSH_Player::BeginPlay()
 		{
 			garbagebot->SetOwner(this);
 			garbagebot->SetPlayer(this);
-			garbagebot->InitializeMovePoint(); 
+			//garbagebot->InitializeMovePoint(); 
 		}
 
 		spawnBot = GetWorld()->SpawnActor<APSH_SpawnBot>(param);
@@ -359,16 +361,18 @@ void APSH_Player::NRPC_SetUiVisible_Implementation(bool check)
 	
 	if (check)
 	{
-		if (pc->garbageBotWidget && pc->garbageBotWidget->IsVisible())
+		if (pc->garbageBotWidget)
 		{
-			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
+			PRINTLOG(TEXT("Hidden"));
+			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
 	else
 	{
-		if (pc->garbageBotWidget && pc->garbageBotWidget->IsVisible() == false)
+		if (pc->garbageBotWidget )
 		{
-			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Visible);
+			PRINTLOG(TEXT("Visible"));
+			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 		
@@ -472,6 +476,16 @@ void APSH_Player::InitPcUi()
 		{
 			pc->objectWidget->AddToViewport();
 			pc->objectWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	if (pc->MyChoiceActionWidgetFac)
+	{
+		pc->MyChoiceActionWidget = CreateWidget<UMyChoiceActionWidget>(GetWorld(), pc->MyChoiceActionWidgetFac);
+		if (pc->MyChoiceActionWidget)
+		{
+			pc->MyChoiceActionWidget->AddToViewport();
+			pc->MyChoiceActionWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 
@@ -707,7 +721,6 @@ void APSH_Player::MRPC_PickupAnim_Implementation(class APSH_BlockActor* target)
 	GrabbedActor = target;
 
 	if (anim == nullptr) return;
-	PRINTLOG(TEXT("Anim"));
 	anim->PlayAnimPickUp();
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
@@ -826,23 +839,6 @@ void APSH_Player::SRPC_HandleBlock_Implementation(FHitResult hitinfo, bool hit, 
 
 		rotationHelper->AddWorldRotation(UKismetMathLibrary::ComposeRotators(A, B));
 
-// 		if (Cast<APSH_BlockActor>(hitActor))
-// 		{
-// 			worldTransfrom = UKismetMathLibrary::MakeTransform(UKismetMathLibrary::InverseTransformLocation(
-// 				heldActor->GetActorTransform(), targetLoc),
-// 				rotationHelper->GetComponentRotation());
-// 
-// 			if (hitActor->connectionsize >= heldActor->connectionsize)
-// 			{
-// 				if (heldActor->OvelapChek())
-// 				{
-// 					heldActor->Place(hitActor, worldTransfrom);
-// 					DropBlcok();
-// 					snapPointIndex = 0;
-// 				}
-// 			}
-// 			return;
-// 		}
 	}
 	else
 	{
@@ -1072,25 +1068,6 @@ void APSH_Player::SRPC_SpawnBotMoveTo_Implementation()
 
 }
 
-void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
-{
-	if(bSpawn == false) return;
-	// 캐릭터의 위치와 방향을 기준으로 상대적 위치를 설정
-	FVector CharacterLocation = GetActorLocation();
-	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
-	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 앞쪽 방향
-
-	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
-	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 300);
-
-	// 스폰 파라미터 설정 및 엑터 소환
-	FActorSpawnParameters SpawnParams;
-	
-	APSH_BlockActor* SpawnActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
-	
-	SpawnActor->SetOwner(this);
-}
-
 void APSH_Player::SRPC_GabageBotMovePoint_Implementation(const FVector& Movelocation)
 {
 	if (garbagebot)
@@ -1101,11 +1078,6 @@ void APSH_Player::SRPC_GabageBotMovePoint_Implementation(const FVector& Moveloca
 void APSH_Player::SRPC_GarbageBotInitPoint_Implementation()
 {
 	if (garbagebot == nullptr) return;
-
-	if (garbagebot->compMesh->IsVisible() == false)
-	{
-		garbagebot->compMesh->SetVisibility(true);
-	}
 
 	garbagebot->InitializeMovePoint();
 }
@@ -1143,25 +1115,494 @@ void APSH_Player::BotMoveAndModeChange()
 					pc->garbageBotWidget->SetVisibility(ESlateVisibility::Visible);
 				}
 			}
-		}
-		// 오브젝트 선택했을 때 컴포넌트가 있으면 UI열리기
-		AActor* SelectedActor = hitresult.GetActor();
-		if (SelectedActor && (SelectedActor->FindComponentByClass<UMyMoveActorComponent>() || SelectedActor->FindComponentByClass<UMyFlyActorComponent>()))
-		{
-			pc->SelectObject(SelectedActor);
+
+			APSH_BlockActor* block = Cast<APSH_BlockActor>(hitresult.GetActor());
+
+			if (block)
+			{
+				switch (block->blockDataType)
+				{
+				case  EBlockDataType::MOVEANDFLY:
+
+					if (pc->MyChoiceActionWidget)
+					{
+						pc->MyChoiceActionWidget->SetVisibility(ESlateVisibility::Visible);
+						PRINTLOG(TEXT("->MyChoiceActionWidget"));
+					}
+
+					PRINTLOG(TEXT("MOVEANDFLY"));
+					break;
+
+				case  EBlockDataType::ROTATE:
+					PRINTLOG(TEXT("ROTATE"));
+
+					if (pc->RotationWidgetFac)
+					{
+						pc->RotationWidget = CreateWidget<URotationWidget>(GetWorld(), pc->RotationWidgetFac);
+						if (pc->RotationWidget)
+						{
+							pc->RotationWidget->AddToViewport();
+						}
+					}
+					break;
+				}
+			}
+			else
+			{
+				if (pc->MyChoiceActionWidget)
+				{
+					pc->MyChoiceActionWidget->SetVisibility(ESlateVisibility::Hidden);
+				}
+			}	
 		}
 		else
 		{
 			// 선택된 오브젝트가 없거나 특정 컴포넌트가 없는경우 UI 닫기
 			if (pc->MyChoiceActionWidget)
 			{
-				pc->MyChoiceActionWidget->RemoveFromParent();
-				pc->MyChoiceActionWidget = nullptr;
+				pc->MyChoiceActionWidget->SetVisibility(ESlateVisibility::Hidden);
 			}
 		}
+		// 오브젝트 선택했을 때 컴포넌트가 있으면 UI열리기
+		AActor* SelectedActor = hitresult.GetActor();
+		
 	}
 }
 
+FPSH_ObjectData APSH_Player::ParseJsonToBlockData(const FString& JsonString)
+{
+	FPSH_ObjectData ObjectData;
+
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	{
+		// BlockData 파싱
+		const TSharedPtr<FJsonObject>* BlockDataObject;
+		if (JsonObject->TryGetObjectField(TEXT("BlockData"), BlockDataObject))
+		{
+			ObjectData.blockData = ParseJsonObjectToBlockData(*BlockDataObject);
+		}
+
+		// bisSave 파싱
+		ObjectData.bisSave = JsonObject->GetBoolField(TEXT("bisSave"));
+	}
+
+	return ObjectData;
+}
+
+FPSH_BlockData APSH_Player::ParseJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject)
+{
+	FPSH_BlockData BlockData;
+
+	// ActorClass 파싱
+	FString ActorClassName;
+	if (JsonObject->TryGetStringField(TEXT("ActorClass"), ActorClassName))
+	{
+		FString Path = FString::Printf(TEXT("%s"), *ActorClassName);
+		UE_LOG(LogTemp, Warning, TEXT("Attempting to load class at path: %s"), *Path);
+		BlockData.actor = LoadClass<AActor>(nullptr, *Path);
+		if (!BlockData.actor)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to load class at path: %s"), *Path);
+		}
+	}
+
+	// Transform 파싱
+	FTransform ParsedTransform;
+	FString TransformString;
+
+	if (JsonObject->TryGetStringField(TEXT("Transform"), TransformString))
+	{
+		// 문자열에서 FTransform으로 변환
+		if (ParsedTransform.InitFromString(TransformString))
+		{
+			// 성공적으로 변환됨
+			BlockData.actorTransform = ParsedTransform;
+			PRINTLOG(TEXT("ParsedTransform : %s"),*ParsedTransform.ToString());
+			PRINTLOG(TEXT("actorTransform : %s"),*BlockData.actorTransform.ToString());
+		}
+		else
+		{
+			// 변환 실패
+			UE_LOG(LogTemp, Warning, TEXT("Transform 파싱 실패"));
+		}
+	}
+
+	// FunctionData 파싱
+	const TArray<TSharedPtr<FJsonValue>>* FunctionDataArray;
+	if (JsonObject->TryGetArrayField(TEXT("FunctionData"), FunctionDataArray))
+	{
+		for (const TSharedPtr<FJsonValue>& FunctionDataValue : *FunctionDataArray)
+		{
+			FPSH_FunctionBlockData FunctionData;
+
+			const TSharedPtr<FJsonObject>* FunctionDataObject;
+			if (FunctionDataValue->TryGetObject(FunctionDataObject))
+			{
+				// 숫자 배열 파싱
+				const TArray<TSharedPtr<FJsonValue>>* IntArray;
+				if (FunctionDataObject->Get()->TryGetArrayField(TEXT("IntArray"), IntArray))
+				{
+					for (const TSharedPtr<FJsonValue>& Value : *IntArray)
+					{
+						if (Value->Type == EJson::Number)
+						{
+							FunctionData.intArray.Add(Value->AsNumber());
+						}
+					}
+				}
+
+				const TArray<TSharedPtr<FJsonValue>>* FloatArray;
+				if (FunctionDataObject->Get()->TryGetArrayField(TEXT("FloatArray"), FloatArray))
+				{
+					for (const TSharedPtr<FJsonValue>& Value : *FloatArray)
+					{
+						if (Value->Type == EJson::Number)
+						{
+							FunctionData.floatArray.Add(Value->AsNumber());
+						}
+					}
+				}
+
+				// Boolean 배열 처리
+				const TArray<TSharedPtr<FJsonValue>>* BoolArray;
+				if (FunctionDataObject->Get()->TryGetArrayField(TEXT("BoolArray"), BoolArray))
+				{
+					for (const TSharedPtr<FJsonValue>& Value : *BoolArray)
+					{
+						if (Value->Type == EJson::Boolean)
+						{
+							FunctionData.boolArray.Add(Value->AsBool());
+						}
+					}
+				}
+
+				// VectorArray 및 RotatorArray는 문자열 배열로 처리
+				TArray<FString> VectorStrings;
+				if ((*FunctionDataObject)->TryGetStringArrayField(TEXT("VectorArray"), VectorStrings))
+				{
+					for (const FString& VectorString : VectorStrings)
+					{
+						FVector ParsedVector;
+						if (ParsedVector.InitFromString(VectorString))
+						{
+							FunctionData.fvectorArray.Add(ParsedVector);
+						}
+					}
+				}
+
+				TArray<FString> RotatorStrings;
+				if ((*FunctionDataObject)->TryGetStringArrayField(TEXT("RotatorArray"), RotatorStrings))
+				{
+					for (const FString& RotatorString : RotatorStrings)
+					{
+						FRotator ParsedRotator;
+						if (ParsedRotator.InitFromString(RotatorString))
+						{
+							FunctionData.frotatorArray.Add(ParsedRotator);
+						}
+					}
+				}
+
+				BlockData.funcitonData.Add(FunctionData);
+			}
+		}
+	}
+
+	// Children 파싱
+	const TArray<TSharedPtr<FJsonValue>>* ChildrenArray;
+	if (JsonObject->TryGetArrayField(TEXT("Children"), ChildrenArray))
+	{
+		for (const TSharedPtr<FJsonValue>& ChildValue : *ChildrenArray)
+		{
+			const TSharedPtr<FJsonObject>* ChildObject;
+			if (ChildValue->TryGetObject(ChildObject))
+			{
+				BlockData.childData.Add(ParseJsonObjectToBlockData(*ChildObject));
+			}
+		}
+	}
+
+	return BlockData;
+}
+
+void APSH_Player::SpawnBlocksFromJson(const FString& JsonString)
+{
+	// JSON 데이터를 FPSH_ObjectData로 변환
+	FPSH_ObjectData ObjectData = ParseJsonToBlockData(JsonString);
+	if (dataTable)
+	{
+		PRINTLOG(TEXT("DataTable"));
+		dataTable->AddRow(FName("1"), ObjectData);
+	}
+
+	// 최상위 블록 스폰
+// 	FActorSpawnParameters SpawnParams;
+// 	APSH_BlockActor* RootBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+// 		ObjectData.blockData.actor,
+// 		ObjectData.blockData.actorTransform,
+// 		SpawnParams
+// 	);
+
+	APSH_BlockActor* RootBlock = SpawnBlock(ObjectData.blockData, nullptr);
+
+// 	for (FPSH_BlockData data : ObjectData.blockData.childData)
+// 	{
+// 		APSH_BlockActor* ChildeBlock = SpawnBlock(data, nullptr);
+// 
+// 	}
+	if (RootBlock)
+	{
+// 		if (RootBlock->blockDataType == EBlockDataType::MOVEANDFLY)
+// 		{
+// 			RootBlock->SetActorScale3D(FVector(0.5f,0.48f,0.5f));
+// 		}
+		PRINTLOG(TEXT("Root block spawned successfully."));
+	}
+	else
+	{
+		PRINTLOG(TEXT("Failed to spawn root block."));
+	}
+}
+
+APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_BlockActor* Parent)
+{
+	if (!BlockData.actor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid actor class for block data."));
+		return nullptr;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	APSH_BlockActor* NewBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+		BlockData.actor,
+		BlockData.actorTransform,
+		SpawnParams
+	);
+// 	FAttachmentTransformRules rule = FAttachmentTransformRules(
+// 		EAttachmentRule::KeepWorld,
+// 		EAttachmentRule::SnapToTarget,
+// 		EAttachmentRule::KeepWorld,
+// 		true
+// 	);
+
+	if (NewBlock)
+	{
+		NewBlock->SetOwner(this);
+		// 부모 블록과 연결
+		if (Parent)
+		{
+			NewBlock->meshComp->SetSimulatePhysics(false);
+			NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+			if (NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform))
+			{
+				PRINTLOG(TEXT("Attach"));
+			}
+			else
+			{
+				PRINTLOG(TEXT("NonAttach"));
+			}
+			NewBlock->SetActorRelativeLocation(BlockData.actorTransform.GetLocation());
+			NewBlock->SetActorRotation(BlockData.actorTransform.GetRotation());
+			NewBlock->SetActorRelativeScale3D(BlockData.actorTransform.GetScale3D());
+			NewBlock->MRPC_LoadSetting();
+		}
+		// 물리 비활성화
+		//NewBlock->meshComp->SetSimulatePhysics(false);
+
+		// 컴포넌트 데이터 로드
+		if (!BlockData.funcitonData.IsEmpty())
+		{
+			NewBlock->ComponentLoadData(BlockData.funcitonData);
+		}
+
+		// 자식 블록 생성
+		for (const FPSH_BlockData& ChildData : BlockData.childData)
+		{
+			SpawnBlock(ChildData, NewBlock);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to spawn actor of class: %s"), *BlockData.actor->GetName());
+	}
+
+	return NewBlock;
+}
+
+
+void APSH_Player::LoadTest()
+{
+
+	SRPC_Load(jsonString);
+}
+
+void APSH_Player::SRPC_Load_Implementation(const FString& JsonString)
+{
+	SpawnBlocksFromJson(JsonString);
+}
+// 	if (!IsValid(dataTable))
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
+// 		return;
+// 	}
+// 
+// 	TArray<FPSH_ObjectData*> dataArray;
+// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("LoadContext"), dataArray);
+// 
+// 	for (FPSH_ObjectData* data : dataArray)
+// 	{
+// 		if (!data) continue;
+// 
+// 		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor;
+// 
+// 		if (spawnActor)
+// 		{
+// 			FActorSpawnParameters Params;
+// 			APSH_BlockActor* rootBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+// 				spawnActor,
+// 				data->blockData.actorTransform,
+// 				Params
+// 			);
+// 
+// 			if (rootBlock)
+// 			{
+// 				rootBlock->SetOwner(this);
+// 				if (rootBlock->blockDataType == EBlockDataType::MOVEANDFLY)
+// 				{
+// 					rootBlock->SetActorScale3D(FVector(0.5f, 0.48f, 0.5f));
+// 				}
+// 
+// 				if (!data->blockData.funcitonData.IsEmpty())
+// 				{
+// 					rootBlock->ComponentLoadData(data->blockData.funcitonData);
+// 				}
+// 				// 자식 블록 로드
+// 				rootBlock->LoadBlockHierarchy(data->blockData);
+// 			}
+// 		}
+// 	}
+
+
+void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockActor> spawnActor)
+{
+	if (bSpawn == false) return;
+	// 캐릭터의 위치와 방향을 기준으로 상대적 위치를 설정
+	FVector CharacterLocation = GetActorLocation();
+	FVector upVector = GetActorUpVector();  // 캐릭터의 오른쪽 방향
+	FVector ForwardVector = GetActorForwardVector();  // 캐릭터의 앞쪽 방향
+
+	// 상대적 오프셋 설정 (오른쪽으로 200, 앞쪽으로 약간 떨어진 위치)
+	FVector SpawnLocation = CharacterLocation + (upVector * 300) + (ForwardVector * 300);
+
+	// 스폰 파라미터 설정 및 엑터 소환
+	FActorSpawnParameters SpawnParams;
+
+	APSH_BlockActor* SpawnActor = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, SpawnLocation, GetActorRotation(), SpawnParams);
+
+	SpawnActor->SetOwner(this);
+}
+FString APSH_Player::ConvertBlockDataToJson(const FPSH_ObjectData& BlockData)
+{
+	TSharedPtr<FJsonObject> RootJsonObject = MakeShared<FJsonObject>();
+
+	// blockData를 JSON으로 변환
+	TSharedPtr<FJsonObject> BlockDataJsonObject = ConvertBlockDataToJsonObject(BlockData.blockData);
+
+	// 최상위 JSON 객체에 추가
+	RootJsonObject->SetObjectField(TEXT("BlockData"), BlockDataJsonObject);
+	RootJsonObject->SetBoolField(TEXT("bisSave"), BlockData.bisSave);
+
+	// JSON 문자열로 직렬화
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	if (FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), Writer))
+	{
+		return OutputString;
+	}
+
+	return TEXT(""); // 실패 시 빈 문자열 반환
+}
+TSharedPtr<FJsonObject> APSH_Player::ConvertBlockDataToJsonObject(const FPSH_BlockData& BlockData)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
+
+	// 기본 데이터 필드 추가
+	JsonObject->SetStringField(TEXT("ActorClass"), BlockData.actor->GetPathName());
+	JsonObject->SetStringField(TEXT("Transform"), BlockData.actorTransform.ToString());
+
+	// funcitonData 배열 변환
+	TArray<TSharedPtr<FJsonValue>> FunctionDataArray;
+	for (const FPSH_FunctionBlockData& FunctionData : BlockData.funcitonData)
+	{
+		TSharedPtr<FJsonObject> FunctionDataObject = MakeShared<FJsonObject>();
+		FunctionDataObject->SetArrayField(TEXT("IntArray"), ConvertIntArrayToJson(FunctionData.intArray));
+		FunctionDataObject->SetArrayField(TEXT("FloatArray"), ConvertFloatArrayToJson(FunctionData.floatArray));
+		FunctionDataObject->SetArrayField(TEXT("VectorArray"), ConvertVectorArrayToJson(FunctionData.fvectorArray));
+		FunctionDataObject->SetArrayField(TEXT("RotatorArray"), ConvertRotatorArrayToJson(FunctionData.frotatorArray));
+		FunctionDataObject->SetArrayField(TEXT("BoolArray"), ConvertBoolArrayToJson(FunctionData.boolArray));
+		FunctionDataArray.Add(MakeShared<FJsonValueObject>(FunctionDataObject));
+	}
+	JsonObject->SetArrayField(TEXT("FunctionData"), FunctionDataArray);
+
+	// childData 배열 변환
+	TArray<TSharedPtr<FJsonValue>> ChildArray;
+	for (const FPSH_BlockData& ChildData : BlockData.childData)
+	{
+		TSharedPtr<FJsonObject> ChildJsonObject = ConvertBlockDataToJsonObject(ChildData);
+		ChildArray.Add(MakeShared<FJsonValueObject>(ChildJsonObject));
+	}
+	JsonObject->SetArrayField(TEXT("Children"), ChildArray);
+
+	return JsonObject;
+}
+TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertIntArrayToJson(const TArray<int32>& IntArray)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (int32 Value : IntArray)
+	{
+		JsonArray.Add(MakeShared<FJsonValueNumber>(Value));
+	}
+	return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertFloatArrayToJson(const TArray<float>& FloatArray)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (float Value : FloatArray)
+	{
+		JsonArray.Add(MakeShared<FJsonValueNumber>(Value));
+	}
+	return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertVectorArrayToJson(const TArray<FVector>& VectorArray)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (const FVector& Vector : VectorArray)
+	{
+		JsonArray.Add(MakeShared<FJsonValueString>(Vector.ToString()));
+	}
+	return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertRotatorArrayToJson(const TArray<FRotator>& RotatorArray)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (const FRotator& Rotator : RotatorArray)
+	{
+		JsonArray.Add(MakeShared<FJsonValueString>(Rotator.ToString()));
+	}
+	return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertBoolArrayToJson(const TArray<bool>& BoolArray)
+{
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (bool Value : BoolArray)
+	{
+		JsonArray.Add(MakeShared<FJsonValueBoolean>(Value));
+	}
+	return JsonArray;
+}
 void APSH_Player::SaveTest()
 {
 	/*SRPC_Save();*/
@@ -1187,149 +1628,33 @@ void APSH_Player::SaveTest()
 			// 계층 구조 저장
 			FPSH_ObjectData BlockData = blockActor->SaveBlock();
 
-			// 데이터 테이블에 추가
-			if (dataTable)
+			// Json으로 변환
+
+			jsonString = ConvertBlockDataToJson(BlockData);
+			if (!jsonString.IsEmpty())
 			{
-				FString JsonT;
-				dataTable->CreateTableFromJSONString(JsonT);
-				PRINTLOG(TEXT("csr %s"), *JsonT);
-				dataTable->AddRow(rowName, BlockData);
-			}
-		}
-	}
-}
+				PRINTLOG(TEXT("BlockData JSON: %s"), *jsonString);
 
-void APSH_Player::LoadTest()
-{
-	SRPC_Load();
-}
-
-
-void APSH_Player::SRPC_Save_Implementation()
-{
-
-}
-
-void APSH_Player::SRPC_Load_Implementation()
-{
-
-// 	if (!IsValid(dataTable))
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
-// 		return;
-// 	}
-// 
-// // 	// 데이터 테이블에서 모든 행 가져오기
-// 	TArray<FPSH_ObjectData*> dataArray;
-// 	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
-// 
-// 	if (dataArray.IsEmpty())
-// 	{
-// 		PRINTLOG(TEXT("dataArray.IsEmpty()"));
-// 		return;
-// 	}
-// 
-// 	for (FPSH_ObjectData * data : dataArray)
-// 	{
-// 		
-// 		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor; //부모 몸체 할당
-// 
-// 		if (spawnActor)
-// 		{
-// 			FActorSpawnParameters Params;
-// 			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(spawnActor, data->blockData.actorTransform, Params);
-// 			
-// 			if (spawnBlock)
-// 			{
-// 				if (data->blockData.funcitonData.IsEmpty() == false) // 기능 블럭 데이터가 존재함으로 기능 블럭
-// 				{
-// 					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
-// 					spawnBlock->LoadBlockHierarchy(*data);
-// 					spawnBlock->SetOwner(this);
-// 				}
-// 				
-// 				spawnBlock->SetActorTransform(data->blockData.actorTransform); // 블럭 위치 지정
-// 				
-// 			}
-// 		}
-// 	}
-	if (!IsValid(dataTable))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Load"));
-		return;
-	}
-
-	TArray<FPSH_ObjectData*> dataArray;
-	dataTable->GetAllRows<FPSH_ObjectData>(TEXT("non"), dataArray);
-
-	if (dataArray.IsEmpty())
-	{
-		PRINTLOG(TEXT("dataArray.IsEmpty()"));
-		return;
-	}
-
-	for (FPSH_ObjectData* data : dataArray)
-	{
-		TSubclassOf<APSH_BlockActor> spawnActor = data->blockData.actor;
-		if (spawnActor)
-		{
-			FActorSpawnParameters Params;
-			Params.Owner = this;
-
-			APSH_BlockActor* spawnBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-				spawnActor,
-				data->blockData.actorTransform,
-				Params
-			);
-
-			if (spawnBlock)
-			{
-				if (!data->blockData.funcitonData.IsEmpty())
+				// 파일로 저장
+				if (SaveJsonToFile(jsonString, "BlockData.json"))
 				{
-					spawnBlock->ComponentLoadData(data->blockData.funcitonData);
+					PRINTLOG(TEXT("JSON saved successfully to file!"));
 				}
-
-				// 계층 구조 로드
-				spawnBlock->LoadBlockHierarchy(*data);
+				else
+				{
+					PRINTLOG(TEXT("Failed to save JSON to file."));
+				}
 			}
+
+// 			// 데이터 테이블에 추가
+// 			if (dataTable)
+// 			{
+// 				dataTable->AddRow(rowName, BlockData);
+// 			}
 		}
 	}
-// 	for (int i = 0; i < dataArray.Num(); i++)
-// 	{
-// 		if (!dataArray.IsEmpty() && dataArray[i]->actor != nullptr) // 비어있지 않고 데이터테이블에 엑터 클레스가 정확하게 들어있을때 반복
-// 		{
-// 			// 루트 블럭 소환
-// 			TSubclassOf<APSH_BlockActor> SpawnActor = dataArray[i]->actor; //부모 할당
-// 			if (SpawnActor)
-// 			{
-// 				FActorSpawnParameters Params;
-// 
-// 				// 부모 소환
-// 				APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(SpawnActor, dataArray[i]->actorTransfrom, Params);
-// 
-// 				// 블럭 계층 구조 불러오기
-// 				if (SpawnedBlock)
-// 				{
-// 					// 부모가 기능블럭데이터를 가지고 있다면.
-// 					if (dataArray[i]->funcitonData.IsEmpty() == false)
-// 					{
-// 						// 기능 테이블 집어 넣어주기
-// 						SpawnedBlock->ComponentLoadData(dataArray[i]->funcitonData);
-// 					}
-// 					// 위치 지정
-// 					SpawnedBlock->SetActorTransform(dataArray[i]->actorTransfrom);
-// 
-// 					// 자식 을 불러오기.
-// 					for (const FPSH_Childdats& Childdats : dataArray[i]->childsData)
-// 					{
-// 						SpawnedBlock->LoadBlockHierarchy(Childdats);
-// 					}
-// 				}
-// 			}
-// 		}
-// 
-// 	}
 }
+
 
 void APSH_Player::ShowInterface()
 {

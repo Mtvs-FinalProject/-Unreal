@@ -101,6 +101,13 @@ void APSH_GarbageBot::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 	}
 }
 
+void APSH_GarbageBot::MRPC_Visible_Implementation()
+{
+    if (compMesh)
+    {
+        compMesh->SetVisibility(true);
+    }
+}
 void APSH_GarbageBot::IdleState()
 {
     if(player == nullptr) return;
@@ -204,6 +211,11 @@ void APSH_GarbageBot::InitializeMovePoint()
     if (player)
     {
         Dir = player->GetActorLocation() + player->GetActorForwardVector() * 250;
+
+        if (compMesh->IsVisible() == false)
+        {
+            MRPC_Visible();
+        }
         SetActorLocation(Dir);
     }
 }

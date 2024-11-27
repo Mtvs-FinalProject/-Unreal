@@ -51,12 +51,9 @@ void UMyMoveActorComponent::BeginPlay()
 
     if (block)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Bind"));
         block->componentCreateBoolDelegate.AddUObject(this, &UMyMoveActorComponent::GetDelegateBool);
     }
-
 	StartLocation = GetOwner()->GetActorLocation();
-	UE_LOG(LogTemp, Warning, TEXT("Initial Location stored : %s"), *StartLocation.ToString());
 }
 
 
@@ -77,7 +74,7 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
     AActor* Owner = GetOwner();
     if (!Owner) return;
 
-    if(Owner->HasAuthority()) return;
+   // if(Owner->HasAuthority()) return;
 
     FVector NewLocation = Owner->GetActorLocation() + (MoveDirection * MoveSpeed * DeltaTime);
     float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
@@ -107,10 +104,7 @@ void UMyMoveActorComponent::ObjectMove(float DeltaTime)
     }
     else
     {
-
         SRPC_SetOwnerLocation(NewLocation);
-        // Move actor to new location
-      //  Owner->SetActorLocation(NewLocation);
     }
 }
 
@@ -119,8 +113,14 @@ void UMyMoveActorComponent::StartMoving()
 {
     StartLocation = GetOwner()->GetActorLocation();
 
-   
+   SRPC_SetOwnerSync(MoveDirection,MaxDistance,MoveSpeed,bLoopMode,bSingleDirection);
 
+   APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+   if (block && block->ActorHasTag(FName("owner")))
+   {
+       block->SaveBlockLocations();
+       PRINTLOG(TEXT("SaveBlockLocations"));
+   }
 
     bShouldMove = true;
 
@@ -130,36 +130,58 @@ void UMyMoveActorComponent::StartMoving()
 // 이동 끝 함수
 void UMyMoveActorComponent::StopMoving()
 {
-	bShouldMove = false;
-	UE_LOG(LogTemp, Warning, TEXT("Movement stopped!"));  // 로그 추가
+    SRPC_StopMoving();
+	
+    APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+
+    if (block)
+    {
+        block->SRPC_SetSimulatePhysics(true);
+    }
+	
 }
 
+void UMyMoveActorComponent::SRPC_StopMoving_Implementation()
+{
+    MRPC_StopMoving();
+}
+void UMyMoveActorComponent::MRPC_StopMoving_Implementation()
+{
+    bShouldMove = false;
+    PRINTLOG(TEXT("Movement stopped!"));  // 로그 추가
+}
 // 시작 위치로 이동
 void UMyMoveActorComponent::OriginMove()
 {
 	if (AActor* Owner = GetOwner())
 	{
         SRPC_SetOwnerLocation(StartLocation);
-		UE_LOG(LogTemp, Warning, TEXT("Moved back to start location: %s"), *StartLocation.ToString());
 	}
 }
 
 void UMyMoveActorComponent::GetDelegateBool(bool delegatebool)
 {   
-    bShouldMove = delegatebool;
+    bShouldMove = !delegatebool;
 
     if (bShouldMove)
     {
+        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+        if (block->ActorHasTag(FName("owner")))
+            block->SRPC_SetSimulatePhysics(false);
         PRINTLOG(TEXT("true"));
     }
     else
     {
+        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+        if (block->ActorHasTag(FName("owner")))
+            block->SRPC_SetSimulatePhysics(true);
         PRINTLOG(TEXT("fasle"));
     }
 }
 FPSH_FunctionBlockData UMyMoveActorComponent::SaveData()
 {
         FPSH_FunctionBlockData funtionData;
+
 	    funtionData.floatArray.Add(MoveSpeed);
 	    funtionData.floatArray.Add(MaxDistance);
 		funtionData.fvectorArray.Add(MoveDirection);
@@ -185,10 +207,10 @@ void UMyMoveActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& 
     GetOwner()->SetActorLocation(newLocation);
 }
 
-void UMyMoveActorComponent::SRPC_SetOwnerSync_Implementation(FVector CMoveDirection, float CMoveDistance, float CMoveSpeed, bool CbLoopMode ,bool CbSingleDirection)
+void UMyMoveActorComponent::SRPC_SetOwnerSync_Implementation(FVector CMoveDirection, float CMaxDistance, float CMoveSpeed, bool CbLoopMode ,bool CbSingleDirection)
 {
     MoveSpeed = CMoveSpeed; // float
-    MaxDistance = CMoveDistance; // float
+    MaxDistance = CMaxDistance; // float
     MoveDirection = CMoveDirection;
     bLoopMode = CbLoopMode; //bool
     bSingleDirection = CbSingleDirection;

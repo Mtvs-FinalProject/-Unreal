@@ -14,6 +14,8 @@
 #include "YWK/MyRotateActorComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/EditableText.h"
+#include "PSH/PSH_GameMode/PSH_GameModeBase.h"
+#include "../FinalProject.h"
 
 AMyStartButton::AMyStartButton()
 {
@@ -65,51 +67,68 @@ void AMyStartButton::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
     FVector CurrentScale = ButtonMesh->GetComponentScale();
     ButtonMesh->SetWorldScale3D(FVector(CurrentScale.X, CurrentScale.Y, PressedScale.Z));
 
-    // RotationWidgetInstance가 null인 경우 위젯을 찾음
-    if (!RotationWidgetInstance)
+    if (Cast<APSH_Player>(OtherActor))
     {
-        TArray<UUserWidget*> FoundRotationWidgets;
-        UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundRotationWidgets, URotationWidget::StaticClass(), false);
-
-        if (FoundRotationWidgets.Num() > 0)
-        {
-            RotationWidgetInstance = Cast<URotationWidget>(FoundRotationWidgets[0]);
-        }
+        SetOwner(Cast<APSH_Player>(OtherActor));
     }
 
-    // MovewidgetInstance가 null인 경우 위젯을 찾고 초기화
-    if (!MovewidgetInstance)
+    if (HasAuthority())
     {
-        TArray<UUserWidget*> FoundMoveWidgets;
-        UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundMoveWidgets, UMovewidget::StaticClass(), false);
+       APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
 
-        if (FoundMoveWidgets.Num() > 0)
-        {
-            MovewidgetInstance = Cast<UMovewidget>(FoundMoveWidgets[0]);
-        }
-    }
-
-    // MovewidgetInstance의 이동 시작 함수 호출
-    if (MovewidgetInstance)
-    {
-        MovewidgetInstance->OnStartButtonClicked();
-        UE_LOG(LogTemp, Warning, TEXT("Movement started from OnStartButtonClicked in Movewidget"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("MovewidgetInstance is null, cannot start movement"));
+       if (GM)
+       {
+           bmodeChange = !bmodeChange;
+           GM->SetCreateingCheck(bmodeChange);
+           PRINTLOG(TEXT("SetCreateingCheck"));
+       }
     }
 
-    // RotationWidgetInstance의 회전 시작 함수 호출
-    if (RotationWidgetInstance)
-    {
-        RotationWidgetInstance->OnRotateStartClicked();
-        UE_LOG(LogTemp, Warning, TEXT("Rotation started from OnRotateStartClicked in RotationWidget"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("RotationWidgetInstance is null, cannot start rotation"));
-    }
+//     // RotationWidgetInstance가 null인 경우 위젯을 찾음
+//     if (!RotationWidgetInstance)
+//     {
+//         TArray<UUserWidget*> FoundRotationWidgets;
+//         UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundRotationWidgets, URotationWidget::StaticClass(), false);
+// 
+//         if (FoundRotationWidgets.Num() > 0)
+//         {
+//             RotationWidgetInstance = Cast<URotationWidget>(FoundRotationWidgets[0]);
+//         }
+//     }
+// 
+//     // MovewidgetInstance가 null인 경우 위젯을 찾고 초기화
+//     if (!MovewidgetInstance)
+//     {
+//         TArray<UUserWidget*> FoundMoveWidgets;
+//         UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundMoveWidgets, UMovewidget::StaticClass(), false);
+// 
+//         if (FoundMoveWidgets.Num() > 0)
+//         {
+//             MovewidgetInstance = Cast<UMovewidget>(FoundMoveWidgets[0]);
+//         }
+//     }
+// 
+//     // MovewidgetInstance의 이동 시작 함수 호출
+//     if (MovewidgetInstance)
+//     {
+//         MovewidgetInstance->OnStartButtonClicked();
+//         UE_LOG(LogTemp, Warning, TEXT("Movement started from OnStartButtonClicked in Movewidget"));
+//     }
+//     else
+//     {
+//         UE_LOG(LogTemp, Error, TEXT("MovewidgetInstance is null, cannot start movement"));
+//     }
+// 
+//     // RotationWidgetInstance의 회전 시작 함수 호출
+//     if (RotationWidgetInstance)
+//     {
+//         RotationWidgetInstance->OnRotateStartClicked();
+//         UE_LOG(LogTemp, Warning, TEXT("Rotation started from OnRotateStartClicked in RotationWidget"));
+//     }
+//     else
+//     {
+//         UE_LOG(LogTemp, Error, TEXT("RotationWidgetInstance is null, cannot start rotation"));
+//     }
 }
 
 

@@ -34,7 +34,7 @@ public:
 	FVector StartLocation;
 
 	// 상승 거리 변수
-	UPROPERTY(EditAnywhere, Category = "Fly")
+	UPROPERTY(EditAnywhere, Replicated,Category = "Fly")
 	float FlyDistance;
 
 	// 최대 상승 거리
@@ -70,6 +70,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Fly")
 	void StopFly();
+
+	UFUNCTION(Server, Reliable)
+	void SRPC_StopFly();
+
+	UFUNCTION(NetMulticast , Reliable)
+	void MRPC_StopFlay();
 
 	UFUNCTION(BlueprintCallable, Category = "Fly")
 	void OriginFly();

@@ -99,6 +99,9 @@ public:
 	void BeginOverlap( UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep
 	, const FHitResult& SweepResult);
 	// 길찾기 사용
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MRPC_Visible();
 public:
 	TArray<FNavigationNode*> CurrentPath; // 현재 경로
 	int32 CurrentPathIndex; // 현재 목표 노드 인덱스

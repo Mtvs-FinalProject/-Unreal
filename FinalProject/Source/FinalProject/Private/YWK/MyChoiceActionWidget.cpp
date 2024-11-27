@@ -24,7 +24,7 @@ void UMyChoiceActionWidget::NativeConstruct()
 void UMyChoiceActionWidget::OnMoveButtonClicked()
 {
 	// 기존 UI제거
-	RemoveFromParent();
+	SetVisibility(ESlateVisibility::Hidden);
 	if (WBP_Move)
 	{
 		UUserWidget* MoveWidget = CreateWidget<UUserWidget>(GetWorld(), WBP_Move);
@@ -37,7 +37,7 @@ void UMyChoiceActionWidget::OnMoveButtonClicked()
 
 void UMyChoiceActionWidget::OnFlyButtonClicked()
 {
-	RemoveFromParent();
+	SetVisibility(ESlateVisibility::Hidden);
 	if (WBP_Fly)
 	{
 		UUserWidget* FlyWidget = CreateWidget<UUserWidget>(GetWorld(), WBP_Fly);

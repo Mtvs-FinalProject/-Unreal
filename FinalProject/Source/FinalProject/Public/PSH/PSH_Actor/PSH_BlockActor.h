@@ -117,10 +117,12 @@ public:
 	FPSH_ObjectData SaveBlock();
 	FPSH_BlockData SaveChildBlock();
 
-
+	FTransform placedWorldTransform;
+	bool bIsPlaced = false;
 	//FPSH_Childdats SaveBlock();
 	
-	void LoadBlockHierarchy(const FPSH_ObjectData& Childdats);
+	//void LoadBlockHierarchy(class APSH_BlockActor* attachActor,const FPSH_BlockData& Childdats);
+	void LoadBlockHierarchy(const FPSH_BlockData& data);
 
 	void AllDestroy();
 
@@ -205,8 +207,17 @@ public:
 
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_SetSimulatePhysics(bool check);
-// 	UFUNCTION(Server , Unreliable)
-// 	void SRPC_SatartLocation(const FVector & startLoc);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_LoadSetting();
+
+	UPROPERTY(ReplicatedUsing = OnRep_SimulatePhysics)
+	bool bSimulatePhysics = false;
+
+	UFUNCTION()
+	void OnRep_SimulatePhysics();
+
+	void SetSimulatePhysics(bool bEnabled);
 private:
 	class APSH_Player * master = nullptr;
 
@@ -215,22 +226,23 @@ private:
 // 성락 코드
 #pragma region 
 public:
-
-    // 네트워크 관련성 함수 오버라이드
-    virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+// 
+//     // 네트워크 관련성 함수 오버라이드
+//     virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
 
 public:
-	// 레벨 인스턴스 소유권 설정
-	void SetOwnedByRoomInstance(bool bInIsOwnedByRoomInstance)
-	{
-		bIsOwnedByRoomInstance = bInIsOwnedByRoomInstance;
-	}
-
-	// 레벨 인스턴스 소유 여부 확인
-	bool IsOwnedByRoomInstance() const { return bIsOwnedByRoomInstance; }
-
-protected:
-	virtual void PostInitializeComponents() override;
+// 
+// 	// 레벨 인스턴스 소유권 설정
+// 	void SetOwnedByRoomInstance(bool bInIsOwnedByRoomInstance)
+// 	{
+// 		bIsOwnedByRoomInstance = bInIsOwnedByRoomInstance;
+// 	}
+// 
+// 	// 레벨 인스턴스 소유 여부 확인
+// 	bool IsOwnedByRoomInstance() const { return bIsOwnedByRoomInstance; }
+// 
+// protected:
+// 	virtual void PostInitializeComponents() override;
 private:
 	UPROPERTY(Replicated)
     bool bIsOwnedByRoomInstance;

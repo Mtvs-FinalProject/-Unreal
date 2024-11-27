@@ -43,6 +43,7 @@ struct FPSH_BlockData // 자식 데이터 베이스 저장할 공간.
 	UPROPERTY(EditAnywhere)
 	FTransform actorTransform; // 블럭의 위치
 	
+
 	TArray<FPSH_BlockData> childData;
 
 };

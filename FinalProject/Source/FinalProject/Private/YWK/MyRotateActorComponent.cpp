@@ -31,14 +31,12 @@ void UMyRotateActorComponent::BeginPlay()
 
     if (block)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Bind"));
         block->componentCreateBoolDelegate.AddUObject(this, &UMyRotateActorComponent::GetDelegateBool);
     }
 
 	if (AActor* Owner = GetOwner())
 	{
 		StartRotation = Owner->GetActorRotation();
-		UE_LOG(LogTemp, Warning, TEXT("Initial Rotation stored : %s"), *StartRotation.ToString());
 	}
 }
 
@@ -49,7 +47,7 @@ void UMyRotateActorComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
     if (bShouldRot)
     {
-        UE_LOG(LogTemp, Warning, TEXT("bShouldRot is true for %s; rotation will proceed"), *GetOwner()->GetName());
+      //  UE_LOG(LogTemp, Warning, TEXT("bShouldRot is true for %s; rotation will proceed"), *GetOwner()->GetName());
 
         // 현재 시간을 가져옴
         float CurrentTime = GetWorld()->GetTimeSeconds();
@@ -80,8 +78,6 @@ void UMyRotateActorComponent::ObjectRolling(float DeltaTime)
     AActor* Owner = GetOwner();
     if (!Owner) return;
 
-    if (Owner->HasAuthority()) return;
-
     //
     if (RotateSpeed <= 0.0f)
     {
@@ -94,8 +90,8 @@ void UMyRotateActorComponent::ObjectRolling(float DeltaTime)
     FQuat NewQuat = RotationQuat * CurrentQuat;
     NewQuat.Normalize();
     SetOwnerRotation(NewQuat);
-
-    PRINTLOG(TEXT("Rotating %s by %f degrees"), *Owner->GetName(), RotateSpeed * DeltaTime);
+// 
+//     PRINTLOG(TEXT("Rotating %s by %f degrees"), *Owner->GetName(), RotateSpeed * DeltaTime);
 }
 
 void UMyRotateActorComponent::StartRolling()
@@ -121,11 +117,21 @@ void UMyRotateActorComponent::StartRolling()
 
 void UMyRotateActorComponent::StopRolling()
 {
-    bShouldRot = false;
-    TotalRotationAngle = 0.0f;  // 회전 초기화
-    UE_LOG(LogTemp, Warning, TEXT("Rolling stopped!"));
+    SRPCStopRolling();
+
+    APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+
 }
 
+void UMyRotateActorComponent::SRPCStopRolling_Implementation()
+{
+    MRPC_StopRolling();
+}
+void UMyRotateActorComponent::MRPC_StopRolling_Implementation()
+{
+    bShouldRot = false;
+    TotalRotationAngle = 0.0f;  // 회전 초기화
+}
 void UMyRotateActorComponent::OriginRolling()
 {
 	if (AActor* Owner = GetOwner())
@@ -137,15 +143,18 @@ void UMyRotateActorComponent::OriginRolling()
 }
 void UMyRotateActorComponent::GetDelegateBool(bool delegatebool)
 {
-    bShouldRot = delegatebool;
+    bShouldRot = !delegatebool;
 
     if (bShouldRot)
     {
-        PRINTLOG(TEXT("true"));
+        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+        if (block->ActorHasTag(FName("owner")))
+            block->SRPC_SetSimulatePhysics(false);
     }
     else
     {
-        PRINTLOG(TEXT("fasle"));
+        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+       
     }
 }
 FPSH_FunctionBlockData UMyRotateActorComponent::SaveData()
@@ -171,7 +180,14 @@ void UMyRotateActorComponent::SetOwnerRotation_Implementation(const FQuat& newRo
 
     GetOwner()->SetActorRotation(newRotation);
 
-    PRINTLOG(TEXT("SetOwnerLocation_Implementation"));
+//     if (GetOwner()->GetOwner() == nullptr)
+//     {
+//         PRINTLOG(TEXT("Owner == Null"));
+//     }
+//     else
+//     {
+//         PRINTLOG(TEXT("Owner : %s"), *GetOwner()->GetOwner()->GetName());
+//     }
 }
 
 void UMyRotateActorComponent::SRPC_SetOwnerSync_Implementation(FRotator CRotateDirection, float CRotateSpeed)
