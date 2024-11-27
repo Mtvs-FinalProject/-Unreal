@@ -166,6 +166,8 @@ public:
 	// 제이슨 변환
 	FString ConvertBlockDataToJson(const FPSH_ObjectData& BlockData);
 
+	FString ConvertWorldDataToJson(const FPSH_WorldData& WorldData);
+
 	// 데이터를 제이슨데이터로 변환
 	TSharedPtr<FJsonObject> ConvertBlockDataToJsonObject(const FPSH_BlockData& BlockData);
 
@@ -190,12 +192,29 @@ public:
 	}
 
 	//받은 제이슨 변환
+	
+	// 데이터 변환 도우미
+	TArray < int32 > ConvertJsonToIntArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray);
+	TArray<float> ConvertJsonToFloatArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray);
+	TArray<FVector> ConvertJsonToVectorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray);
+	TArray<FRotator> ConvertJsonToRotatorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray);
+	TArray<bool> ConvertJsonToBoolArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray);
+
+	
+	// 현재
+	FPSH_WorldData ParseJsonToWorldData(const FString& JsonString);
+	void SpawnBlocksFromObjectData(const FPSH_ObjectData& ObjectData);
+
+	FPSH_BlockData ConvertJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject);
+	
+	// 기존
 	FPSH_ObjectData ParseJsonToBlockData(const FString& JsonString);
 
 	FPSH_BlockData ParseJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject);
 
 	void SpawnBlocksFromJson(const FString& JsonString);
 
+	// 통합
 	APSH_BlockActor* SpawnBlock(const FPSH_BlockData& BlockData, APSH_BlockActor* Parent);
 
 	// 테스트 스트링

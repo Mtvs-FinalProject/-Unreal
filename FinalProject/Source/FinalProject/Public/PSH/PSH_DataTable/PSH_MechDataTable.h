@@ -6,7 +6,6 @@
 #include "Engine/DataTable.h"
 #include "PSH_MechDataTable.generated.h"
 
-
 USTRUCT(Atomic, BlueprintType)
 struct FPSH_FunctionBlockData // 자식 데이터 베이스 저장할 공간.
 {
@@ -49,7 +48,7 @@ struct FPSH_BlockData // 자식 데이터 베이스 저장할 공간.
 };
 
 USTRUCT(Atomic, BlueprintType)
-struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
+struct FPSH_ObjectData 
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -58,6 +57,15 @@ struct FPSH_ObjectData : public FTableRowBase // 데이터 베이스 저장할 공간.
 	
 	UPROPERTY(EditAnywhere)
 	bool bisSave = false;
+};
+
+USTRUCT(Atomic, BlueprintType)
+struct FPSH_WorldData : public FTableRowBase // 데이터 베이스 저장할 공간.
+{
+    GENERATED_USTRUCT_BODY()
+
+    UPROPERTY(EditAnywhere)
+    TArray<FPSH_ObjectData> BlockArray; // 월드의 모든 블록 데이터를 포함하는 배열
 };
 
 UCLASS()

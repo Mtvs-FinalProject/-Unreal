@@ -22,8 +22,8 @@ void UPSH_ObjectWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	Btr_Back->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedBack);
-	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
-	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
+// 	Btr_Save->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedSave);
+// 	Btr_Load->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnClickedLoad);
 
 	// Nomal UI ¹öÆ°
 	Btr_NormalRight->OnClicked.AddDynamic(this, &UPSH_ObjectWidget::OnNormalScrollRightClicked);

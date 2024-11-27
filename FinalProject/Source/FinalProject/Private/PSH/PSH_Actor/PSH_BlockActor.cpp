@@ -153,6 +153,7 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 	}
 }
 
+// 
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
 	if (!IsValid(attachActor))
@@ -662,27 +663,20 @@ void APSH_BlockActor::LoadBlockHierarchy(const FPSH_BlockData& data)
 
 void APSH_BlockActor::MRPC_LoadSetting_Implementation()
 {
-	meshComp->SetSimulatePhysics(false);
+	if (meshComp)
+	{
+		meshComp->SetSimulatePhysics(false);
+	}
+
+	if (!GetAttachParentActor())
+	{
+		PRINTLOG(TEXT("This is the root block, keeping the 'owner' tag."));
+		return;
+	}
+
 	Tags.Remove(FName("owner"));
 }
 
-void APSH_BlockActor::OnRep_SimulatePhysics()
-{
-	// 클라이언트에서 물리 상태 동기화
-	if (meshComp)
-	{
-		meshComp->SetSimulatePhysics(bSimulatePhysics);
-		PRINTLOG(TEXT("OnRep_SimulatePhysics: %s for %s"), bSimulatePhysics ? TEXT("True") : TEXT("False"), *GetName());
-	}
-}
-void APSH_BlockActor::SetSimulatePhysics(bool bEnabled)
-{
-	if (HasAuthority()) // 서버에서만 상태를 변경
-	{
-		bSimulatePhysics = bEnabled;
-		meshComp->SetSimulatePhysics(bEnabled);
-	}
-}
 void APSH_BlockActor::AllDestroy()
 {
 	for (auto* actor : childsActors)
@@ -833,8 +827,11 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 }
 void APSH_BlockActor::SRPC_SetSimulatePhysics_Implementation(bool check)
 {
-	MRPC_SetSimulatePhysics(check);
-	meshComp->SetSimulatePhysics(check);
+	if (HasAuthority())
+	{
+		MRPC_SetSimulatePhysics(check);
+	}
+	//meshComp->SetSimulatePhysics(check);
 }
 void APSH_BlockActor::MRPC_SetSimulatePhysics_Implementation(bool check)
 {

@@ -145,17 +145,11 @@ void UMyRotateActorComponent::GetDelegateBool(bool delegatebool)
 {
     bShouldRot = !delegatebool;
 
-    if (bShouldRot)
-    {
+ 
         APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
         if (block->ActorHasTag(FName("owner")))
             block->SRPC_SetSimulatePhysics(false);
-    }
-    else
-    {
-        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-       
-    }
+  
 }
 FPSH_FunctionBlockData UMyRotateActorComponent::SaveData()
 {

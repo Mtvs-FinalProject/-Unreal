@@ -68,7 +68,6 @@ void UMyFlyActorComponent::objectFly(float DeltaTime)
 	{
 		return;
 	}
-	PRINTLOG(TEXT("objectFly"));
 
 	FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
 	
@@ -106,7 +105,7 @@ void UMyFlyActorComponent::StartFly()
 {
 	StartLocation = GetOwner()->GetActorLocation();
 	
-	SRPC_SetOwnerSync(FlyDirection, FlyDistance,FlySpeed,bLoopMode,bSingleDirection);
+	SRPC_SetOwnerSync(FlyDirection,FlyDistance,FlySpeed,bLoopMode,bSingleDirection);
 
 	bShouldFly = true;
 
@@ -153,19 +152,10 @@ void UMyFlyActorComponent::GetDelegateBool(bool delegatebool)
 {
 	bShouldFly = !delegatebool;
 
-	if (bShouldFly)
+	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+	if (block->ActorHasTag(FName("owner")))
 	{
-		APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-		if(block->ActorHasTag(FName("owner")))
 		block->SRPC_SetSimulatePhysics(false);
-		PRINTLOG(TEXT("true"));
-	}
-	else
-	{
-		APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-		if (block->ActorHasTag(FName("owner")))
-		block->SRPC_SetSimulatePhysics(true);
-		PRINTLOG(TEXT("fasle"));
 	}
 }
 

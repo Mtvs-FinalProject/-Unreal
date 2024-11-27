@@ -211,13 +211,6 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_LoadSetting();
 
-	UPROPERTY(ReplicatedUsing = OnRep_SimulatePhysics)
-	bool bSimulatePhysics = false;
-
-	UFUNCTION()
-	void OnRep_SimulatePhysics();
-
-	void SetSimulatePhysics(bool bEnabled);
 private:
 	class APSH_Player * master = nullptr;
 

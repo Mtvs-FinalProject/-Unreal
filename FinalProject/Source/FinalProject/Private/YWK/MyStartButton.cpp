@@ -70,19 +70,21 @@ void AMyStartButton::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
     if (Cast<APSH_Player>(OtherActor))
     {
         SetOwner(Cast<APSH_Player>(OtherActor));
+
+        if (HasAuthority())
+        {
+            APSH_GameModeBase* GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
+
+            if (GM)
+            {
+                bmodeChange = !bmodeChange;
+                GM->SetCreateingCheck(bmodeChange);
+                PRINTLOG(TEXT("SetCreateingCheck"));
+            }
+        }
     }
 
-    if (HasAuthority())
-    {
-       APSH_GameModeBase * GM = Cast<APSH_GameModeBase>(GetWorld()->GetAuthGameMode());
-
-       if (GM)
-       {
-           bmodeChange = !bmodeChange;
-           GM->SetCreateingCheck(bmodeChange);
-           PRINTLOG(TEXT("SetCreateingCheck"));
-       }
-    }
+    
 
 //     // RotationWidgetInstance가 null인 경우 위젯을 찾음
 //     if (!RotationWidgetInstance)

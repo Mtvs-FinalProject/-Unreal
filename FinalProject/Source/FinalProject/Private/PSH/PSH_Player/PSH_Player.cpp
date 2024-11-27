@@ -1329,20 +1329,6 @@ void APSH_Player::SpawnBlocksFromJson(const FString& JsonString)
 {
 	// JSON 데이터를 FPSH_ObjectData로 변환
 	FPSH_ObjectData ObjectData = ParseJsonToBlockData(JsonString);
-	if (dataTable)
-	{
-		PRINTLOG(TEXT("DataTable"));
-		dataTable->AddRow(FName("1"), ObjectData);
-	}
-
-	// 최상위 블록 스폰
-// 	FActorSpawnParameters SpawnParams;
-// 	APSH_BlockActor* RootBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-// 		ObjectData.blockData.actor,
-// 		ObjectData.blockData.actorTransform,
-// 		SpawnParams
-// 	);
-
 	APSH_BlockActor* RootBlock = SpawnBlock(ObjectData.blockData, nullptr);
 
 // 	for (FPSH_BlockData data : ObjectData.blockData.childData)
@@ -1352,10 +1338,7 @@ void APSH_Player::SpawnBlocksFromJson(const FString& JsonString)
 // 	}
 	if (RootBlock)
 	{
-// 		if (RootBlock->blockDataType == EBlockDataType::MOVEANDFLY)
-// 		{
-// 			RootBlock->SetActorScale3D(FVector(0.5f,0.48f,0.5f));
-// 		}
+		
 		PRINTLOG(TEXT("Root block spawned successfully."));
 	}
 	else
@@ -1364,11 +1347,166 @@ void APSH_Player::SpawnBlocksFromJson(const FString& JsonString)
 	}
 }
 
+FPSH_WorldData APSH_Player::ParseJsonToWorldData(const FString& JsonString)
+{
+	FPSH_WorldData WorldData;
+
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		PRINTLOG(TEXT("Failed to parse JSON string into WorldData."));
+		return WorldData;
+	}
+
+	if (!JsonObject->HasField(TEXT("BlockArray")))
+	{
+		PRINTLOG(TEXT("JSON does not contain BlockArray field."));
+		return WorldData;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> BlockArray = JsonObject->GetArrayField(TEXT("BlockArray"));
+	PRINTLOG(TEXT("Parsed BlockArray with %d elements."), BlockArray.Num());
+
+	for (const TSharedPtr<FJsonValue>& BlockValue : BlockArray)
+	{
+		TSharedPtr<FJsonObject> BlockObject = BlockValue->AsObject();
+		if (BlockObject.IsValid())
+		{
+			FPSH_BlockData BlockData = ConvertJsonObjectToBlockData(BlockObject);
+			FPSH_ObjectData ObjectData;
+			ObjectData.blockData = BlockData;
+
+			WorldData.BlockArray.Add(ObjectData);
+
+			PRINTLOG(TEXT("Successfully parsed block data: %s"), *BlockData.actor->GetName());
+		}
+		else
+		{
+			PRINTLOG(TEXT("Failed to parse block object in JSON."));
+		}
+	}
+
+	return WorldData;
+}
+void APSH_Player::SpawnBlocksFromObjectData(const FPSH_ObjectData& ObjectData)
+{
+	// 최상위 블록 스폰
+	APSH_BlockActor* RootBlock = SpawnBlock(ObjectData.blockData, nullptr);
+	if (RootBlock)
+	{
+		PRINTLOG(TEXT("Root block spawned successfully."));
+	}
+	else
+	{
+		PRINTLOG(TEXT("Failed to spawn root block."));
+	}
+}
+FPSH_BlockData APSH_Player::ConvertJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject)
+{
+	FPSH_BlockData BlockData;
+
+	FString ActorClassPath = JsonObject->GetStringField(TEXT("ActorClass"));
+	UClass* ActorClass = LoadClass<AActor>(nullptr, *ActorClassPath);
+	if (!ActorClass)
+	{
+		PRINTLOG(TEXT("Failed to load ActorClass from path: %s"), *ActorClassPath);
+	}
+	BlockData.actor = ActorClass;
+
+	FString TransformString = JsonObject->GetStringField(TEXT("Transform"));
+	FTransform Transform;
+	if (!Transform.InitFromString(TransformString))
+	{
+		PRINTLOG(TEXT("Failed to parse Transform from string: %s"), *TransformString);
+	}
+	BlockData.actorTransform = Transform;
+
+	// FunctionData 복원
+	TArray<TSharedPtr<FJsonValue>> FunctionDataArray = JsonObject->GetArrayField(TEXT("FunctionData"));
+	for (const TSharedPtr<FJsonValue>& FunctionValue : FunctionDataArray)
+	{
+		TSharedPtr<FJsonObject> FunctionObject = FunctionValue->AsObject();
+		FPSH_FunctionBlockData FunctionData;
+		FunctionData.intArray = ConvertJsonToIntArray(FunctionObject->GetArrayField(TEXT("IntArray")));
+		FunctionData.floatArray = ConvertJsonToFloatArray(FunctionObject->GetArrayField(TEXT("FloatArray")));
+		FunctionData.fvectorArray = ConvertJsonToVectorArray(FunctionObject->GetArrayField(TEXT("VectorArray")));
+		FunctionData.frotatorArray = ConvertJsonToRotatorArray(FunctionObject->GetArrayField(TEXT("RotatorArray")));
+		FunctionData.boolArray = ConvertJsonToBoolArray(FunctionObject->GetArrayField(TEXT("BoolArray")));
+		BlockData.funcitonData.Add(FunctionData);
+	}
+
+	// Children 복원
+	TArray<TSharedPtr<FJsonValue>> ChildrenArray = JsonObject->GetArrayField(TEXT("Children"));
+	for (const TSharedPtr<FJsonValue>& ChildValue : ChildrenArray)
+	{
+		TSharedPtr<FJsonObject> ChildObject = ChildValue->AsObject();
+		if (ChildObject.IsValid())
+		{
+			FPSH_BlockData ChildData = ConvertJsonObjectToBlockData(ChildObject);
+			BlockData.childData.Add(ChildData);
+		}
+	}
+
+	return BlockData;
+}
 APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_BlockActor* Parent)
 {
+// 기존
+// 	if (!BlockData.actor)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("Invalid actor class for block data."));
+// 		return nullptr;
+// 	}
+// 
+// 	FActorSpawnParameters SpawnParams;
+// 	APSH_BlockActor* NewBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+// 		BlockData.actor,
+// 		BlockData.actorTransform,
+// 		SpawnParams
+// 	);
+// 
+// 	if (NewBlock)
+// 	{
+// 		NewBlock->SetOwner(this);
+// 
+// 		// 물리 비활성화 및 태그 제거를 모든 클라이언트에서 동기화
+// 		NewBlock->MRPC_LoadSetting();
+// 
+// 		// 부모와 연결
+// 		if (Parent)
+// 		{
+// 			NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+// 
+// 			// 부모-자식 관계 설정
+// 			NewBlock->SetActorRelativeLocation(BlockData.actorTransform.GetLocation());
+// 			NewBlock->SetActorRotation(BlockData.actorTransform.GetRotation());
+// 			NewBlock->SetActorRelativeScale3D(BlockData.actorTransform.GetScale3D());
+// 		}
+// 
+// 		// 컴포넌트 데이터 로드
+// 		if (!BlockData.funcitonData.IsEmpty())
+// 		{
+// 			NewBlock->ComponentLoadData(BlockData.funcitonData);
+// 		}
+// 
+// 		// 자식 블록 생성
+// 		for (const FPSH_BlockData& ChildData : BlockData.childData)
+// 		{
+// 			SpawnBlock(ChildData, NewBlock);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("Failed to spawn actor of class: %s"), *BlockData.actor->GetName());
+// 	}
+// 
+// 	return NewBlock;
+
 	if (!BlockData.actor)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid actor class for block data."));
+		PRINTLOG(TEXT("Actor class is invalid for block data. Cannot spawn block."));
 		return nullptr;
 	}
 
@@ -1378,37 +1516,23 @@ APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_B
 		BlockData.actorTransform,
 		SpawnParams
 	);
-// 	FAttachmentTransformRules rule = FAttachmentTransformRules(
-// 		EAttachmentRule::KeepWorld,
-// 		EAttachmentRule::SnapToTarget,
-// 		EAttachmentRule::KeepWorld,
-// 		true
-// 	);
 
 	if (NewBlock)
 	{
 		NewBlock->SetOwner(this);
-		// 부모 블록과 연결
+		NewBlock->MRPC_LoadSetting();
+		// 부모와 연결
 		if (Parent)
 		{
-			NewBlock->meshComp->SetSimulatePhysics(false);
-
+			// 물리 비활성화 및 태그 제거를 모든 클라이언트에서 동기화
+			
 			NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
-			if (NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform))
-			{
-				PRINTLOG(TEXT("Attach"));
-			}
-			else
-			{
-				PRINTLOG(TEXT("NonAttach"));
-			}
+
+			// 부모-자식 관계 설정
 			NewBlock->SetActorRelativeLocation(BlockData.actorTransform.GetLocation());
 			NewBlock->SetActorRotation(BlockData.actorTransform.GetRotation());
 			NewBlock->SetActorRelativeScale3D(BlockData.actorTransform.GetScale3D());
-			NewBlock->MRPC_LoadSetting();
 		}
-		// 물리 비활성화
-		//NewBlock->meshComp->SetSimulatePhysics(false);
 
 		// 컴포넌트 데이터 로드
 		if (!BlockData.funcitonData.IsEmpty())
@@ -1419,12 +1543,16 @@ APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_B
 		// 자식 블록 생성
 		for (const FPSH_BlockData& ChildData : BlockData.childData)
 		{
-			SpawnBlock(ChildData, NewBlock);
+			APSH_BlockActor* ChildBlock = SpawnBlock(ChildData, NewBlock);
+			if (ChildBlock)
+			{
+				PRINTLOG(TEXT("Child block spawned and attached successfully."));
+			}
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to spawn actor of class: %s"), *BlockData.actor->GetName());
+		PRINTLOG(TEXT("Failed to spawn actor of class: %s"), *BlockData.actor->GetName());
 	}
 
 	return NewBlock;
@@ -1433,13 +1561,19 @@ APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_B
 
 void APSH_Player::LoadTest()
 {
-
 	SRPC_Load(jsonString);
 }
 
 void APSH_Player::SRPC_Load_Implementation(const FString& JsonString)
 {
-	SpawnBlocksFromJson(JsonString);
+	// JSON 문자열을 FPSH_WorldData로 변환
+	FPSH_WorldData WorldData = ParseJsonToWorldData(JsonString);
+
+	// 파싱한 데이터를 사용하여 블록 생성
+	for (const FPSH_ObjectData& ObjectData : WorldData.BlockArray)
+	{
+		SpawnBlocksFromObjectData(ObjectData);
+	};
 }
 // 	if (!IsValid(dataTable))
 // 	{
@@ -1502,6 +1636,7 @@ void APSH_Player::SRPC_SpawnBlock_Implementation(TSubclassOf<class APSH_BlockAct
 
 	SpawnActor->SetOwner(this);
 }
+
 FString APSH_Player::ConvertBlockDataToJson(const FPSH_ObjectData& BlockData)
 {
 	TSharedPtr<FJsonObject> RootJsonObject = MakeShared<FJsonObject>();
@@ -1522,6 +1657,41 @@ FString APSH_Player::ConvertBlockDataToJson(const FPSH_ObjectData& BlockData)
 	}
 
 	return TEXT(""); // 실패 시 빈 문자열 반환
+}
+
+FString APSH_Player::ConvertWorldDataToJson(const FPSH_WorldData& WorldData)
+{
+	TSharedRef<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+
+	TArray<TSharedPtr<FJsonValue>> BlockArray;
+	for (const FPSH_ObjectData& BlockData : WorldData.BlockArray)
+	{
+		TSharedPtr<FJsonObject> BlockObject = ConvertBlockDataToJsonObject(BlockData.blockData);
+
+		if (BlockObject.IsValid())
+		{
+			BlockArray.Add(MakeShareable(new FJsonValueObject(BlockObject)));
+		}
+		else
+		{
+			PRINTLOG(TEXT("Failed to convert block data to JSON object."));
+		}
+	}
+
+	JsonObject->SetArrayField(TEXT("BlockArray"), BlockArray);
+
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	if (FJsonSerializer::Serialize(JsonObject, Writer))
+	{
+		PRINTLOG(TEXT("Serialized WorldData JSON: %s"), *OutputString);
+	}
+	else
+	{
+		PRINTLOG(TEXT("Failed to serialize WorldData JSON."));
+	}
+
+	return OutputString;
 }
 TSharedPtr<FJsonObject> APSH_Player::ConvertBlockDataToJsonObject(const FPSH_BlockData& BlockData)
 {
@@ -1550,7 +1720,10 @@ TSharedPtr<FJsonObject> APSH_Player::ConvertBlockDataToJsonObject(const FPSH_Blo
 	for (const FPSH_BlockData& ChildData : BlockData.childData)
 	{
 		TSharedPtr<FJsonObject> ChildJsonObject = ConvertBlockDataToJsonObject(ChildData);
-		ChildArray.Add(MakeShared<FJsonValueObject>(ChildJsonObject));
+		if (ChildJsonObject.IsValid())
+		{
+			ChildArray.Add(MakeShareable(new FJsonValueObject(ChildJsonObject)));
+		}
 	}
 	JsonObject->SetArrayField(TEXT("Children"), ChildArray);
 
@@ -1601,6 +1774,58 @@ TArray<TSharedPtr<FJsonValue>> APSH_Player::ConvertBoolArrayToJson(const TArray<
 	}
 	return JsonArray;
 }
+
+TArray < int32 > APSH_Player::ConvertJsonToIntArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+	TArray<int32> IntArray;
+	for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+	{
+		IntArray.Add(Value->AsNumber());
+	}
+	return IntArray;
+}
+TArray<float> APSH_Player::ConvertJsonToFloatArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+	TArray<float> FloatArray;
+	for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+	{
+		FloatArray.Add(Value->AsNumber());
+	}
+	return FloatArray;
+}
+TArray<FVector> APSH_Player::ConvertJsonToVectorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+	TArray<FVector> VectorArray;
+	for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+	{
+		FVector Vector;
+		Vector.InitFromString(Value->AsString());
+		VectorArray.Add(Vector);
+	}
+
+	return VectorArray;
+}
+TArray<FRotator> APSH_Player::ConvertJsonToRotatorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+	TArray<FRotator> RotatorArray;
+	for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+	{
+		FRotator Rotator;
+		Rotator.InitFromString(Value->AsString());
+		RotatorArray.Add(Rotator);
+	}
+	return RotatorArray;
+}
+TArray<bool> APSH_Player::ConvertJsonToBoolArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+	TArray<bool> BoolArray;
+	for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+	{
+		BoolArray.Add(Value->AsBool());
+	}
+	return BoolArray;
+}
+
 void APSH_Player::SaveTest()
 {
 	/*SRPC_Save();*/
@@ -1615,44 +1840,36 @@ void APSH_Player::SaveTest()
 	// "owner" 태그가 달린 모든 블록을 가져옴
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
 
+	FPSH_WorldData WorldData;
+
 	for (AActor* arrayActor : blockArray)
 	{
 		APSH_BlockActor* blockActor = Cast<APSH_BlockActor>(arrayActor);
 
 		if (blockActor)
 		{
-			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
-
 			// 계층 구조 저장
 			FPSH_ObjectData BlockData = blockActor->SaveBlock();
-
-			// Json으로 변환
-
-			jsonString = ConvertBlockDataToJson(BlockData);
-			if (!jsonString.IsEmpty())
-			{
-				PRINTLOG(TEXT("BlockData JSON: %s"), *jsonString);
-
-				// 파일로 저장
-				if (SaveJsonToFile(jsonString, "BlockData.json"))
-				{
-					PRINTLOG(TEXT("JSON saved successfully to file!"));
-				}
-				else
-				{
-					PRINTLOG(TEXT("Failed to save JSON to file."));
-				}
-			}
-
-// 			// 데이터 테이블에 추가
-// 			if (dataTable)
-// 			{
-// 				dataTable->AddRow(rowName, BlockData);
-// 			}
+			WorldData.BlockArray.Add(BlockData);			
 		}
 	}
-}
 
+	jsonString = ConvertWorldDataToJson(WorldData);
+// 	if (!jsonString.IsEmpty())
+// 	{
+// 		PRINTLOG(TEXT("WorldData JSON: %s"), *jsonString);
+// 
+// 		// 파일로 저장
+// 		if (SaveJsonToFile(jsonString, "WorldData.json"))
+// 		{
+// 			PRINTLOG(TEXT("JSON saved successfully to file!"));
+// 		}
+// 		else
+// 		{
+// 			PRINTLOG(TEXT("Failed to save JSON to file."));
+// 		}
+// 	}
+}
 
 void APSH_Player::ShowInterface()
 {

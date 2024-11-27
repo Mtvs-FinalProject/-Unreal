@@ -136,7 +136,7 @@ void UMyMoveActorComponent::StopMoving()
 
     if (block)
     {
-        block->SRPC_SetSimulatePhysics(true);
+        block->SRPC_SetSimulatePhysics(false);
     }
 	
 }
@@ -163,20 +163,24 @@ void UMyMoveActorComponent::GetDelegateBool(bool delegatebool)
 {   
     bShouldMove = !delegatebool;
 
-    if (bShouldMove)
-    {
-        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-        if (block->ActorHasTag(FName("owner")))
-            block->SRPC_SetSimulatePhysics(false);
-        PRINTLOG(TEXT("true"));
-    }
-    else
-    {
-        APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-        if (block->ActorHasTag(FName("owner")))
-            block->SRPC_SetSimulatePhysics(true);
-        PRINTLOG(TEXT("fasle"));
-    }
+
+    APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+    if (block->ActorHasTag(FName("owner")))
+        block->SRPC_SetSimulatePhysics(false);
+//     if (bShouldMove)
+//     {
+//         APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+//         if (block->ActorHasTag(FName("owner")))
+//             block->SRPC_SetSimulatePhysics(false);
+//         PRINTLOG(TEXT("true"));
+//     }
+//     else
+//     {
+//         APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+//         if (block->ActorHasTag(FName("owner")))
+//             block->SRPC_SetSimulatePhysics(true);
+//         PRINTLOG(TEXT("fasle"));
+//     }
 }
 FPSH_FunctionBlockData UMyMoveActorComponent::SaveData()
 {
