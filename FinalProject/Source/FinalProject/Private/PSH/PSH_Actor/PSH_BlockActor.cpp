@@ -50,15 +50,7 @@ APSH_BlockActor::APSH_BlockActor()
 	{
 		PlaceEffect = placeNiagara.Object;
 	}
-	// 기능 컴포넌트들
-	//MyMoveActorComponent = CreateDefaultSubobject<UMyMoveActorComponent>(TEXT("MoveComponent"));
-	//MyFlyActorComponent = CreateDefaultSubobject<UMyFlyActorComponent>(TEXT("FlyComponent"));
-	//MyRotateActorComponent = CreateDefaultSubobject<UMyRotateActorComponent>(TEXT("RotateComponent"));
-
-	//// 컴포넌트가 특정 상황에서만 활성화되도록 설정
-	//MyMoveActorComponent->SetActive(false);
-	//MyFlyActorComponent->SetActive(false);
-	//MyRotateActorComponent->SetActive(false);
+	
 }
 
 // Called when the game starts or when spawned
@@ -70,10 +62,6 @@ void APSH_BlockActor::BeginPlay()
 	{
 		meshComp->SetSimulatePhysics(false);
 	}
-	else
-	{
-		meshComp->SetSimulatePhysics(true);
-	}
 
 	if (HasAuthority())
 	{
@@ -83,30 +71,9 @@ void APSH_BlockActor::BeginPlay()
 		if (GM)
 		{
 			GM->onStartBlock.AddDynamic(this, &APSH_BlockActor::StartBlockDelgate);
-			PRINTLOG(TEXT("StartBlockDelgate"));
 		}
 	}
-	/*meshComp->OnComponentSleep.AddDynamic(this, &APSH_BlockActor::OnComponentSleep);*/
-
-	//if (MyMoveActorComponent && MyMoveActorComponent->IsComponentTickEnabled())
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("MoveComponent is active in %s"), *GetName());
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("MoveComponent is NOT active in %s"), *GetName());
-	//	MyMoveActorComponent->SetComponentTickEnabled(true);  // 컴포넌트 활성화 설정
-	//}
-
-	//if (MyFlyActorComponent && MyFlyActorComponent->IsActive())
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("FlyComponent is active in %s"), *GetName());
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("FlyComponent is NOT active in %s"), *GetName());
-	//	MyFlyActorComponent->SetActive(true);  // 활성화 설정
-	//}
+	
 }
 
 // Called every frame
@@ -114,13 +81,11 @@ void APSH_BlockActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-
-	//PRINTLOG(TEXT("%f,%f,%f"),GetActorRotation(),)
 }
 
 void APSH_BlockActor::MRPC_PickUp_Implementation(class UPhysicsHandleComponent* handle)
 {
-	if (mapBlock)
+	if (meshComp->IsSimulatingPhysics() == false)
 	{
 		meshComp->SetSimulatePhysics(true);
 	}
@@ -187,23 +152,46 @@ void APSH_BlockActor::MRPC_Drop_Implementation(class UPhysicsHandleComponent* ph
 		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
 	}
 }
+
+// 
 void APSH_BlockActor::Place(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
+	if (!IsValid(attachActor))
+	{
+		PRINTLOG(TEXT("Place failed: Parent actor not valid for %s"), *GetName());
+		return;
+	}
+	//MRPC_LoadSetting();
 	MRPC_Place(attachActor,worldTransform);
 }
 
 void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachActor, FTransform worldTransform)
 {
 
+	PRINTLOG(TEXT("MRC_Place AttachActor return"));
+	if (!attachActor)
+	{
+		return;
+	}
+	else
+	{
+		PRINTLOG(TEXT("AttachAcotr : %s"), *attachActor->GetName());
+	}
+
+	PRINTLOG(TEXT("MRC_Place AttachActor"));
 	if (PlaceEffect)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PlaceEffect, GetActorLocation());
 	}
 
-	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
+	// 중요: 배치 시 월드 트랜스폼 저장
+	placedWorldTransform = worldTransform;
+	bIsPlaced = true;
 
 	meshComp->SetSimulatePhysics(false);
+
 	parent = attachActor;
+	attachActor->AddChild(this); // 부모 블록에 자식 블록으로 추가
 
 	// 자식 블록의 위치와 방향을 변경
 	FAttachmentTransformRules rule = FAttachmentTransformRules(
@@ -214,6 +202,8 @@ void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachAct
 	);
 	// 부모 블럭에 붙이기
 	AttachToActor(attachActor, rule);
+
+	//SetActorRelativeTransform(worldTransform);
 
 	SetActorRelativeLocation(worldTransform.GetLocation());
 	SetActorRotation(worldTransform.GetRotation());
@@ -228,9 +218,12 @@ void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachAct
 
 	Tags.Remove(FName("owner"));
 
-	for (auto* actor : childsActors)
+	for (auto* child : childsActors)
 	{
-		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
+		if (auto* childBlock = Cast<APSH_BlockActor>(child))
+		{
+			childBlock->ChildCollisionUpdate(ECollisionEnabled::QueryAndPhysics);
+		}
 	}
 }
 
@@ -330,7 +323,10 @@ void APSH_BlockActor::ChildCollisionUpdate(ECollisionEnabled::Type NewType) // �
 
 	for (auto* actor : childsActors)
 	{
-		Cast<APSH_BlockActor>(actor)->ChildCollisionUpdate(NewType);
+		if (APSH_BlockActor* childBlock = Cast<APSH_BlockActor>(actor))
+		{
+			childBlock->ChildCollisionUpdate(NewType);
+		}
 	}
 }
 
@@ -470,7 +466,6 @@ void APSH_BlockActor::AddChild(class APSH_BlockActor* childActor)
 	}
 }
 
-
 void APSH_BlockActor::TransferChildren(TArray<AActor*> childActor)
 {
 	PRINTLOG(TEXT("AddChild?"));
@@ -501,16 +496,24 @@ FPSH_ObjectData APSH_BlockActor::SaveBlock() // 클라 서버 2번 불림
 	}
 	
 	// 부모 저장
-	Data.blockData.actor = GetClass(); // 블루프린트 사용한것 저장
-	
-	FTransform actorTransfrom = GetActorTransform();
-	actorTransfrom.SetLocation(FVector(
-		actorTransfrom.GetLocation().X,
-		actorTransfrom.GetLocation().Y,
-		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
-	));
 
-	Data.blockData.actorTransform = actorTransfrom; // 위치 저장
+	if (bIsPlaced)
+	{
+		Data.blockData.actorTransform = placedWorldTransform;
+	}
+	else
+	{
+		Data.blockData.actor = GetClass(); // 블루프린트 사용한것 저장
+
+		FTransform actorTransfrom = GetActorTransform();
+		actorTransfrom.SetLocation(FVector(
+			actorTransfrom.GetLocation().X,
+			actorTransfrom.GetLocation().Y,
+			FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
+		));
+		// 배치되지 않았다면 기존 로직 유지
+		Data.blockData.actorTransform = actorTransfrom;
+	}
 
 	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
@@ -543,14 +546,23 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock() // 서버 클라
 	// 내 정보 저장.
 	data.actor = GetClass();
 
-	FTransform actorTransfrom = GetActorTransform();
-	actorTransfrom.SetLocation(FVector(
-		actorTransfrom.GetLocation().X,
-		actorTransfrom.GetLocation().Y,
-		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
-	));
+	if (bIsPlaced)
+	{
+		data.actorTransform = placedWorldTransform;
+	}
+	else
+	{
+		data.actor = GetClass(); // 블루프린트 사용한것 저장
 
-	data.actorTransform = actorTransfrom; // 위치 저장
+		FTransform actorTransfrom = GetActorTransform();
+		actorTransfrom.SetLocation(FVector(
+			actorTransfrom.GetLocation().X,
+			actorTransfrom.GetLocation().Y,
+			FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
+		));
+		// 배치되지 않았다면 기존 로직 유지
+		data.actorTransform = actorTransfrom;
+	}
 
 	if (blockDataType != EBlockDataType::NOMAL) // 기본 블럭이 아니라면
 	{
@@ -576,8 +588,6 @@ FPSH_BlockData APSH_BlockActor::SaveChildBlock() // 서버 클라
 void APSH_BlockActor::SaveBlockLocations() // 클라이언트만.
 {
 	PRINTLOG(TEXT("SaveBlockLocations"));
-	if(locationData.bisSave) return;
-
 	locationData.bisSave = true;
 
 	// 부모 저장
@@ -589,6 +599,7 @@ void APSH_BlockActor::SaveBlockLocations() // 클라이언트만.
 		actorTransfrom.GetLocation().Y,
 		FMath::RoundToFloat(actorTransfrom.GetLocation().Z / 50.0f) * 50.0f
 	));
+	
 
 	locationData.blockData.actorTransform = actorTransfrom; // 위치 저장
 
@@ -613,87 +624,57 @@ void APSH_BlockActor::SaveBlockLocations() // 클라이언트만.
 
 }
 
-void APSH_BlockActor::LoadBlockHierarchy(const FPSH_ObjectData& Childdats)
+void APSH_BlockActor::LoadBlockHierarchy(const FPSH_BlockData& data)
 {
-//  	if (Childdats.blockData.childData.IsEmpty()) return; // 자식 데이터가 없으면 종료
-// 
-// 	PRINTLOG(TEXT("Childdats.blockData.childData. :%d"), Childdats.blockData.childData.Num());
-// 	
-// 	for (FPSH_BlockData data : Childdats.blockData.childData)
-// 	{
-// 		PRINTLOG(TEXT("ChildActor : %s"), *data.actor->GetName());
-// 
-// 	}
+	if(HasAuthority() == false) return;
 
-	if (Childdats.blockData.childData.IsEmpty()) return;
+	if(data.childData.IsEmpty()) return;
 
-	PRINTLOG(TEXT("Childdats.blockData.childData. :%d"), Childdats.blockData.childData.Num());
-
-	for (const FPSH_BlockData& data : Childdats.blockData.childData)
+	for (const FPSH_BlockData& childData : data.childData)
 	{
-		// 자식 블록 스폰
-		if (data.actor)
+		if (childData.actor)
 		{
 			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this; // 현재 액터를 소유자로 설정
-
-			APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-				data.actor,
-				data.actorTransform,
+	
+			APSH_BlockActor* childBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+				childData.actor,
+				childData.actorTransform,
 				SpawnParams
 			);
 
-			if (ChildBlock)
+			if (childBlock)
 			{
-				// 자식 블록에 데이터 로드
-				if (!data.funcitonData.IsEmpty())
+				// Place를 사용해 부모-자식 관계 설정
+				childBlock->SetOwner(GetOwner());
+				childBlock->Place(this, childData.actorTransform);
+
+				// 컴포넌트 데이터 로드
+				if (!childData.funcitonData.IsEmpty())
 				{
-					ChildBlock->ComponentLoadData(data.funcitonData);
+					childBlock->ComponentLoadData(childData.funcitonData);
 				}
 
-				// 자식 블록의 자식들도 재귀적으로 로드
-				FPSH_ObjectData ChildObjectData;
-				ChildObjectData.blockData = data;
-				ChildBlock->LoadBlockHierarchy(ChildObjectData);
+				// 재귀적으로 자식 블록 로드
+				childBlock->LoadBlockHierarchy(childData);
 			}
 		}
 	}
+}
 
-// 
-// 	// 자실들의 데이터 를 확인.
-// 	for (const FPSH_ChildData& ChildData : Childdats.childData)
-// 	{
-// 		if (!ChildData.actor) continue; // Actor 클래스가 없으면 무시
-// 
-// 		// 자식 블록 스폰
-// 		APSH_BlockActor* ChildBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-// 			ChildData.actor,
-// 			ChildData.actorTransfrom
-// 		);
-// 
-// 		if (ChildBlock)
-// 		{
-// 			// 부모 블록에 자식 블록 연결
-// 			ChildBlock->meshComp->SetSimulatePhysics(false);
-// 			FAttachmentTransformRules AttachRules(
-// 				EAttachmentRule::KeepWorld,
-// 				EAttachmentRule::KeepWorld,
-// 				EAttachmentRule::KeepWorld,
-// 				true
-// 			);
-// 			ChildBlock->AttachToActor(this, AttachRules);
-// 			AddChild(ChildBlock);
-// 
-// 			// 추가 데이터 로드
-// 			if (ChildBlock->functionObjectDataType == EFunctionObjectDataType::ROTATE)
-// 			{
-// 				ChildBlock->ComponentLoadData(ChildData.funcitonData);
-// 			}
-// 
-// 			// 재귀적으로 자식 데이터 처리
-// 			ChildBlock->LoadBlockHierarchy(Childdats); // 올바른 재귀 호출
-// 		}
-// 	}
+void APSH_BlockActor::MRPC_LoadSetting_Implementation()
+{
+	if (meshComp)
+	{
+		meshComp->SetSimulatePhysics(false);
+	}
+
+	if (!GetAttachParentActor())
+	{
+		PRINTLOG(TEXT("This is the root block, keeping the 'owner' tag."));
+		return;
+	}
+
+	Tags.Remove(FName("owner"));
 }
 
 void APSH_BlockActor::AllDestroy()
@@ -713,7 +694,6 @@ void APSH_BlockActor::AllDestroy()
 void APSH_BlockActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
 }
 
 void APSH_BlockActor::SetMaster(class APSH_Player* owner)
@@ -804,7 +784,6 @@ TArray<FPSH_FunctionBlockData> APSH_BlockActor::ComponentSaveData(EBlockDataType
 void APSH_BlockActor::ComponentLoadData(TArray<FPSH_FunctionBlockData> funcionBlockData)
 {
 
-	PRINTLOG(TEXT("ComponentLoadData"));
 	switch (blockDataType)
 	{
 	case EBlockDataType::MOVEANDFLY:
@@ -848,85 +827,80 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 }
 void APSH_BlockActor::SRPC_SetSimulatePhysics_Implementation(bool check)
 {
-	MRPC_SetSimulatePhysics(check);
-	meshComp->SetSimulatePhysics(check);
+	if (HasAuthority())
+	{
+		MRPC_SetSimulatePhysics(check);
+	}
+	//meshComp->SetSimulatePhysics(check);
 }
 void APSH_BlockActor::MRPC_SetSimulatePhysics_Implementation(bool check)
 {
 	meshComp->SetSimulatePhysics(check);
 }
-
-bool APSH_BlockActor::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
-{
-
-	// 레벨 인스턴스가 소유한 액터인 경우
-	if (bIsOwnedByRoomInstance)
-	{
-		// 뷰 타겟의 컨트롤러 획득
-		AController* TargetController = Cast<AController>(ViewTarget->GetInstigatorController());
-		if (!TargetController)
-		{
-			if (const APawn* TargetPawn = Cast<APawn>(ViewTarget))
-			{
-				TargetController = TargetPawn->GetController();
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("ViewTarget is null in IsNetRelevantFor"));
-			//return false;
-		}
-
-		// 플레이어 컨트롤러인 경우
-		if (APlayerController* PC = Cast<APlayerController>(TargetController))
-		{
-			if (GetOwner())
-			{
-				if (AAutoRoomLevelInstance* OwningRoom = Cast<AAutoRoomLevelInstance>(GetOwner()))
-				{
-					return OwningRoom->IsPlayerInRoom(PC);
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Owner is null for %s in IsNetRelevantFor"), *GetName());
-			}
-			return false;
-		}
-		return false;
-	}
-
-	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
-}
-
-void APSH_BlockActor::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-	if (HasAuthority())
-	{
-		if (AAutoRoomLevelInstance* RoomInstance = Cast<AAutoRoomLevelInstance>(GetOwner()))
-		{
-			bIsOwnedByRoomInstance = true;
-
-			// 네트워크 설정 확인
-			if (!bReplicates)
-			{
-				SetReplicates(true);
-				SetReplicateMovement(true);
-			}
-
-			UE_LOG(LogTemp, Log, TEXT("Block %s initialized with owner %s"),
-				*GetName(),
-				*RoomInstance->GetName());
-		}
-	}
-}
-
-// void APSH_BlockActor::SRPC_SatartLocation_Implementation(const FVector& startLoc)
+// 
+// bool APSH_BlockActor::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
 // {
 // 
-// 	PRINTLOG(TEXT("startLoc : %s"), *startLoc.ToString());
-// 	if(HasAuthority())
-// 	SetActorLocation(startLoc);
+// 	// 레벨 인스턴스가 소유한 액터인 경우
+// 	if (bIsOwnedByRoomInstance)
+// 	{
+// 		// 뷰 타겟의 컨트롤러 획득
+// 		AController* TargetController = Cast<AController>(ViewTarget->GetInstigatorController());
+// 		if (!TargetController)
+// 		{
+// 			if (const APawn* TargetPawn = Cast<APawn>(ViewTarget))
+// 			{
+// 				TargetController = TargetPawn->GetController();
+// 			}
+// 		}
+// 		else
+// 		{
+// 			UE_LOG(LogTemp, Warning, TEXT("ViewTarget is null in IsNetRelevantFor"));
+// 			//return false;
+// 		}
+// 
+// 		// 플레이어 컨트롤러인 경우
+// 		if (APlayerController* PC = Cast<APlayerController>(TargetController))
+// 		{
+// 			if (GetOwner())
+// 			{
+// 				if (AAutoRoomLevelInstance* OwningRoom = Cast<AAutoRoomLevelInstance>(GetOwner()))
+// 				{
+// 					return OwningRoom->IsPlayerInRoom(PC);
+// 				}
+// 			}
+// 			else
+// 			{
+// 				UE_LOG(LogTemp, Warning, TEXT("Owner is null for %s in IsNetRelevantFor"), *GetName());
+// 			}
+// 			return false;
+// 		}
+// 		return false;
+// 	}
+// 
+// 	return Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+// }
+// 
+// void APSH_BlockActor::PostInitializeComponents()
+// {
+// 	Super::PostInitializeComponents();
+// 
+// 	if (HasAuthority())
+// 	{
+// 		if (AAutoRoomLevelInstance* RoomInstance = Cast<AAutoRoomLevelInstance>(GetOwner()))
+// 		{
+// 			bIsOwnedByRoomInstance = true;
+// 
+// 			// 네트워크 설정 확인
+// 			if (!bReplicates)
+// 			{
+// 				SetReplicates(true);
+// 				SetReplicateMovement(true);
+// 			}
+// 
+// 			UE_LOG(LogTemp, Log, TEXT("Block %s initialized with owner %s"),
+// 				*GetName(),
+// 				*RoomInstance->GetName());
+// 		}
+// 	}
 // }

@@ -25,9 +25,6 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 	// 상승한 높이 초기화
 	FlyDistance = 0.0f;
 
-	// 초기 상승 최대 높이
-	MaxFlyDistance = 1000.0f;
-
 	bLoopMode = false;
 	bSingleDirection = false;
 
@@ -42,18 +39,8 @@ void UMyFlyActorComponent::BeginPlay()
 
 	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
 
-	if (GetOwner()->GetOwner() == nullptr)
-	{
-		PRINTLOG(TEXT("Owner == Null"));
-	}
-	else
-	{
-		PRINTLOG(TEXT("Owner : %s"), * GetOwner()->GetOwner()->GetName());
-	}
-
 	if (block)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Bind"));
 		block->componentCreateBoolDelegate.AddUObject(this,&UMyFlyActorComponent::GetDelegateBool);
 	}
 
@@ -81,13 +68,12 @@ void UMyFlyActorComponent::objectFly(float DeltaTime)
 	{
 		return;
 	}
-	if (Owner->HasAuthority()) return;
 
 	FVector NewLocation = Owner->GetActorLocation() + (FlyDirection * FlySpeed * DeltaTime);
 	
 	float DistanceTraveled = FVector::Dist(StartLocation, NewLocation);
 
-	if (DistanceTraveled >= MaxFlyDistance)
+	if (DistanceTraveled >= FlyDistance)
 	{
 		if (bSingleDirection)
 		{
@@ -113,13 +99,14 @@ void UMyFlyActorComponent::objectFly(float DeltaTime)
 	else
 	{
 		SRPC_SetOwnerLocation(NewLocation);
-		PRINTLOG(TEXT("Owner->SetActorLocation(newLocation)"));
 	}
 }
 void UMyFlyActorComponent::StartFly()
 {
 	StartLocation = GetOwner()->GetActorLocation();
 	
+	SRPC_SetOwnerSync(FlyDirection,FlyDistance,FlySpeed,bLoopMode,bSingleDirection);
+
 	bShouldFly = true;
 
 	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
@@ -139,17 +126,20 @@ void UMyFlyActorComponent::StartFly()
 
 void UMyFlyActorComponent::StopFly()
 {
-	bShouldFly = false;
+	SRPC_StopFly();
 
-	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
-
-	if (block)
-	{
-		block->SRPC_SetSimulatePhysics(true);
-	}
 	UE_LOG(LogTemp, Warning, TEXT("StopFly called. bShouldFly = %s"), bShouldFly ? TEXT("true") : TEXT("false"));
 }
 
+void UMyFlyActorComponent::SRPC_StopFly_Implementation()
+{
+	MRPC_StopFlay();
+
+}
+void UMyFlyActorComponent::MRPC_StopFlay_Implementation()
+{
+	bShouldFly = false;
+}
 void UMyFlyActorComponent::OriginFly()
 {
 	if (AActor* Owner = GetOwner())
@@ -160,15 +150,12 @@ void UMyFlyActorComponent::OriginFly()
 }
 void UMyFlyActorComponent::GetDelegateBool(bool delegatebool)
 {
-	bShouldFly = delegatebool;
+	bShouldFly = !delegatebool;
 
-	if (bShouldFly)
+	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
+	if (block->ActorHasTag(FName("owner")))
 	{
-		UE_LOG(LogTemp,Warning,TEXT("true"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("fasle"));
+		block->SRPC_SetSimulatePhysics(false);
 	}
 }
 
@@ -177,6 +164,7 @@ FPSH_FunctionBlockData UMyFlyActorComponent::SaveData()
 	FPSH_FunctionBlockData funtionData;
 
 	funtionData.floatArray.Add(FlySpeed);
+	funtionData.floatArray.Add(FlyDistance);
 	funtionData.fvectorArray.Add(FlyDirection);
 	funtionData.boolArray.Add(bLoopMode);
 	funtionData.boolArray.Add(bSingleDirection);
@@ -188,6 +176,7 @@ void UMyFlyActorComponent::LoadData(FPSH_FunctionBlockData funtionData)
 {
 	
 	FlySpeed = funtionData.floatArray[0]; // float
+	FlyDistance = funtionData.floatArray[1];
 	FlyDirection = funtionData.fvectorArray[0]; // fvector
 	bLoopMode = funtionData.boolArray[0]; // bool
 	bSingleDirection = funtionData.boolArray[1]; // bool
@@ -204,7 +193,12 @@ void UMyFlyActorComponent::SRPC_SetOwnerLocation_Implementation(const FVector& n
 
 void UMyFlyActorComponent::SRPC_SetOwnerSync_Implementation(FVector CFlyDirection, float CMaxFlyDistance, float CFlySpeed, bool CbLoopMode, bool CbSingleDirection)
 {
-
+	PRINTLOG(TEXT("SRPC_SetOwnerSync"));
+	FlyDirection = CFlyDirection;
+	FlyDistance = CMaxFlyDistance;
+	FlySpeed = CFlySpeed;
+	bLoopMode = CbLoopMode;
+	bSingleDirection = CbSingleDirection;
 }
 void UMyFlyActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -213,6 +207,7 @@ void UMyFlyActorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(UMyFlyActorComponent, bLoopMode);
 	DOREPLIFETIME(UMyFlyActorComponent, bShouldFly);
 	DOREPLIFETIME(UMyFlyActorComponent, FlyDirection);
+	DOREPLIFETIME(UMyFlyActorComponent, FlyDistance);
 	DOREPLIFETIME(UMyFlyActorComponent, FlySpeed);
 	DOREPLIFETIME(UMyFlyActorComponent, bSingleDirection);
 }

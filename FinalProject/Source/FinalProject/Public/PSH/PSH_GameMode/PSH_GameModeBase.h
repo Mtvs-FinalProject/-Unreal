@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
 	TSubclassOf<APSH_Player> PlayerBasicClass;
 private:
-	bool bCreateMode = true;
+	bool bCreateMode = false;
 	ECreateMode mode;
 
 };

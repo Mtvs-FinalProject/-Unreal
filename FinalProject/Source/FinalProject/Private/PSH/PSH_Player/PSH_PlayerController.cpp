@@ -106,7 +106,7 @@ void APSH_PlayerController::ObjectSave()
 		{
 			FName rowName = FName(*FString::FormatAsNumber(RowNum++));
 			FPSH_ObjectData BlockData = actor->SaveBlock();
-			dataTable->AddRow(rowName, BlockData);
+//			dataTable->AddRow(rowName, BlockData);
 			UE_LOG(LogTemp,Warning,TEXT("Save RowNam : %d"),RowNum);
 		}
 

@@ -370,8 +370,8 @@ void AAutoRoomLevelInstance::SpawnActorsFromJson()
                 SpawnedBlock->SetOwner(this);
                 SpawnedBlock->SetReplicates(true);
                 SpawnedBlock->SetReplicateMovement(true);
-                SpawnedBlock->SetOwnedByRoomInstance(true);
-                SpawnedBlock->LoadBlockHierarchy(*Data);
+             /*   SpawnedBlock->SetOwnedByRoomInstance(true);*/
+//                SpawnedBlock->LoadBlockHierarchy(*Data);
                 SpawnedActors.Add(SpawnedBlock);
                 // PostInitializeComponents 전에 필요한 설정
                 //SpawnedBlock->SetOwnedByRoomInstance(true);

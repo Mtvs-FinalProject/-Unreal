@@ -62,6 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Rotation")
 	void StopRolling();
 
+	UFUNCTION(Server,Reliable)
+	void SRPCStopRolling();
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MRPC_StopRolling();
+
 	// 초기 회전 상태로 복구
 	UFUNCTION(BlueprintCallable, Category = "Rotation")
 	void OriginRolling();

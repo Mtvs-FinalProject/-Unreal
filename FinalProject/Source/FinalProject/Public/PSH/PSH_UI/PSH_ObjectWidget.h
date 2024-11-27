@@ -47,10 +47,10 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton * Btr_Back;
-	UPROPERTY(meta = (BindWidget))
-	class UButton * Btr_Save;
-	UPROPERTY(meta = (BindWidget))
-	class UButton * Btr_Load;
+// 	UPROPERTY(meta = (BindWidget))
+// 	class UButton * Btr_Save;
+// 	UPROPERTY(meta = (BindWidget))
+// 	class UButton * Btr_Load;
 
 	UPROPERTY(EditDefaultsOnly , Category = "Data")
 	class UDataTable * nomalObjectData;

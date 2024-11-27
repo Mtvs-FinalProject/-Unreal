@@ -68,4 +68,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Button Animation")
 	FVector PressedScale;
 
+	bool bmodeChange = true;
+
 };

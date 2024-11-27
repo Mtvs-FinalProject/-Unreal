@@ -268,8 +268,8 @@ void UMovewidget::ApplyMovementValues()
 			MoveComponent->MaxDistance = DistanceValue;
 
 			UpdateMovementValuesInUI(SpeedValue, DistanceValue);
-			UE_LOG(LogTemp, Warning, TEXT("Movement values applied for %s with speed: %f, distance: %f"),
-				*MoveComponent->GetOwner()->GetName(), SpeedValue, DistanceValue);
+			//UE_LOG(LogTemp, Warning, TEXT("Movement values applied for %s with speed: %f, distance: %f"),
+				//*MoveComponent->GetOwner()->GetName(), SpeedValue, DistanceValue);
 		}
 	}
 }

@@ -73,6 +73,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void StopMoving();
 
+	UFUNCTION(Server,Reliable)
+	void SRPC_StopMoving();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MRPC_StopMoving();
+
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void OriginMove();
 
@@ -87,7 +93,7 @@ public:
 	void SRPC_SetOwnerLocation(const FVector & newLocation);
 
 	UFUNCTION(Server,Reliable)
-	void SRPC_SetOwnerSync(FVector CMoveDirection, float CMoveDistance, float CMoveSpeed, bool CbLoopMode, bool CbSingleDirection);
+	void SRPC_SetOwnerSync(FVector CMoveDirection, float CMaxDistance, float CMoveSpeed, bool CbLoopMode, bool CbSingleDirection);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
