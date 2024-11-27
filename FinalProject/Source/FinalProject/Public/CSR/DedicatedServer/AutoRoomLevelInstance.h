@@ -52,6 +52,9 @@ public:
     void ServerUnassignAutoRoom();
  
     UFUNCTION(Server, Reliable)
+    void ServerGetOutAll();
+
+    UFUNCTION(Server, Reliable)
     void ServerJoinRoom(APlayerController* JoiningPlayer);
 
     UFUNCTION(Server, Reliable)
@@ -71,6 +74,9 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+    // 방에 접속한 모든 플레이어를 로비로 되돌리는 함수
+    void ReturnAllPlayersToLobby();
 
     // WorldAsset이 변경될 때 호출될 함수
     void HandleWorldAssetChanged();

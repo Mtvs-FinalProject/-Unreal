@@ -127,6 +127,9 @@ void AddObjectToComboBox(AActor* NewObject);
 UFUNCTION(BlueprintCallable)
 void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 
+UFUNCTION()
+UWidget* GenerateComboBoxItem(FString Item);
+
 //-----------------------------------------------------------------------------------------------
 // 왕복관련 함수들
 UFUNCTION(BlueprintCallable)

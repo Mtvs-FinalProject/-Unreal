@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -38,6 +38,9 @@ class UButton* Btn_end;
 UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 bool bIsEditMode;
 
+UPROPERTY(EditDefaultsOnly, Category = "UI")
+TSubclassOf<class UWBP_CreateWidget> CreateWidgetClass;
+
 UFUNCTION()
 void OnActionClicked();
 
@@ -56,11 +59,14 @@ void OnBtn_SaveClicked();
 UFUNCTION(BlueprintImplementableEvent)
 void MapSave();
 
-// Çàµ¿À¸·Î µé¾î°¡±â
+UFUNCTION()
+void CreateSaveDataTable();
+
+// í–‰ë™ìœ¼ë¡œ ë“¤ì–´ê°€ê¸°
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> ActionChoice;
 
-// ¿ÀºêÁ§Æ® À§Á¬À¸·Î µé¾î°¡±â
+// ì˜¤ë¸Œì íŠ¸ ìœ„ì ¯ìœ¼ë¡œ ë“¤ì–´ê°€ê¸°
 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 TSubclassOf<UUserWidget> PSH_ObjectWidget;
 

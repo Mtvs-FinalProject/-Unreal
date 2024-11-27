@@ -5,6 +5,7 @@
 #include "Components/EditableText.h"
 #include "Components/ComboBoxString.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/TextBlock.h"
 
 void URotationWidget::NativeConstruct()
 {
@@ -56,6 +57,12 @@ void URotationWidget::NativeConstruct()
     if (RotateLoop)
     {
         RotateLoop->OnCheckStateChanged.AddDynamic(this, &URotationWidget::OnLoopModeCheckChanged);
+    }
+
+    // 콤보박스 글자 색 바꾸기
+    if (RotateBoxList)
+    {
+        RotateBoxList->OnGenerateWidgetEvent.BindDynamic(this, &URotationWidget::GenerateComboBoxItem);
     }
 
     InitializeFunctionObjects();
@@ -222,7 +229,12 @@ void URotationWidget::InitializeFunctionObjects()
                     }
                 }
             }
+
+            // OnSelectionChanged 이벤트 바인딩
             RotateBoxList->OnSelectionChanged.AddDynamic(this, &URotationWidget::OnFunctionObjectSelected);
+
+            // OnGenerateWidgetEvent 바인딩
+            RotateBoxList->OnGenerateWidgetEvent.BindDynamic(this, &URotationWidget::GenerateComboBoxItem);
         }
         if (AllFunctionObject.Num() > 0)
         {
@@ -230,6 +242,7 @@ void URotationWidget::InitializeFunctionObjects()
         }
     }
 }
+
 
 void URotationWidget::AddObjectToComboBox(AActor* NewObject)
 {
@@ -319,6 +332,18 @@ void URotationWidget::UpdateComponentSettings(UMyRotateActorComponent* RotateCom
     RotateComponent->MaxRotate = TimesValue;
 
     UE_LOG(LogTemp, Warning, TEXT("Updated component settings: Speed=%f, MaxRotate=%d for component %s"), SpeedValue, TimesValue, *RotateComponent->GetOwner()->GetName());
+}
+
+UWidget* URotationWidget::GenerateComboBoxItem(FString Item)
+{
+    UTextBlock* TextBlock = NewObject<UTextBlock>(this);  // TextBlock 생성
+    if (TextBlock)
+    {
+        TextBlock->SetText(FText::FromString(Item));  // 텍스트 설정
+        TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // 텍스트 색상
+        TextBlock->Font.Size = 16;  // 텍스트 크기 설정
+    }
+    return TextBlock;  // UWidget 반환
 }
 
 void URotationWidget::StartRotation()

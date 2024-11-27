@@ -9,7 +9,9 @@
 #include "YWK/MyFlyActorComponent.h"
 #include "Components/ComboBoxString.h"
 #include "Components/CheckBox.h"
+#include "Components/TextBlock.h"
 #include "../FinalProject.h"
+
 
 void UFlyWidget::NativeConstruct()
 {
@@ -73,6 +75,12 @@ void UFlyWidget::NativeConstruct()
 	if (Txt_LoopCount)
 	{
 		Txt_LoopCount->OnTextCommitted.AddDynamic(this, &UFlyWidget::OnLoopCountCommitted);
+	}
+
+	// 콤보박스 글자 색 바꾸기
+	if (FlyBoxList)
+	{
+		FlyBoxList->OnGenerateWidgetEvent.BindDynamic(this, &UFlyWidget::GenerateComboBoxItem);
 	}
 }
 
@@ -342,7 +350,12 @@ void UFlyWidget::InitializeFunctionObjects()
 					FlyBoxList->AddOption(FunctionObject->GetName());
 				}
 			}
+
+			// OnSelectionChanged 이벤트 바인딩
 			FlyBoxList->OnSelectionChanged.AddDynamic(this, &UFlyWidget::OnFunctionObjectSelected);
+
+			// OnGenerateWidgetEvent 바인딩
+			FlyBoxList->OnGenerateWidgetEvent.BindDynamic(this, &UFlyWidget::GenerateComboBoxItem);
 		}
 
 		if (AllFunctionObject.Num() > 0)
@@ -351,6 +364,7 @@ void UFlyWidget::InitializeFunctionObjects()
 		}
 	}
 }
+
 
 void UFlyWidget::AddObjectToComboBox(AActor* NewObject)
 {
@@ -400,6 +414,18 @@ void UFlyWidget::OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Typ
 	}
 }
 
+
+UWidget* UFlyWidget::GenerateComboBoxItem(FString Item)
+{
+	UTextBlock* TextBlock = NewObject<UTextBlock>(this);  // TextBlock 생성
+	if (TextBlock)
+	{
+		TextBlock->SetText(FText::FromString(Item));  // 텍스트 설정
+		TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // 텍스트 색상
+		TextBlock->Font.Size = 16;  // 텍스트 크기 설정
+	}
+	return TextBlock;  // UWidget 반환
+}
 
 // 왕복 모드 체크박스 상태 변경
 
