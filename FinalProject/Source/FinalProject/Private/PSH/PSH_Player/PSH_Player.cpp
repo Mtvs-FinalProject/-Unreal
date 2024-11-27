@@ -462,10 +462,7 @@ void APSH_Player::InitPcUi()
 		if (pc->garbageBotWidget)
 		{
 			pc->garbageBotWidget->AddToViewport();
-			if (!bCreatingMode)
-			{
-				pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
+			pc->garbageBotWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 
@@ -1395,6 +1392,7 @@ APSH_BlockActor* APSH_Player::SpawnBlock(const FPSH_BlockData& BlockData, APSH_B
 		if (Parent)
 		{
 			NewBlock->meshComp->SetSimulatePhysics(false);
+
 			NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
 			if (NewBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform))
 			{
