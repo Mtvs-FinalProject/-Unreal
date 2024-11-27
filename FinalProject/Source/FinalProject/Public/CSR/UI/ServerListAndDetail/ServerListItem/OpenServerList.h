@@ -7,15 +7,19 @@
 #include "Components/ScrollBox.h"
 #include "CSR/DedicatedServer/AutoGameState.h"
 #include "Components/VerticalBox.h"
-#include "OpenServerItem.h"
 #include "OpenServerList.generated.h"
 
 class UOpenServerItem;
+
 
 UCLASS()
 class FINALPROJECT_API UOpenServerList : public UUserWidget
 {
     GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable)
+	void SendDetailData(const FString& RoomName, const FString& Title, int32 CurrentPlayer) const;
 
 protected:
     virtual void NativeConstruct() override;
@@ -31,7 +35,7 @@ protected:
 
     // 현재 선택된 아이템
     UPROPERTY()
-    class UOpenServerItem* SelectedItem;
+    UOpenServerItem* SelectedItem;
 
     // GameState의 방 목록 업데이트 이벤트에 반응하는 함수
     UFUNCTION()
@@ -42,10 +46,10 @@ protected:
 
 public:
     // 아이템 선택 처리 함수
-    void SelectItem(class UOpenServerItem* NewSelectedItem);
+    void SelectItem(UOpenServerItem* NewSelectedItem);
 
     // 현재 선택된 아이템 반환
-    class UOpenServerItem* GetSelectedItem() const { return SelectedItem; }
+    UOpenServerItem* GetSelectedItem() const { return SelectedItem; }
 
 private:
     // 이벤트 바인딩 해제를 위한 약한 참조

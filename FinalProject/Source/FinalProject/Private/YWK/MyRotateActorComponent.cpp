@@ -20,12 +20,12 @@ UMyRotateActorComponent::UMyRotateActorComponent()
 	TotalRotationAngle = 0.0f;
 	bLoopMode = false;
 
-    SetIsReplicated(true);
 }
 
 void UMyRotateActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
+    SetIsReplicated(true);
 
     APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
 

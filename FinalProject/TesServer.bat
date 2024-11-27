@@ -1,0 +1,1 @@
+"C:\UnrealCode\UnrealEngine-5.4.4-release\Engine\Binaries\Win64\UnrealEditor.exe" "C:\Users\Admin\Documents\Unreal Projects\-Unreal\FinalProject\FinalProject.uproject" tes2 -server -log -statsPort=24002

@@ -23,7 +23,7 @@ public:
     void CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);
 
     // JSON 데이터를 포함한 방 생성 함수
-    void CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer);
+    void CreateAutoRoomWithData(const FString& RoomName, const FString& SelectedMap, const FString& JsonData, APlayerController* RequestingPlayer);
 
     // 방 참가 함수
     void JoinAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer);

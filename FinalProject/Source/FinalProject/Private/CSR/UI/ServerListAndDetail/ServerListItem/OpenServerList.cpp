@@ -6,6 +6,7 @@
 #include "CSR/UI/ServerListAndDetail/ServerListsWidget.h"
 #include "Components/PanelSlot.h"
 #include "CSR/UI/ServerListAndDetail/ServerListItem/OpenServerItem.h"
+#include "PSH/PSH_Player/PSH_PlayerController.h"
 
 void UOpenServerList::NativeConstruct()
 {
@@ -70,6 +71,18 @@ void UOpenServerList::RefreshRoomList()
                 }
             }
         }
+    }
+}
+
+void UOpenServerList::SendDetailData(const FString& RoomName, const FString& Title, int32 CurrentPlayer) const
+{
+    APSH_PlayerController* player = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController());
+    if (player->ListsWidget) {
+        UE_LOG(LogTemp, Warning, TEXT("csr SendDetailData %s, %s"), *RoomName, *Title);
+        player->ListsWidget->SendDetailData(RoomName, Title, CurrentPlayer);
+    }
+    else {
+        UE_LOG(LogTemp, Warning, TEXT("hee"));
     }
 }
 

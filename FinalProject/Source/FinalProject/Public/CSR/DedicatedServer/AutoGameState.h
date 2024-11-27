@@ -28,6 +28,9 @@ struct FRoomListInfo
     FString RoomName;
     
     UPROPERTY()
+    FString SelectedMap;
+
+    UPROPERTY()
     int32 CurrentPlayers;
     
     UPROPERTY()
@@ -38,6 +41,24 @@ struct FRoomListInfo
 
     UPROPERTY()
     ERoomMode RoomMode;
+
+    FRoomListInfo() {
+        this->RoomName.Empty();
+        this->SelectedMap.Empty();
+        this->CurrentPlayers = 0;
+        this->MaxPlayers = 4;
+        this->bIsPlaying = false;
+        this->RoomMode = ERoomMode::NoMode;
+    }
+
+    void InitAllData() {
+        this->RoomName.Empty();
+        this->SelectedMap.Empty();
+        this->CurrentPlayers = 0;
+        this->MaxPlayers = 4;
+        this->bIsPlaying = false;
+        this->RoomMode = ERoomMode::NoMode;
+    }
 };
 
 /**
@@ -64,7 +85,7 @@ public:
 
     // 서버에서 방 정보 업데이트
     void UpdateRoomList();
-
+    
 protected:
     UFUNCTION()
     void OnRep_RoomList();

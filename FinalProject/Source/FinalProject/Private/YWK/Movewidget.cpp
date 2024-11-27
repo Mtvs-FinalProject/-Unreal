@@ -434,7 +434,18 @@ UWidget* UMovewidget::GenerateComboBoxItem(FString Item)
 	{
 		TextBlock->SetText(FText::FromString(Item));  // 텍스트 설정
 		TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // 텍스트 색상
-		TextBlock->Font.Size = 16;  // 텍스트 크기 설정
+		//TextBlock->Font.Size = 16;  // 텍스트 크기 설정
+		if (TextBlock)
+		{
+			// 기존 Font 가져오기
+			FSlateFontInfo CurrentFont = TextBlock->GetFont();
+
+			// Font Size 수정
+			CurrentFont.Size = 16;
+
+			// 수정된 Font 다시 설정
+			TextBlock->SetFont(CurrentFont);
+		}
 	}
 	return TextBlock;  // UWidget 반환
 }

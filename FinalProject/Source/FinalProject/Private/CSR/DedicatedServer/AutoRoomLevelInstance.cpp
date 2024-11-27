@@ -21,9 +21,9 @@ AAutoRoomLevelInstance::AAutoRoomLevelInstance()
     bReplicates = true;
     SetReplicatingMovement(true);
     bAlwaysRelevant = true;
-
+    
     // 레벨 경로 설정 (프로젝트에 맞게 수정 필요)
-    LevelPath = TEXT("/Game/PSH/PSH_Map/PSH_Level.PSH_Level");
+    LevelPath = TEXT("/Game/Alpha/NewFolder/runningmap_alpha.runningmap_alpha");
 }
 
 void AAutoRoomLevelInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -433,6 +433,8 @@ void AAutoRoomLevelInstance::SpawnAndSetupCharacter(APlayerController* PlayerCon
     {
         SpawnedActors.Add(SpawnedCharacter);
         PlayerController->Possess(SpawnedCharacter);
+        APSH_PlayerController *player = Cast<APSH_PlayerController>(PlayerController);
+        player->Client_deleteMainUI();
     }
 }
 

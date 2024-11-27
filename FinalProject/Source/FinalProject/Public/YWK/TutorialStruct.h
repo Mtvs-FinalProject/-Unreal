@@ -22,4 +22,11 @@ struct FTutorialStruct : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tutorial")
     int32 NextID;
+
+    FTutorialStruct() {
+        this->ID = 0;
+        this->NextID = 0;
+        this->Speaker.Empty();
+        this->Text.Empty();
+    }
 };

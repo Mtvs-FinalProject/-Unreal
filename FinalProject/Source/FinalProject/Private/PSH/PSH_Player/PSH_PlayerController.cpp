@@ -49,7 +49,11 @@ void APSH_PlayerController::BeginPlay()
 // 		StartUI = CreateWidget<UCSR_Proto_StartUI>(this, StartUIFac);
 // 		StartUI->AddToViewport();
 		SetInputMode(FInputModeGameAndUI());
-
+	if (!HasAuthority()) {
+		MainUI = CreateWidget<UMainPageWidget>(this, MainUIClass);
+		MainUI->AddToViewport();
+		SetInputMode(FInputModeUIOnly());
+	}
 }
 void APSH_PlayerController::LookMouseCursor()
 {
@@ -246,7 +250,7 @@ void APSH_PlayerController::CRPC_ObjectWidgetVisible_Implementation(bool check)
 
 // 서버에 룸 관련 요청 - 성락
 #pragma region
-void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FString& RoomName, const FString& JsonData)
+void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FString& RoomName, const FString& SelectedMap, const FString& JsonData)
 {
 	if (!HasAuthority())
 	{
@@ -265,7 +269,7 @@ void APSH_PlayerController::ServerRequestCreateAutoRoom_Implementation(const FSt
 			else
 			{
 				// Play 모드 - JSON 데이터로 방 생성
-				RoomManager->CreateAutoRoomWithData(RoomName, JsonData, this);
+				RoomManager->CreateAutoRoomWithData(RoomName, SelectedMap, JsonData, this);
 			}
 		}
 		else
@@ -381,6 +385,21 @@ void APSH_PlayerController::Client_ShowMainUI_Implementation()
 
 	// 입력 모드 설정
 	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+}
+
+void APSH_PlayerController::Client_deleteMainUI_Implementation()
+{
+	if (MainUI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("suss?"));
+		MainUI->RemoveFromParent();
+		MainUI = nullptr;
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("ffffail"));
+	}
+	SetInputMode(FInputModeGameAndUI());
 	bShowMouseCursor = true;
 }
 

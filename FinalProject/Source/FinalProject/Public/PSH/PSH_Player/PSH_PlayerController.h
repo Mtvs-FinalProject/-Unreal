@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "CSR/HTTP/CSR_HTTP_Actor.h"
+#include "CSR/UI/ServerListAndDetail/ServerListAndDetail.h"
 #include "PSH_PlayerController.generated.h"
 
 /**
@@ -71,6 +72,9 @@ public:
 	UPROPERTY()
 	class APSH_Player * curPlayer;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UServerListAndDetail* ListsWidget;
+
 	// URotationwidget 클래스에 대한 포인터 (UI 인스턴스)
 	UPROPERTY()
 	class URotationWidget* RotationWidget;
@@ -90,7 +94,7 @@ public:
 public:
     // 방 생성 관련 RPC 함수
     UFUNCTION(Server, Reliable)
-    void ServerRequestCreateAutoRoom(const FString& RoomName, const FString& JsonData = TEXT(""));
+    void ServerRequestCreateAutoRoom(const FString& RoomName, const FString& SelectedMap = TEXT(""), const FString& JsonData = TEXT(""));
 
     UFUNCTION(Server, Reliable)
     void ServerRequestJoinAutoRoom(const FString& RoomName);
@@ -108,6 +112,9 @@ public:
 
 	UFUNCTION(Client, Reliable)
     void Client_ShowMainUI();
+
+	UFUNCTION(Client, Reliable)
+	void Client_deleteMainUI();
 
 	UFUNCTION(Server, Reliable)
     void ServerRequestCleanupCurrentRoom();

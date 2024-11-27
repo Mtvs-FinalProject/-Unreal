@@ -32,13 +32,13 @@ UMyFlyActorComponent::UMyFlyActorComponent()
 	bSingleDirection = false;
 
 
-	SetIsReplicated(true);
 }
 
 // Called when the game starts
 void UMyFlyActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	SetIsReplicated(true);
 
 	APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
 

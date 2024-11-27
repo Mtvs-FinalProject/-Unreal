@@ -7,7 +7,6 @@
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "CSR/DedicatedServer/AutoGameState.h"
-#include "UObject/NoExportTypes.h"
 #include "OpenServerItem.generated.h"
 
 class UOpenServerList;
@@ -28,9 +27,10 @@ public:
     ERoomMode GetRoomMode() const { return CurrentMode; }
 
     UFUNCTION()
-    void SetParentWidget(class UOpenServerList* ParentWidget_) {
+    void SetParentWidget(UOpenServerList* ParentWidget_) {
         this->ParentWidget = ParentWidget_;
     }
+
 protected:
     virtual void NativeConstruct() override;
 
@@ -46,6 +46,15 @@ protected:
     UPROPERTY(meta = (BindWidget))
     class UTextBlock* PlayerCountText;
 
+    UPROPERTY()
+    FString SelectedMap;
+
+    UPROPERTY()
+    bool IsPlay;
+
+    UPROPERTY()
+    int32 CurrentPlayer;
+
     UPROPERTY(EditAnywhere, Category = "Style")
     FLinearColor NormalColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
@@ -56,7 +65,8 @@ protected:
     void OnMainButtonClicked();
 
     UPROPERTY()
-    class UOpenServerList *ParentWidget;
+    UOpenServerList * ParentWidget;
+
 private:
     FString CurrentRoomName;
     ERoomMode CurrentMode;

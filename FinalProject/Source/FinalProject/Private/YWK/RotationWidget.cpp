@@ -1,4 +1,4 @@
-#include "YWK/RotationWidget.h"
+ï»¿#include "YWK/RotationWidget.h"
 #include "YWK/MyRotateActorComponent.h"
 #include "Components/Button.h"
 #include "Components/CheckBox.h"
@@ -59,7 +59,7 @@ void URotationWidget::NativeConstruct()
         RotateLoop->OnCheckStateChanged.AddDynamic(this, &URotationWidget::OnLoopModeCheckChanged);
     }
 
-    // ÄÞº¸¹Ú½º ±ÛÀÚ »ö ¹Ù²Ù±â
+    // ì½¤ë³´ë°•ìŠ¤ ê¸€ìž ìƒ‰ ë°”ê¾¸ê¸°
     if (RotateBoxList)
     {
         RotateBoxList->OnGenerateWidgetEvent.BindDynamic(this, &URotationWidget::GenerateComboBoxItem);
@@ -181,7 +181,7 @@ void URotationWidget::OnRotateSpeedTextCommitted(const FText& Text, ETextCommit:
             RotateSpeedMap.FindOrAdd(SelectedRotateComponent) = SpeedValue;
             UE_LOG(LogTemp, Warning, TEXT("Rotation speed set to: %f for component %s"), SpeedValue, *SelectedRotateComponent->GetOwner()->GetName());
             
-            UpdateRotateSpeedMap();  // RotateSpeedMap °»½Å ½Ã È£Ãâ
+            UpdateRotateSpeedMap();  // RotateSpeedMap ê°±ì‹  ì‹œ í˜¸ì¶œ
         }
         else
         {
@@ -230,10 +230,10 @@ void URotationWidget::InitializeFunctionObjects()
                 }
             }
 
-            // OnSelectionChanged ÀÌº¥Æ® ¹ÙÀÎµù
+            // OnSelectionChanged ì´ë²¤íŠ¸ ë°”ì¸ë”©
             RotateBoxList->OnSelectionChanged.AddDynamic(this, &URotationWidget::OnFunctionObjectSelected);
 
-            // OnGenerateWidgetEvent ¹ÙÀÎµù
+            // OnGenerateWidgetEvent ë°”ì¸ë”©
             RotateBoxList->OnGenerateWidgetEvent.BindDynamic(this, &URotationWidget::GenerateComboBoxItem);
         }
         if (AllFunctionObject.Num() > 0)
@@ -336,14 +336,25 @@ void URotationWidget::UpdateComponentSettings(UMyRotateActorComponent* RotateCom
 
 UWidget* URotationWidget::GenerateComboBoxItem(FString Item)
 {
-    UTextBlock* TextBlock = NewObject<UTextBlock>(this);  // TextBlock »ý¼º
+    UTextBlock* TextBlock = NewObject<UTextBlock>(this);  // TextBlock ìƒì„±
     if (TextBlock)
     {
-        TextBlock->SetText(FText::FromString(Item));  // ÅØ½ºÆ® ¼³Á¤
-        TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // ÅØ½ºÆ® »ö»ó
-        TextBlock->Font.Size = 16;  // ÅØ½ºÆ® Å©±â ¼³Á¤
+        TextBlock->SetText(FText::FromString(Item));  // í…ìŠ¤íŠ¸ ì„¤ì •
+        TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor::Green));  // í…ìŠ¤íŠ¸ ìƒ‰ìƒ
+        //TextBlock->Font.Size = 16;  // í…ìŠ¤íŠ¸ í¬ê¸° ì„¤ì •
+        if (TextBlock)
+        {
+            // ê¸°ì¡´ Font ê°€ì ¸ì˜¤ê¸°
+            FSlateFontInfo CurrentFont = TextBlock->GetFont();
+
+            // Font Size ìˆ˜ì •
+            CurrentFont.Size = 16;
+
+            // ìˆ˜ì •ëœ Font ë‹¤ì‹œ ì„¤ì •
+            TextBlock->SetFont(CurrentFont);
+        }
     }
-    return TextBlock;  // UWidget ¹ÝÈ¯
+    return TextBlock;  // UWidget ë°˜í™˜
 }
 
 void URotationWidget::StartRotation()

@@ -8,6 +8,7 @@
 #include "ModalWidget.h"
 #include "Delegates/DelegateCombinations.h"
 #include "ServerListItem/OpenServerList.h"
+#include "RoomDetailPanel.h"
 #include "ServerListsWidget.generated.h"
 
 
@@ -33,7 +34,6 @@ public:
 
     UPROPERTY(meta = (BindWidget))
     UOpenServerList * WBP_Open_Server_List;
-
 
     // 모달 위젯 클래스 (Blueprint 설정 가능)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))

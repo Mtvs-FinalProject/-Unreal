@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 #include "RotationWidget.generated.h"
 
-// È¸Àü ¼Óµµ ¸Ê ¾÷µ¥ÀÌÆ®¸¦ ¾Ë¸®´Â ÀÌº¥Æ® µ¨¸®°ÔÀÌÆ® ¼±¾ğ
+// íšŒì „ ì†ë„ ë§µ ì—…ë°ì´íŠ¸ë¥¼ ì•Œë¦¬ëŠ” ì´ë²¤íŠ¸ ë¸ë¦¬ê²Œì´íŠ¸ ì„ ì–¸
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRotateSpeedMapUpdated);
 
 UCLASS()
@@ -17,18 +17,18 @@ class FINALPROJECT_API URotationWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    // UI ÃÊ±âÈ­
+    // UI ì´ˆê¸°í™”
     virtual void NativeConstruct() override;
 
-    // È¸Àü ¼Óµµ ÀÔ·Â ÇÊµå
+    // íšŒì „ ì†ë„ ì…ë ¥ í•„ë“œ
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UEditableText* RotateSpeedText;
 
-    // È¸Àü È½¼ö¸¦ ÀÔ·Â¹Ş´Â ÅØ½ºÆ®
+    // íšŒì „ íšŸìˆ˜ë¥¼ ì…ë ¥ë°›ëŠ” í…ìŠ¤íŠ¸
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UEditableText* TimesRotateText;
 
-    // È¸Àü Ãà ¹öÆ°
+    // íšŒì „ ì¶• ë²„íŠ¼
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UButton* Btn_X;
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
@@ -36,7 +36,7 @@ public:
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UButton* Btn_Z;
 
-    // UI Á¦¾î ¹öÆ°
+    // UI ì œì–´ ë²„íŠ¼
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UButton* Btn_RotateBack;
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
@@ -46,19 +46,19 @@ public:
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UButton* Btn_RotateOrigin;
 
-    // È¸Àü ·çÇÁ Ã¼Å©¹Ú½º
+    // íšŒì „ ë£¨í”„ ì²´í¬ë°•ìŠ¤
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     class UCheckBox* RotateLoop;
 
-    // Action Choice À§Á¬ Å¬·¡½º
+    // Action Choice ìœ„ì ¯ í´ë˜ìŠ¤
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
     TSubclassOf<UUserWidget> ActionChoice;
 
-    // ÄŞº¸¹Ú½º¸®½ºÆ® (È¸Àü ¿ÀºêÁ§Æ® ¼±ÅÃ)
+    // ì½¤ë³´ë°•ìŠ¤ë¦¬ìŠ¤íŠ¸ (íšŒì „ ì˜¤ë¸Œì íŠ¸ ì„ íƒ)
     UPROPERTY(meta = (BindWidget))
     class UComboBoxString* RotateBoxList;
 
-    // È¸Àü Ãà ¹öÆ° Å¬¸¯ ÇÔ¼ö
+    // íšŒì „ ì¶• ë²„íŠ¼ í´ë¦­ í•¨ìˆ˜
     UFUNCTION(BlueprintCallable)
     void OnXClicked();
     UFUNCTION(BlueprintCallable)
@@ -66,7 +66,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void OnZClicked();
 
-    // È¸Àü Á¦¾î ¹öÆ° Å¬¸¯ ÇÔ¼ö
+    // íšŒì „ ì œì–´ ë²„íŠ¼ í´ë¦­ í•¨ìˆ˜
     UFUNCTION(BlueprintCallable)
     void OnRotateBackClicked();
     UFUNCTION(BlueprintCallable)
@@ -76,19 +76,19 @@ public:
     UFUNCTION(BlueprintCallable)
     void OnRotateOriginClicked();
 
-    // È¸Àü Ãà°ú È¸Àü ¼Óµµ ¼³Á¤ ÇÔ¼ö
+    // íšŒì „ ì¶•ê³¼ íšŒì „ ì†ë„ ì„¤ì • í•¨ìˆ˜
     UFUNCTION(BlueprintCallable)
     void SetRotationDirection(FRotator NewDirection);
 
-    // È¸Àü ¼Óµµ ÀÔ·Â Ã³¸®
+    // íšŒì „ ì†ë„ ì…ë ¥ ì²˜ë¦¬
     UFUNCTION(BlueprintCallable)
     void OnRotateSpeedTextCommitted(const FText& Text, ETextCommit::Type CommitMethod);
 
-    // ·çÇÁ ¸ğµå Ã¼Å©¹Ú½º »óÅÂ º¯°æ
+    // ë£¨í”„ ëª¨ë“œ ì²´í¬ë°•ìŠ¤ ìƒíƒœ ë³€ê²½
     UFUNCTION(BlueprintCallable)
     void OnLoopModeCheckChanged(bool bIsChecked);
 
-    // ¿ÀºêÁ§Æ® °¡Á®¿À±â, ÃÊ±âÈ­ ¹× ÄŞº¸¹Ú½º ¼³Á¤
+    // ì˜¤ë¸Œì íŠ¸ ê°€ì ¸ì˜¤ê¸°, ì´ˆê¸°í™” ë° ì½¤ë³´ë°•ìŠ¤ ì„¤ì •
     UFUNCTION(BlueprintCallable)
     void InitializeFunctionObjects();
     UFUNCTION(BlueprintCallable)
@@ -96,45 +96,45 @@ public:
     UFUNCTION(BlueprintCallable)
     void OnFunctionObjectSelected(FString SelectedItem, ESelectInfo::Type SelectionType);
 
-    // ´ÙÁß È¸Àü ÄÄÆ÷³ÍÆ® ¹è¿­°ú Ãß°¡ ÇÔ¼ö
+    // ë‹¤ì¤‘ íšŒì „ ì»´í¬ë„ŒíŠ¸ ë°°ì—´ê³¼ ì¶”ê°€ í•¨ìˆ˜
     TArray<UMyRotateActorComponent*> ControlledRotateComponents;
     void AddControlledRotateComponent(UMyRotateActorComponent* NewComponent);
 
-    // È½¼ö ÅØ½ºÆ®°¡ º¯°æµÉ ¶§ È£ÃâµÇ´Â ÇÔ¼ö
+    // íšŸìˆ˜ í…ìŠ¤íŠ¸ê°€ ë³€ê²½ë  ë•Œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
     UFUNCTION(BlueprintCallable)
     void UpdateTimesTextUI(const FText& Text, ETextCommit::Type CommitMethod);
 
-    // ÄÄÆ÷³ÍÆ® ¼³Á¤ ¾÷µ¥ÀÌÆ®
+    // ì»´í¬ë„ŒíŠ¸ ì„¤ì • ì—…ë°ì´íŠ¸
     UFUNCTION(BlueprintCallable)
     void UpdateComponentSettings(UMyRotateActorComponent* RotateComponent);
 
     UFUNCTION()
 	UWidget* GenerateComboBoxItem(FString Item);
 
-    // È¸Àü ½ÃÀÛ
+    // íšŒì „ ì‹œì‘
     UFUNCTION()
     void StartRotation();
 
-    bool bIsInitialized = false; // À§Á¬ ÃÊ±âÈ­ »óÅÂ ÇÃ·¡±×
+    bool bIsInitialized = false; // ìœ„ì ¯ ì´ˆê¸°í™” ìƒíƒœ í”Œë˜ê·¸
     void RetryInitialization();
     FTimerHandle TimerHandle;
 
-    // ÇöÀç ¼±ÅÃµÈ ¾×ÅÍ ¹× ¸ğµç È¸Àü ¿ÀºêÁ§Æ® ¹è¿­
+    // í˜„ì¬ ì„ íƒëœ ì•¡í„° ë° ëª¨ë“  íšŒì „ ì˜¤ë¸Œì íŠ¸ ë°°ì—´
     AActor* SelectedActor;
     TArray<AActor*> AllFunctionObject;
 
-    // ÄÄÆ÷³ÍÆ® ¿À³Ê¸¦ °¡Á®¿À´Â ÇÔ¼ö
+    // ì»´í¬ë„ŒíŠ¸ ì˜¤ë„ˆë¥¼ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜
     AActor* GetOwnerFromComponent();
 
-    // È¸Àü ¹æÇâ, ¼Óµµ µîÀ» ÀúÀåÇÒ ¸Ê
+    // íšŒì „ ë°©í–¥, ì†ë„ ë“±ì„ ì €ì¥í•  ë§µ
     TMap<UMyRotateActorComponent*, float> RotateSpeedMap;
     TMap<UMyRotateActorComponent*, int32> TimesRotateMap;
     TMap<UMyRotateActorComponent*, FRotator> RotateDirectionMap;
 
-    // RotateSpeedMap ¾÷µ¥ÀÌÆ® ÀÌº¥Æ®
+    // RotateSpeedMap ì—…ë°ì´íŠ¸ ì´ë²¤íŠ¸
     UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
     FOnRotateSpeedMapUpdated OnRotateSpeedMapUpdated;
 
-    // RotateSpeedMap ¾÷µ¥ÀÌÆ® ½Ã È£ÃâµÇ´Â ÇÔ¼ö
+    // RotateSpeedMap ì—…ë°ì´íŠ¸ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
     void UpdateRotateSpeedMap();
 };

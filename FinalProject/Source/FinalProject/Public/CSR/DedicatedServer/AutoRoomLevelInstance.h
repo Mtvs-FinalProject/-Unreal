@@ -31,8 +31,11 @@ public:
     TSoftObjectPtr<UWorld> RuntimeWorldAsset;
 
 	UPROPERTY(Replicated)
-	FString CurrentRoomName;
+	FString CurrentRoomName = "";
     
+    UPROPERTY(Replicated)
+    FString SelectedMap = "";
+
 	UPROPERTY(Replicated)
 	ERoomMode RoomMode = ERoomMode::NoMode;
 
@@ -45,6 +48,18 @@ public:
 	void SetCurrentRoomName(const FString& NewRoomName) {
 		if (HasAuthority()) {
 			CurrentRoomName = NewRoomName;
+		}
+	}
+
+    UFUNCTION(BlueprintCallable, Category = "Room")
+	FString GetSelectedMap() const {
+		return SelectedMap;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Room")
+	void SetSelectedMap(const FString& SelectedMap_) {
+		if (HasAuthority()) {
+            SelectedMap = SelectedMap_;
 		}
 	}
 

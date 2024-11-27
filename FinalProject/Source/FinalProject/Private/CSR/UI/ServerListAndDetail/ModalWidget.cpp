@@ -105,9 +105,9 @@ void UModalWidget::OnCreateButtonClicked()
     bool bIsCreateRoom = CreateRoomCheckBox->IsChecked();
     FString SelectedMap = SelectMapComboBox->GetSelectedOption();
 
-    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("방 이름: %s"), *RoomName));
-    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("새로운 맵 생성: %s"), bIsCreateRoom ? TEXT("Yes") : TEXT("No")));
-    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("선택된 맵: %s"), *SelectedMap));
+    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("csr 방 이름: %s"), *RoomName));
+    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("csr 새로운 맵 생성: %s"), bIsCreateRoom ? TEXT("Yes") : TEXT("No")));
+    UE_LOG(LogTemp, Log, TEXT("%s"), *FString::Printf(TEXT("csr 선택된 맵: %s"), *SelectedMap));
 
     // 입력 검증
     FString ErrorMessage;
@@ -131,7 +131,7 @@ void UModalWidget::OnCreateButtonClicked()
             FString JsonString = LoadJsonFromFile(SelectedMap);
             if (!JsonString.IsEmpty())
             {
-                PC->ServerRequestCreateAutoRoom(RoomName, JsonString);
+                PC->ServerRequestCreateAutoRoom(RoomName, SelectedMap, JsonString);
             }
             else
             {

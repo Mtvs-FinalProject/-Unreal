@@ -6,11 +6,12 @@
 #include "CSR/UI/ServerListAndDetail/ServerListItem/OpenServerList.h"
 #include "Styling/SlateTypes.h"
 #include "Components/PanelWidget.h"
+#include "CSR/UI/ServerListAndDetail/ServerListsWidget.h"
+#include "CSR/UI/ServerListAndDetail/RoomDetailPanel.h"
 
-UOpenServerItem::UOpenServerItem(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer)
-    , bIsSelected(false)
+UOpenServerItem::UOpenServerItem(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
+    this->bIsSelected = false;
 }
 
 void UOpenServerItem::NativeConstruct()
@@ -26,8 +27,11 @@ void UOpenServerItem::NativeConstruct()
 
 void UOpenServerItem::SetRoomInfo(const FRoomListInfo& InRoomInfo)
 {
-    CurrentRoomName = InRoomInfo.RoomName;
-    CurrentMode = InRoomInfo.RoomMode;
+    this->CurrentRoomName = InRoomInfo.RoomName;
+    this->CurrentMode = InRoomInfo.RoomMode;
+    this->SelectedMap = InRoomInfo.SelectedMap;
+    this->IsPlay = InRoomInfo.bIsPlaying;
+    this->CurrentPlayer = InRoomInfo.CurrentPlayers;
 
     if (RoomNameText)
     {
@@ -55,15 +59,17 @@ void UOpenServerItem::SetSelected(bool bSelected)
     FLinearColor NewColor = bSelected ? SelectedColor : NormalColor;
     if (MainButton)
     {
-        FButtonStyle NewStyle = MainButton->WidgetStyle;
-        NewStyle.Normal.TintColor = NewColor;
-        NewStyle.Hovered.TintColor = NewColor * 1.1f;
-        NewStyle.Pressed.TintColor = NewColor * 0.9f;
-        MainButton->SetStyle(NewStyle);
+		FButtonStyle NewStyle = MainButton->GetStyle(); // WidgetStyle 대신 GetStyle() 사용
+		NewStyle.Normal.TintColor = NewColor;
+		NewStyle.Hovered.TintColor = NewColor * 1.1f;
+		NewStyle.Pressed.TintColor = NewColor * 0.9f;
+		MainButton->SetStyle(NewStyle); // 수정된 스타일을 다시 적용
     }
 }
 
 void UOpenServerItem::OnMainButtonClicked()
 {
     ParentWidget->SelectItem(this);
+    UE_LOG(LogTemp, Warning, TEXT("csr %s"), *this->SelectedMap);
+    ParentWidget->SendDetailData(this->CurrentRoomName, this->SelectedMap, this->CurrentPlayer);
 }

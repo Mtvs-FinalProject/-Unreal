@@ -3,6 +3,7 @@
 
 #include "CSR/Auth/AuthSubsystem.h"
 #include "JsonObjectConverter.h"
+#include "Kismet/GameplayStatics.h"
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -138,16 +139,16 @@ void UAuthSubsystem::OnLoginRequestComplete(FHttpRequestPtr Request, FHttpRespon
         bool bSuccessful = Response->GetResponseCode() == 200;
 
         // 토큰이 있는지 확인
-        if (bSuccessful && JsonObject->HasField("token"))
+        if (bSuccessful && JsonObject->HasField(TEXT("token")))
         {
-            AuthToken = JsonObject->GetStringField("token");
+            AuthToken = JsonObject->GetStringField(TEXT("token"));
         }
 
         FString Message;
-        if (JsonObject->HasField("message"))
+        if (JsonObject->HasField(TEXT("message")))
         {
             // 서버에서 message 필드를 보내줬다면 그 메시지를 사용
-            Message = JsonObject->GetStringField("message");
+            Message = JsonObject->GetStringField(TEXT("message"));
         }
         else
         {
@@ -163,6 +164,8 @@ void UAuthSubsystem::OnLoginRequestComplete(FHttpRequestPtr Request, FHttpRespon
         }
 
         OnLoginResponse.Broadcast(bSuccessful, Message);
+        FString ServerAddress = TEXT("127.0.0.1:7777"); // 서버 주소
+        UGameplayStatics::OpenLevel(GetWorld(), FName(*ServerAddress), true);
     }
     else
     {

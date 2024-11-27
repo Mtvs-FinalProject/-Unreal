@@ -97,7 +97,7 @@ void AAutoRoomManager::LeaveAutoRoom(const FString& RoomName, APlayerController*
 }
 
 
-void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FString& JsonData, APlayerController* RequestingPlayer)
+void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FString& SelectedMap, const FString& JsonData, APlayerController* RequestingPlayer)
 {
     if (!ValidateRoomCreation(RoomName, RequestingPlayer))
     {
@@ -107,9 +107,11 @@ void AAutoRoomManager::CreateAutoRoomWithData(const FString& RoomName, const FSt
     AAutoRoomLevelInstance* AvailableRoom = FindAvailableAutoRoom();
     if (AvailableRoom)
     {
+        UE_LOG(LogTemp, Warning, TEXT("csr %s"), *SelectedMap);
         UE_LOG(LogTemp, Log, TEXT("Creating room %s with data for player %s"),
             *RoomName, *RequestingPlayer->GetName());
         AvailableRoom->RoomMode = ERoomMode::Play;
+        AvailableRoom->SetSelectedMap(SelectedMap);
         AvailableRoom->ServerAssignAutoRoom(RoomName, JsonData);
         AvailableRoom->ServerJoinRoom(RequestingPlayer);
         if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())

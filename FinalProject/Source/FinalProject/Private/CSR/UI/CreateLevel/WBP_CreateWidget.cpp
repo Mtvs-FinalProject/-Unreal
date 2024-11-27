@@ -89,7 +89,6 @@ void UWBP_CreateWidget::SendHttpRequest(const TArray<uint8>& FormData)
     Request->SetVerb(TEXT("POST"));
     UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>();
     FString Token = AuthSubsystem->GetAuthToken();
-    Token = TEXT("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzMyNjA4Mzc5LCJleHAiOjE3MzMyMTMxNzl9.Nu-F64GuhEeJQZgU3BMpqNjdmRdlbc5ssfS08hVfPVQ");
     Request->SetHeader("Authorization", FString::Printf(TEXT("Bearer %s"), *Token));
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *BOUNDARY));
     Request->SetContent(FormData);

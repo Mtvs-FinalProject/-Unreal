@@ -21,6 +21,7 @@ void AAutoGameState::UpdateRoomList()
         {
             FRoomListInfo NewInfo;
             NewInfo.RoomName = Room->GetCurrentRoomName();
+            NewInfo.SelectedMap = Room->GetSelectedMap();
             NewInfo.CurrentPlayers = Room->ConnectedPlayers.Num();
             NewInfo.MaxPlayers = 4; // 또는 설정된 최대 플레이어 수
             NewInfo.bIsPlaying = true; // 또는 방의 상태에 따라 설정

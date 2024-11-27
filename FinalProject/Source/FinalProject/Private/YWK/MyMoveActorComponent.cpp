@@ -37,7 +37,6 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 	// ÇöÀç ¿Õº¹ È½¼ö
 	CurrentLoop = 0;
 
-    SetIsReplicated(true);
 
 }
 
@@ -46,6 +45,7 @@ UMyMoveActorComponent::UMyMoveActorComponent()
 void UMyMoveActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
+    SetIsReplicated(true);
 
     APSH_BlockActor* block = Cast<APSH_BlockActor>(GetOwner());
 

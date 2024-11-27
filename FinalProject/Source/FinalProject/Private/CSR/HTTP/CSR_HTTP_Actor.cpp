@@ -97,7 +97,17 @@ FString ConvertDataTableToJSON(UDataTable* DataTable)
             {
                 FProperty* Property = *PropIt;
                 FString ValueString;
-                Property->ExportTextItem(ValueString, Property->ContainerPtrToValuePtr<void>(RowData), nullptr, nullptr, 0);
+                /*Property->ExportTextItem(ValueString, Property->ContainerPtrToValuePtr<void>(RowData), nullptr, nullptr, 0);*/
+                if (Property && RowData)
+                {
+                    Property->ExportText_Direct(
+                        ValueString,                                         // 출력 문자열
+                        Property->ContainerPtrToValuePtr<void>(RowData),    // 직렬화할 데이터 포인터
+                        nullptr,                                            // 이전 데이터 포인터 (비교용, 필요 없으면 nullptr)
+                        nullptr,                                            // ExportTextInner 사용 시 필요 (대체 포인터)
+                        PPF_None                                            // 직렬화 플래그
+                    );
+                }
                 RowJson->SetStringField(Property->GetNameCPP(), ValueString);
             }
             JsonArray.Add(MakeShared<FJsonValueObject>(RowJson));
