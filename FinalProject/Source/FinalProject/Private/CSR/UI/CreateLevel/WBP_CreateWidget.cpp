@@ -14,6 +14,7 @@
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "../FinalProject.h"
+#include "PSH/PSH_Player/PSH_Player.h"
 
 void UWBP_CreateWidget::NativeConstruct()
 {
@@ -143,7 +144,8 @@ void UWBP_CreateWidget::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 
 bool UWBP_CreateWidget::SaveMapDataToFile(const FString& JsonString)
 {
-    // JSON 문자열을 파싱
+    UE_LOG(LogTemp, Warning, TEXT("Original JSON: %s"), *JsonString);
+
     TSharedPtr<FJsonObject> JsonObject;
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
 
@@ -153,26 +155,40 @@ bool UWBP_CreateWidget::SaveMapDataToFile(const FString& JsonString)
         return false;
     }
 
-    // mapName과 dataTable 필드 확인
+    // 필드 확인
     if (!JsonObject->HasField(TEXT("mapName")) || !JsonObject->HasField(TEXT("dataTable")))
     {
         UE_LOG(LogTemp, Error, TEXT("JSON missing required fields"));
         return false;
     }
 
-    // dataTable만 포함하는 새로운 JSON 문자열 생성
+    // dataTable 객체 추출
+    TSharedPtr<FJsonObject> DataTableObject = JsonObject->GetObjectField(TEXT("dataTable"));
+    if (!DataTableObject.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to extract dataTable"));
+        return false;
+    }
+
+    // dataTable 직렬화
     FString SaveJsonString;
     TSharedRef<TJsonWriter<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>> Writer =
         TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&SaveJsonString);
 
-    // dataTable 배열을 직접 직렬화
-    FJsonSerializer::Serialize(JsonObject->GetArrayField(TEXT("dataTable")), Writer);
+    if (FJsonSerializer::Serialize(DataTableObject.ToSharedRef(), Writer))
+    {
+        UE_LOG(LogTemp, Log, TEXT("Successfully serialized dataTable field"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to serialize dataTable field"));
+        return false;
+    }
 
-    // 파일 저장 경로 설정
+    // mapName 및 경로 설정
     FString MapName = JsonObject->GetStringField(TEXT("mapName"));
     FString SavePath = FPaths::ProjectSavedDir() / TEXT("MapData");
 
-    // MapData 디렉토리 생성 확인
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if (!PlatformFile.DirectoryExists(*SavePath))
     {
@@ -216,7 +232,10 @@ FString UWBP_CreateWidget::CreateBaseJson() const
     JsonObject->SetArrayField(TEXT("tags"), TagsArray);
 
     // data_table 필드에 데이터테이블 JSON 추가
-    JsonObject->SetArrayField(TEXT("data_table"), GetDataTableJson());
+
+    APSH_Player* player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetPawn());
+    
+    JsonObject->SetStringField(TEXT("data_table"), player->SaveTest());
 
     // JSON 문자열로 변환
     FString OutputString;

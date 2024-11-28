@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "../../../../Plugins/EnhancedInput/Source/EnhancedInput/Public/InputActionValue.h"
+#include "InputActionValue.h"
 #include "../PSH_DataTable/PSH_MechDataTable.h"
 #include "CSR/UI/GetOutModal.h"
 #include "PSH_Player.generated.h"
@@ -336,7 +336,8 @@ public:
 	// 마우스 이동 제한 영역 설정
 	const float MarginPercent = 0.05f; // 5% 여백
 	
-	void SaveTest();
+	UFUNCTION()
+	FString SaveTest();
 	int32 RowNum = 0;
 
 	void DelegateTest();

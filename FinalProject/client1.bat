@@ -1,1 +1,1 @@
-"C:\UnrealCode\UnrealEngine-5.4.4-release\Engine\Binaries\Win64\UnrealEditor.exe" "C:\Users\Admin\Documents\Unreal Projects\-Unreal\FinalProject\FinalProject.uproject" LoginMap -game -ResX=640 -ResY=480 -WinX=650 -WinY=0 -log
+"C:\UnrealCode\UnrealEngine-5.4.4-release\Engine\Binaries\Win64\UnrealEditor.exe" "C:\Users\Admin\Documents\Unreal Projects\-Unreal\FinalProject\FinalProject.uproject" LoginMap -game -ResX=640 -ResY=480 -WinX=650 -WinY=100 -log

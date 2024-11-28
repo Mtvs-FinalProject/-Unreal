@@ -436,7 +436,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		// 데이터 테이블 스폰 블럭
 		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
-		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
+		//EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
 
 		// 모드 변경
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
@@ -1851,14 +1851,14 @@ TArray<bool> APSH_Player::ConvertJsonToBoolArray(const TArray<TSharedPtr<FJsonVa
 	return BoolArray;
 }
 
-void APSH_Player::SaveTest()
+FString APSH_Player::SaveTest()
 {
 	/*SRPC_Save();*/
 
 	if (!IsValid(dataTable))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
-		return;
+		return ("");
 	}
 
 	TArray<AActor*> blockArray;
@@ -1880,6 +1880,8 @@ void APSH_Player::SaveTest()
 	}
 
 	jsonString = ConvertWorldDataToJson(WorldData);
+
+	return (jsonString);
 // 	if (!jsonString.IsEmpty())
 // 	{
 // 		PRINTLOG(TEXT("WorldData JSON: %s"), *jsonString);
