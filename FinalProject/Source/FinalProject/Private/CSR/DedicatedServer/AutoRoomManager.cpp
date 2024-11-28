@@ -14,7 +14,7 @@ AAutoRoomManager::AAutoRoomManager()
 
     // 기본 설정
     MaxRooms = 10;
-    SpaceBetweenRooms = 10000.0f;
+    SpaceBetweenRooms = 100000.0f;
 }
 
 void AAutoRoomManager::CreateAutoRoom(const FString& RoomName, APlayerController* RequestingPlayer)

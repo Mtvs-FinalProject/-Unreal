@@ -316,6 +316,8 @@ void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FStr
 		return;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("csr ServerRequestLeaveAutoRoom_Implementation"));
+
 	AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>();
 	if (!GameState)
 	{
@@ -339,7 +341,7 @@ void APSH_PlayerController::ServerRequestLeaveCurrentAutoRoom_Implementation()
 	{
 		return;
 	}
-
+	UE_LOG(LogTemp, Warning, TEXT("csr ServerRequestLeaveCurrentAutoRoom_Implementation"));
 	// 서버의 GameState를 통해 RoomManager 접근
 	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
 	{
@@ -350,8 +352,10 @@ void APSH_PlayerController::ServerRequestLeaveCurrentAutoRoom_Implementation()
 			{
 				if (Room && Room->IsPlayerInRoom(this))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("123"));
-					ServerRequestLeaveAutoRoom_Implementation(Room->GetCurrentRoomName());
+					this->Client_ShowMainUI();
+					UE_LOG(LogTemp, Warning, TEXT("csr %s"), *this->GetName());
+					Room->ClientOnLeaveRoom(this);
+					ServerRequestLeaveAutoRoom(Room->GetCurrentRoomName());
 					break;
 				}
 			}
@@ -392,6 +396,7 @@ TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FStr
 
 void APSH_PlayerController::Client_ShowMainUI_Implementation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("csr Client_ShowMainUI_Implementation %s"), *this->GetName());
 	// 이전 UI가 있다면 제거
 	if (MainUI)
 	{
@@ -402,6 +407,7 @@ void APSH_PlayerController::Client_ShowMainUI_Implementation()
 	// MainUI 생성 및 표시
 	if (MainUIClass)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("csr MainUIClass sss"));
 		MainUI = CreateWidget<UMainPageWidget>(this, MainUIClass);
 		if (MainUI)
 		{

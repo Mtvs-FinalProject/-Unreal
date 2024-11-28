@@ -4,6 +4,7 @@
 #include "CSR/Auth/AuthSubsystem.h"
 #include "JsonObjectConverter.h"
 #include "Kismet/GameplayStatics.h"
+#include "../FinalProject.h"
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -134,14 +135,26 @@ void UAuthSubsystem::OnLoginRequestComplete(FHttpRequestPtr Request, FHttpRespon
     UE_LOG(LogTemp, Warning, TEXT("%d"), Response->GetResponseCode());
     //UE_LOG(LogTemp, Warning, TEXT("%d"), Response->GetResponseCode());
 
+    //const TArray<FString>& AllHeaders = Response->GetAllHeaders();
+    //for (const FString& Header : AllHeaders)
+    //{
+    //    PRINTLOG(TEXT("Headers : %s"), *Header);
+    //}
+
     if (FJsonSerializer::Deserialize(Reader, JsonObject))
     {
         bool bSuccessful = Response->GetResponseCode() == 200;
 
         // 토큰이 있는지 확인
-        if (bSuccessful && JsonObject->HasField(TEXT("token")))
+        if (bSuccessful)
         {
-            AuthToken = JsonObject->GetStringField(TEXT("token"));
+            FString HeaderName = TEXT("Authorization");
+            FString Tokens = Response->GetHeader(HeaderName);
+            PRINTLOG(TEXT("Tokken : %s"), *Tokens);
+            FString CleanedToken = Tokens.Replace(TEXT("Bearer "), TEXT(""));
+            PRINTLOG(TEXT("Tokken : %s"), *CleanedToken);
+            AuthToken = CleanedToken;
+            PRINTLOG(TEXT("AuthToken : %s"), *AuthToken);
         }
 
         FString Message;

@@ -13,6 +13,7 @@
 #include "CSR/Auth/AuthSubsystem.h"
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
+#include "../FinalProject.h"
 
 void UWBP_CreateWidget::NativeConstruct()
 {
@@ -95,6 +96,7 @@ void UWBP_CreateWidget::SendHttpRequest(const TArray<uint8>& FormData)
     Request->SetVerb(TEXT("POST"));
     UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>();
     FString Token = AuthSubsystem->GetAuthToken();
+    PRINTLOG(TEXT("csr : %s"), * Token);
     Request->SetHeader("Authorization", FString::Printf(TEXT("Bearer %s"), *Token));
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *BOUNDARY));
     Request->SetContent(FormData);

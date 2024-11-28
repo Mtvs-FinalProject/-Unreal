@@ -6,8 +6,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
-#include "../../../../Plugins/EnhancedInput/Source/EnhancedInput/Public/EnhancedInputSubsystems.h"
-#include "../../../../Plugins/EnhancedInput/Source/EnhancedInput/Public/EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "PSH/PSH_UI/PSH_MouseWidget.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
@@ -27,9 +27,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PSH/PSH_Component/PSH_PlayerAnim.h"
-#include "../../../../Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h"
-#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
-#include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "PSH/PSH_Actor/PSH_SpawnBot.h"
 #include "PSH/PSH_UI/PSH_ObjectWidget.h"
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
@@ -57,17 +57,17 @@ APSH_Player::APSH_Player()
 		GetMesh()->SetAnimClass(tempAnim.Class);
 	}
 
-	// 스프링 컴포넌트
+	//스프링 컴포넌트
 	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	springArm->SetupAttachment(RootComponent);
-
+	
 	// 카메라 컴포넌트
 	rotationHelper = CreateDefaultSubobject<USceneComponent>(TEXT("RotationHelper"));
 	rotationHelper->SetupAttachment(RootComponent);
-
+	
 	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	cameraComp->SetupAttachment(springArm);
-
+	
 	// 피직스 핸들 컴포넌트
 	handleComp = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("Handle"));
 

@@ -112,7 +112,7 @@ void AAutoRoomLevelInstance::HandleWorldAssetChanged()
             bIsLevelLoadedLocally = false;
         }
         else {
-            UE_LOG(LogTemp,Warning, TEXT("scr Im null"));
+            UE_LOG(LogTemp,Warning, TEXT("csr Im null"));
         }
     }
 }
@@ -249,10 +249,9 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
         UE_LOG(LogTemp, Warning, TEXT("ServerLeaveRoom_Implementation 1"));
         if (ConnectedPlayers.Remove(LeavingPlayer) > 0)
         {
-            UE_LOG(LogTemp, Warning, TEXT("ServerLeaveRoom_Implementation 2"));
+            UE_LOG(LogTemp, Warning, TEXT("ServerLeaveRoom_Implmentation 2"));
 
-            ClientOnLeaveRoom(LeavingPlayer);
-
+      
             if (ConnectedPlayers.Num() == 0)
             {
                 ServerUnassignAutoRoom();
@@ -268,19 +267,33 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
 
 void AAutoRoomLevelInstance::ClientOnLeaveRoom_Implementation(APlayerController* LeavingPlayer)
 {
+    UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation aaa"));
     // 자신이 나가는 플레이어인 경우만 레벨 언로드
     if (!HasAuthority()) {
+        UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation bbb"));
+
         if (LeavingPlayer && LeavingPlayer->IsLocalController())
         {
+            UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation ccc"));
+
             if (ULevelInstanceSubsystem* LevelInstanceSubsystem =
                 GetWorld()->GetSubsystem<ULevelInstanceSubsystem>())
             {
+                UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation ddd"));
+
                 UE_LOG(LogTemp, Log, TEXT("Client %s: Unloading level after leaving"),
                     *LeavingPlayer->GetName());
                 LevelInstanceSubsystem->RequestUnloadLevelInstance(this);
                 bIsLevelLoadedLocally = false;
                 APSH_PlayerController * player = Cast<APSH_PlayerController>(LeavingPlayer);
-                player->Client_ShowMainUI();
+                if (player) {
+                    player->Client_ShowMainUI();
+                }
+                else {
+                    UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation ffffail"));
+
+                }
+                UE_LOG(LogTemp, Warning, TEXT("csr ClientOnLeaveRoom_Implementation"));
             }
         }
     }
@@ -438,6 +451,7 @@ void AAutoRoomLevelInstance::SpawnAndSetupCharacter(APlayerController* PlayerCon
     {
         SpawnedActors.Add(SpawnedCharacter);
         PlayerController->Possess(SpawnedCharacter);
+        UE_LOG(LogTemp, Warning, TEXT("csr SpawnedCharacter SpawnedCharacter"));
         APSH_PlayerController *player = Cast<APSH_PlayerController>(PlayerController);
         player->Client_deleteMainUI();
     }
