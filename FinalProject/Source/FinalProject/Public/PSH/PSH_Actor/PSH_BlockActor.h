@@ -200,6 +200,10 @@ public:
 	UFUNCTION(NetMulticast,Reliable)
 	void MRPC_SpawnEffect(const FVector& impactPoint);
 
+	class USoundBase * dorpSound;
+
+	class USoundBase * placeSound;
+
 	bool bHit = true;
 
 	UFUNCTION(Server,Reliable)
