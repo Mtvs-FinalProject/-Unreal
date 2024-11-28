@@ -17,6 +17,9 @@ class FINALPROJECT_API ATutorialBot : public AActor
 public:
     ATutorialBot();
 
+    UFUNCTION(BlueprintImplementableEvent)
+    void TutorialExit();
+
 protected:
     virtual void BeginPlay() override;
 
@@ -134,6 +137,7 @@ public:
 
     // 열 네번째 대사 바꾸기
     void FourteenthUpdateToNextRow();
+
 
 };
 

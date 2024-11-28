@@ -796,11 +796,11 @@ void ATutorialBot::ThirteenthUpdateToNextRow()
 
     TArray<FTutorialStruct*> RowArray;
     TutorialDataTable->GetAllRows<FTutorialStruct>(ContextString, RowArray);
-
     if (RowArray.Num() > 13)
     {
         TutorialWidget->UpdateText(RowArray[13]->Text);
         UE_LOG(LogTemp, Log, TEXT("ThirteenthUpdateToNextRow: Updated text to RowArray[13]: %s"), *RowArray[13]->Text);
+        TutorialExit();
 
         // 튜토리얼 봇 순간이동
         FVector TargetPosition(1403.678482f, -294.131452f, 1104.997603f);
@@ -825,13 +825,12 @@ void ATutorialBot::FourteenthUpdateToNextRow()
 
     TArray<FTutorialStruct*> RowArray;
     TutorialDataTable->GetAllRows<FTutorialStruct>(ContextString, RowArray);
-
+    
     // RowArray[14] 출력
     if (RowArray.Num() > 14)
     {
         TutorialWidget->UpdateText(RowArray[14]->Text);
         UE_LOG(LogTemp, Log, TEXT("FourteenthUpdateToNextRow: Updated text to RowArray[14]: %s"), *RowArray[14]->Text);
-
     }
     else
     {
