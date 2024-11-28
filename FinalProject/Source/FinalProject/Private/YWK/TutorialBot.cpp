@@ -494,7 +494,7 @@ void ATutorialBot::ThirdUpdateToNextRow()
         UE_LOG(LogTemp, Log, TEXT("ThirdUpdateToNextRow: Updated text to RowArray[3]: %s"), *RowArray[3]->Text);
 
         // 튜토리얼 봇 순간이동
-        FVector TargetPosition(10097.166284f, -224.637443f, GetActorLocation().Z);
+        FVector TargetPosition(10097.166284f, 390.693783f, GetActorLocation().Z);
         SetActorLocation(TargetPosition);
         UE_LOG(LogTemp, Log, TEXT("Tutorial Bot moved to First Target Position: %s"), *TargetPosition.ToString());
 
@@ -551,7 +551,7 @@ void ATutorialBot::FifthUpdateToNextRow()
         UE_LOG(LogTemp, Log, TEXT("FifthUpdateToNextRow: Updated text to RowArray[5]: %s"), *RowArray[5]->Text);
 
         // 튜토리얼 봇 순간이동
-        FVector TargetPosition(7517.254219f, -224.637443f, GetActorLocation().Z);
+        FVector TargetPosition(7256.299974f, -1204.322637f, GetActorLocation().Z);
         SetActorLocation(TargetPosition);
         UE_LOG(LogTemp, Log, TEXT("Tutorial Bot moved to Second Target Position: %s"), *TargetPosition.ToString());
 
@@ -617,7 +617,7 @@ void ATutorialBot::SeventhUpdateToNextRow()
             TimerHandle_UpdateTutorial, // 타이머 핸들
             this,                       // 호출 주체
             &ATutorialBot::eighthUpdateToNextRow, // 호출할 함수
-            4.0f,                       // 딜레이 (초)
+            8.0f,                       // 딜레이 (초)
             false );                      // 반복 실행 여부
     }
 }
@@ -646,7 +646,7 @@ void ATutorialBot::eighthUpdateToNextRow()
             TimerHandle_UpdateTutorial, // 타이머 핸들
             this,                       // 호출 주체
             &ATutorialBot::ninethUpdateToNextRow, // 호출할 함수
-            8.0f,                       // 딜레이 (초)
+            5.0f,                       // 딜레이 (초)
             false);                      // 반복 실행 여부
     }
 }
@@ -706,7 +706,7 @@ void ATutorialBot::TenthUpdateToNextRow()
         UE_LOG(LogTemp, Log, TEXT("TenthUpdateToNextRow: Updated text to RowArray[10]: %s"), *RowArray[10]->Text);
 
         // 튜토리얼 봇 순간이동
-        FVector TargetPosition(4942.90665f, -224.637443f, GetActorLocation().Z);
+        FVector TargetPosition(4942.90665f, 390.693783f, GetActorLocation().Z);
         SetActorLocation(TargetPosition);
         UE_LOG(LogTemp, Log, TEXT("Tutorial Bot moved to Third Target Position: %s"), *TargetPosition.ToString());
 
@@ -741,7 +741,7 @@ void ATutorialBot::EleventhUpdateToNextRow()
         UE_LOG(LogTemp, Log, TEXT("EleventhUpdateToNextRow: Updated text to RowArray[11]: %s"), *RowArray[11]->Text);
 
         // 튜토리얼 봇 순간이동
-        FVector TargetPosition(2482.541584f, 103.554918f, GetActorLocation().Z);
+        FVector TargetPosition(2886.880811f, 806.517713f, GetActorLocation().Z);
         SetActorLocation(TargetPosition);
         UE_LOG(LogTemp, Log, TEXT("Tutorial Bot moved to Fourth Target Position: %s"), *TargetPosition.ToString());
 
