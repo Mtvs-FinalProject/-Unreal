@@ -112,6 +112,9 @@ public:
     UFUNCTION(Server, Reliable)
     void ServerRequestLeaveAutoRoom(const FString& RoomName);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRequestLeaveCurrentAutoRoom();
+
 protected:
     // ObjectLoad 로직을 분리하여 재사용 가능한 함수로 만듦
     TArray<FPSH_ObjectData*> ParseJsonToObjectData(const FString& JsonString);

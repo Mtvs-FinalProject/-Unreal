@@ -333,6 +333,32 @@ void APSH_PlayerController::ServerRequestLeaveAutoRoom_Implementation(const FStr
 	GameState->AutoRoomManager->LeaveAutoRoom(RoomName, this);
 }
 
+void APSH_PlayerController::ServerRequestLeaveCurrentAutoRoom_Implementation()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// 서버의 GameState를 통해 RoomManager 접근
+	if (AAutoGameState* GameState = GetWorld()->GetGameState<AAutoGameState>())
+	{
+		if (AAutoRoomManager* RoomManager = GameState->AutoRoomManager)
+		{
+			// RoomManager가 관리하는 풀에서 이 플레이어가 있는 방을 찾아서 정리
+			for (AAutoRoomLevelInstance* Room : RoomManager->AutoRoomPool)
+			{
+				if (Room && Room->IsPlayerInRoom(this))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("123"));
+					ServerRequestLeaveAutoRoom_Implementation(Room->GetCurrentRoomName());
+					break;
+				}
+			}
+		}
+	}
+}
+
 TArray<FPSH_ObjectData*> APSH_PlayerController::ParseJsonToObjectData(const FString& JsonString)
 {
 	TArray<FPSH_ObjectData*> DataArray;

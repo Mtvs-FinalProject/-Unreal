@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "../../../../Plugins/EnhancedInput/Source/EnhancedInput/Public/InputActionValue.h"
 #include "../PSH_DataTable/PSH_MechDataTable.h"
+#include "CSR/UI/GetOutModal.h"
 #include "PSH_Player.generated.h"
 
 UCLASS()
@@ -66,6 +67,8 @@ public:
 
 	void Look(const FInputActionValue& value);
 
+	void EscTry(const FInputActionValue& value);
+
 	// 플레이어 행동
 	UPROPERTY(Replicated)
 	bool bCreatingMode = true;
@@ -122,6 +125,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> FirstSelect;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Widgets")
+	TSubclassOf<UGetOutModal> EcsModarFac;
+
+	UGetOutModal* EscModar;
+	
 	// 현재 열려 있는 UI 위젯 인스턴스를 참조 (UI 열고 닫기 토글 상태 추적)
     UPROPERTY()
     UUserWidget* CurrentObjectWidget = nullptr;

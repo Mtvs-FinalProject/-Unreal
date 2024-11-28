@@ -237,8 +237,8 @@ public:
 // protected:
 // 	virtual void PostInitializeComponents() override;
 private:
-	UPROPERTY(Replicated)
-    bool bIsOwnedByRoomInstance;
+	//UPROPERTY(Replicated)
+ //   bool bIsOwnedByRoomInstance;
 #pragma endregion
 
 };

@@ -4,6 +4,12 @@
 #include "CSR/UI/CreateLevel/WBP_CreateWidget.h"
 #include "PSH/PSH_DataTable/PSH_MechDataTable.h"
 #include "JsonObjectConverter.h"
+#include "Json.h"
+#include "JsonUtilities.h"
+#include "Misc/FileHelper.h"
+#include "HAL/PlatformFilemanager.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "Policies/PrettyJsonPrintPolicy.h"
 #include "CSR/Auth/AuthSubsystem.h"
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
@@ -107,13 +113,20 @@ void UWBP_CreateWidget::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
         {
             UE_LOG(LogTemp, Log, TEXT("Map upload successful: %s"), *ResponseString);
 
-            // 레벨 인스턴스 찾기
-            if (APSH_PlayerController* PC = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController()))
+            if (SaveMapDataToFile(ResponseString))
             {
-                PC->ServerRequestCleanupCurrentRoom();
-            }
+                // 레벨 인스턴스 정리
+                if (APSH_PlayerController* PC = Cast<APSH_PlayerController>(GetWorld()->GetFirstPlayerController()))
+                {
+                    PC->ServerRequestCleanupCurrentRoom();
+                }
 
-            RemoveFromParent();
+                RemoveFromParent();
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to save map data"));
+            }
         }
         else
         {
@@ -124,6 +137,61 @@ void UWBP_CreateWidget::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
     {
         UE_LOG(LogTemp, Error, TEXT("HTTP Request failed"));
     }
+}
+
+bool UWBP_CreateWidget::SaveMapDataToFile(const FString& JsonString)
+{
+    // JSON 문자열을 파싱
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+    if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON response"));
+        return false;
+    }
+
+    // mapName과 dataTable 필드 확인
+    if (!JsonObject->HasField(TEXT("mapName")) || !JsonObject->HasField(TEXT("dataTable")))
+    {
+        UE_LOG(LogTemp, Error, TEXT("JSON missing required fields"));
+        return false;
+    }
+
+    // dataTable만 포함하는 새로운 JSON 문자열 생성
+    FString SaveJsonString;
+    TSharedRef<TJsonWriter<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>> Writer =
+        TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&SaveJsonString);
+
+    // dataTable 배열을 직접 직렬화
+    FJsonSerializer::Serialize(JsonObject->GetArrayField(TEXT("dataTable")), Writer);
+
+    // 파일 저장 경로 설정
+    FString MapName = JsonObject->GetStringField(TEXT("mapName"));
+    FString SavePath = FPaths::ProjectSavedDir() / TEXT("MapData");
+
+    // MapData 디렉토리 생성 확인
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if (!PlatformFile.DirectoryExists(*SavePath))
+    {
+        if (!PlatformFile.CreateDirectoryTree(*SavePath))
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to create directory: %s"), *SavePath);
+            return false;
+        }
+    }
+
+    FString FullPath = SavePath / (MapName + TEXT(".json"));
+
+    // 파일 저장
+    if (!FFileHelper::SaveStringToFile(SaveJsonString, *FullPath))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to save map data to: %s"), *FullPath);
+        return false;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Successfully saved map data to: %s"), *FullPath);
+    return true;
 }
 
 FString UWBP_CreateWidget::CreateBaseJson() const

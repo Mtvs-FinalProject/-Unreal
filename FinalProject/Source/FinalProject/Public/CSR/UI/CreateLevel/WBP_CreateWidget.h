@@ -77,4 +77,5 @@ private:
     // HTTP 응답 처리 함수
     void OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSucceeded);
 
+    bool SaveMapDataToFile(const FString& JsonString);
 };

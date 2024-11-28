@@ -246,8 +246,11 @@ void AAutoRoomLevelInstance::ServerLeaveRoom_Implementation(APlayerController* L
 
     if (HasAuthority() && bIsRoomAssigned && LeavingPlayer)
     {
+        UE_LOG(LogTemp, Warning, TEXT("ServerLeaveRoom_Implementation 1"));
         if (ConnectedPlayers.Remove(LeavingPlayer) > 0)
         {
+            UE_LOG(LogTemp, Warning, TEXT("ServerLeaveRoom_Implementation 2"));
+
             ClientOnLeaveRoom(LeavingPlayer);
 
             if (ConnectedPlayers.Num() == 0)
@@ -276,6 +279,8 @@ void AAutoRoomLevelInstance::ClientOnLeaveRoom_Implementation(APlayerController*
                     *LeavingPlayer->GetName());
                 LevelInstanceSubsystem->RequestUnloadLevelInstance(this);
                 bIsLevelLoadedLocally = false;
+                APSH_PlayerController * player = Cast<APSH_PlayerController>(LeavingPlayer);
+                player->Client_ShowMainUI();
             }
         }
     }

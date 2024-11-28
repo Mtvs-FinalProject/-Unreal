@@ -35,6 +35,7 @@
 #include "PSH/PSH_GameMode/PSH_GameModeBase.h"
 #include "YWK/RotationWidget.h"
 #include "JsonObjectConverter.h"
+#include "CSR/UI/GetOutModal.h"
 
 // Sets default values
 APSH_Player::APSH_Player()
@@ -439,7 +440,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		// 모드 변경
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
-		
+		EnhancedInputComponent->BindAction(inputActions[15], ETriggerEvent::Started, this, &APSH_Player::EscTry);
 	}
 }
 
@@ -506,6 +507,26 @@ void APSH_Player::Look(const FInputActionValue& value)
 
 	AddControllerPitchInput(input2D.Y);
 	AddControllerYawInput(input2D.X);
+}
+
+void APSH_Player::EscTry(const FInputActionValue& value)
+{
+	if (!HasAuthority()) {
+		if (EcsModarFac)
+		{
+			EscModar = CreateWidget<UGetOutModal>(GetWorld(), EcsModarFac);
+		}
+		APSH_PlayerController * player = Cast<APSH_PlayerController>(GetOwner());
+		if (player&& EscModar) 
+		{
+			EscModar->SetPlayer(player);
+			EscModar->AddToViewport();
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("EscTry fail"));
+		}
+		
+	}
 }
 
 void APSH_Player::PlayerJump()
