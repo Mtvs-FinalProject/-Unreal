@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/TimelineComponent.h"
+#include "PSH/PSH_Actor/PSH_BlockActor.h"
 #include "MyStartButton.generated.h"
 
 UCLASS()
-class FINALPROJECT_API AMyStartButton : public AActor
+class FINALPROJECT_API AMyStartButton : public APSH_BlockActor
 {
 	GENERATED_BODY()
 	
@@ -69,5 +70,7 @@ public:
 	FVector PressedScale;
 
 	bool bmodeChange = true;
+
+	bool bIsOverlapping = false; // 클래스 멤버 변수
 
 };

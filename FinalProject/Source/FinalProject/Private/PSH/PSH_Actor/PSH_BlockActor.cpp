@@ -15,6 +15,7 @@
 #include "GameFramework/RotatingMovementComponent.h"
 #include "../../../../Plugins/FX/Niagara/Source/Niagara/Public/NiagaraFunctionLibrary.h"
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APSH_BlockActor::APSH_BlockActor()
@@ -51,6 +52,17 @@ APSH_BlockActor::APSH_BlockActor()
 		PlaceEffect = placeNiagara.Object;
 	}
 	
+	ConstructorHelpers::FObjectFinder<USoundBase> tempPlaceSound(TEXT("/Script/Engine.SoundWave'/Game/YWK/CH_AN/BGM/_Track_16__Tung_Sound_Effects__._Track_16__Tung_Sound_Effects__'"));
+	if (tempPlaceSound.Succeeded())
+	{
+		placeSound = tempPlaceSound.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<USoundBase> tempDorpSound(TEXT("/Script/Engine.SoundWave'/Game/YWK/CH_AN/BGM/hitting-a-metal-lid-36047.hitting-a-metal-lid-36047'"));
+	if (tempDorpSound.Succeeded())
+	{
+		dorpSound = tempDorpSound.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -182,6 +194,11 @@ void APSH_BlockActor::MRPC_Place_Implementation(class APSH_BlockActor* attachAct
 	if (PlaceEffect)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PlaceEffect, GetActorLocation());
+	}
+
+	if (placeSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), placeSound, GetActorLocation());
 	}
 
 	// 중요: 배치 시 월드 트랜스폼 저장
@@ -824,6 +841,7 @@ void APSH_BlockActor::MRPC_SpawnEffect_Implementation(const FVector & impactPoin
 {
 	if(spawnEffect == nullptr) return;
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), spawnEffect, impactPoint);
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), dorpSound,impactPoint);
 }
 void APSH_BlockActor::SRPC_SetSimulatePhysics_Implementation(bool check)
 {

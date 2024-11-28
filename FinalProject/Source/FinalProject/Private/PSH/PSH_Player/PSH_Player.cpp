@@ -1088,6 +1088,7 @@ void APSH_Player::SRPC_GarbageBotSetState_Implementation(EState state)
 
 void APSH_Player::BotMoveAndModeChange()
 {
+	if(bCreatingMode == false) return;
 	if (bArtKey) // art 눌림
 	{
 		FHitResult hitresult;
@@ -1117,6 +1118,9 @@ void APSH_Player::BotMoveAndModeChange()
 
 			if (block)
 			{
+
+				if(GrabbedActor) return;
+
 				switch (block->blockDataType)
 				{
 				case  EBlockDataType::MOVEANDFLY:
