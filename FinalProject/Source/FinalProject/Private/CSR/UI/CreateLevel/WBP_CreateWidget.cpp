@@ -14,6 +14,7 @@
 #include "CSR/DedicatedServer/AutoRoomLevelInstance.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "../FinalProject.h"
+#include "PSH/PSH_Player/PSH_Player.h"
 
 void UWBP_CreateWidget::NativeConstruct()
 {
@@ -216,7 +217,9 @@ FString UWBP_CreateWidget::CreateBaseJson() const
     JsonObject->SetArrayField(TEXT("tags"), TagsArray);
 
     // data_table 필드에 데이터테이블 JSON 추가
-    JsonObject->SetArrayField(TEXT("data_table"), GetDataTableJson());
+    APSH_Player * player = Cast<APSH_Player>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
+    JsonObject->SetStringField(TEXT("data_table"), player->SaveT());
 
     // JSON 문자열로 변환
     FString OutputString;

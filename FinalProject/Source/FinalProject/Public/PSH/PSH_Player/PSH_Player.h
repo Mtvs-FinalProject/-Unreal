@@ -336,6 +336,9 @@ public:
 	// 마우스 이동 제한 영역 설정
 	const float MarginPercent = 0.05f; // 5% 여백
 	
+	UFUNCTION()
+	FString SaveT();
+
 	void SaveTest();
 	int32 RowNum = 0;
 

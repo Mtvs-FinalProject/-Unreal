@@ -1851,15 +1851,39 @@ TArray<bool> APSH_Player::ConvertJsonToBoolArray(const TArray<TSharedPtr<FJsonVa
 	return BoolArray;
 }
 
+FString APSH_Player::SaveT()
+{
+	//if (!IsValid(dataTable))
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
+	//	return ("");
+	//}
+
+	TArray<AActor*> blockArray;
+	// "owner" 태그가 달린 모든 블록을 가져옴
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
+
+	FPSH_WorldData WorldData;
+
+	for (AActor* arrayActor : blockArray)
+	{
+		APSH_BlockActor* blockActor = Cast<APSH_BlockActor>(arrayActor);
+
+		if (blockActor)
+		{
+			// 계층 구조 저장
+			FPSH_ObjectData BlockData = blockActor->SaveBlock();
+			WorldData.BlockArray.Add(BlockData);
+		}
+	}
+
+	jsonString = ConvertWorldDataToJson(WorldData);
+	return (jsonString);
+}
+
 void APSH_Player::SaveTest()
 {
 	/*SRPC_Save();*/
-
-	if (!IsValid(dataTable))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
-		return;
-	}
 
 	TArray<AActor*> blockArray;
 	// "owner" 태그가 달린 모든 블록을 가져옴
