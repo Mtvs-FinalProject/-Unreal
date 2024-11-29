@@ -81,10 +81,6 @@ APSH_Player::APSH_Player()
 		movementComp->BrakingDecelerationFlying = 2000.0f;  // 감속도 설정
 	}
 
-	
-
-
-
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -436,7 +432,7 @@ void APSH_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		// 데이터 테이블 스폰 블럭
 		EnhancedInputComponent->BindAction(inputActions[12], ETriggerEvent::Started, this, &APSH_Player::LoadTest);
-		//EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTest);
+		EnhancedInputComponent->BindAction(inputActions[13], ETriggerEvent::Started, this, &APSH_Player::SaveTestT);
 
 		// 모드 변경
 		EnhancedInputComponent->BindAction(inputActions[14], ETriggerEvent::Started, this, &APSH_Player::DelegateTest);
@@ -1896,6 +1892,35 @@ FString APSH_Player::SaveTest()
 // 			PRINTLOG(TEXT("Failed to save JSON to file."));
 // 		}
 // 	}
+}
+
+void APSH_Player::SaveTestT()
+{
+	if (!IsValid(dataTable))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid DataTable reference in SRPC_Save"));
+		return ;
+	}
+
+	TArray<AActor*> blockArray;
+	// "owner" 태그가 달린 모든 블록을 가져옴
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), APSH_BlockActor::StaticClass(), FName(TEXT("owner")), blockArray);
+
+	FPSH_WorldData WorldData;
+
+	for (AActor* arrayActor : blockArray)
+	{
+		APSH_BlockActor* blockActor = Cast<APSH_BlockActor>(arrayActor);
+
+		if (blockActor)
+		{
+			// 계층 구조 저장
+			FPSH_ObjectData BlockData = blockActor->SaveBlock();
+			WorldData.BlockArray.Add(BlockData);
+		}
+	}
+
+	jsonString = ConvertWorldDataToJson(WorldData);
 }
 
 void APSH_Player::ShowInterface()

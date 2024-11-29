@@ -74,13 +74,14 @@ FString UModalWidget::LoadJsonFromFile(const FString& MapName)
 {
     FString JsonString;
     FString FilePath = FPaths::ProjectSavedDir() / TEXT("MapData") / (MapName + TEXT(".json"));
+    UE_LOG(LogTemp, Warning, TEXT("csr %s"), *MapName);
 
     if (!FFileHelper::LoadFileToString(JsonString, *FilePath))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to load JSON file: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("csr Failed to load JSON file: %s"), *FilePath);
         return TEXT("");
     }
-
+    UE_LOG(LogTemp, Warning, TEXT("csr csr sss %s"), *JsonString);
     return JsonString;
 }
 
@@ -128,16 +129,19 @@ void UModalWidget::OnCreateButtonClicked()
         else
         {
             // Play 모드 - JSON 데이터로 방 생성
+
             FString JsonString = LoadJsonFromFile(SelectedMap);
-            if (!JsonString.IsEmpty())
-            {
-                PC->ServerRequestCreateAutoRoom(RoomName, SelectedMap, JsonString);
-            }
-            else
-            {
-                ShowErrorMessage(FString::Printf(TEXT("Failed to load map data: %s"), *SelectedMap));
-                return;
-            }
+			if (!JsonString.IsEmpty())
+			{
+                JsonString = TEXT("");
+				PC->ServerRequestCreateAutoRoom(RoomName, SelectedMap, JsonString);
+			}
+			else
+			{
+
+				ShowErrorMessage(FString::Printf(TEXT("Failed to load map data: %s"), *SelectedMap));
+
+			}
         }
     }
 

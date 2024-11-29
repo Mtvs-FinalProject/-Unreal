@@ -338,6 +338,9 @@ public:
 	
 	UFUNCTION()
 	FString SaveTest();
+
+	UFUNCTION()
+	void SaveTestT();
 	int32 RowNum = 0;
 
 	void DelegateTest();

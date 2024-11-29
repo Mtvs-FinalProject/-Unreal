@@ -12,6 +12,7 @@
 #include "PSH/PSH_Player/PSH_Player.h"
 #include "PSH/PSH_Player/PSH_PlayerController.h"
 #include "CSR/DedicatedServer/AutoGameState.h"
+#include "../FinalProject.h"
 
 
 AAutoRoomLevelInstance::AAutoRoomLevelInstance()
@@ -218,6 +219,11 @@ void AAutoRoomLevelInstance::ServerGetOutAll_Implementation()
 
         // WorldAsset 제거
         SetRuntimeWorldAsset(nullptr);
+        if (AAutoGameState* GS = GetWorld()->GetGameState<AAutoGameState>())
+        {
+
+            GS->UpdateRoomList();
+        }
 
         OnRep_RoomState();
     }
@@ -340,11 +346,13 @@ void AAutoRoomLevelInstance::OnLevelInstanceLoaded()
 {
     Super::OnLevelInstanceLoaded();
 
+    UE_LOG(LogTemp, Warning, TEXT("csr csr %s"), *PendingJsonData);
     if (!HasAuthority() || PendingJsonData.IsEmpty())
     {
         return;
     }
 
+    FPSH_WorldData WorldData = ParseJsonToWorldData(PendingJsonData);
     UE_LOG(LogTemp, Log, TEXT("Level loaded for room %s, spawning actors..."), *this->GetCurrentRoomName());
     UE_LOG(LogTemp, Log, TEXT("Level loaded for room %s, spawning actors..."), *this->PendingJsonData);
     // JSON 데이터로 액터 스폰
@@ -353,68 +361,21 @@ void AAutoRoomLevelInstance::OnLevelInstanceLoaded()
 
 void AAutoRoomLevelInstance::SpawnActorsFromJson()
 {
+
     if (!HasAuthority() || PendingJsonData.IsEmpty())
     {
         return;
     }
-    UE_LOG(LogTemp, Warning, TEXT("csr hello"));
-    // 임시 데이터 테이블 생성 및 JSON 데이터 로드
-    UDataTable* TempDataTable = NewObject<UDataTable>(this);
-    TempDataTable->RowStruct = FPSH_ObjectData::StaticStruct();
 
-    // JSON 문자열을 데이터 테이블로 변환
-    TempDataTable->CreateTableFromJSONString(PendingJsonData);
-
-    // 데이터 로드 및 액터 스폰
-    TArray<FPSH_ObjectData*> DataArray;
-    TempDataTable->GetAllRows<FPSH_ObjectData>(TEXT(""), DataArray);
-
-    FVector SpawnOrigin = GetActorLocation();
-
-    for (FPSH_ObjectData* Data : DataArray)
+    FPSH_WorldData WorldData = ParseJsonToWorldData(PendingJsonData);
+    
+    for (const FPSH_ObjectData& ObjectData : WorldData.BlockArray)
     {
-        if (Data && Data->blockData.actor)
-        {
-            FTransform SpawnTransform = Data->blockData.actorTransform;
-            SpawnTransform.SetLocation(SpawnTransform.GetLocation() + SpawnOrigin);
-            FActorSpawnParameters SpawnParams;
-            //SpawnParams.bDeferConstruction = true;  // 추가
-            SpawnParams.Owner = this;
-            SpawnParams.bNoFail = true;
-
-            if (APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
-                Data->blockData.actor, SpawnTransform, SpawnParams))
-            {
-                SpawnedBlock->SetOwner(this);
-                SpawnedBlock->SetReplicates(true);
-                SpawnedBlock->SetReplicateMovement(true);
-             /*   SpawnedBlock->SetOwnedByRoomInstance(true);*/
-//                SpawnedBlock->LoadBlockHierarchy(*Data);
-                SpawnedActors.Add(SpawnedBlock);
-                // PostInitializeComponents 전에 필요한 설정
-                //SpawnedBlock->SetOwnedByRoomInstance(true);
-                //if (SpawnedBlock->meshComp)
-                //{
-                //    SpawnedBlock->meshComp->SetSimulatePhysics(false);
-                //}
-                UE_LOG(LogTemp, Log, TEXT("Spawned root block: %s, Owner: %s"),
-                    *SpawnedBlock->GetName(),
-                    *SpawnedBlock->GetOwner()->GetName());
-            }
-        }
-    }
-
-    // 정리
-    TempDataTable->RemoveFromRoot();
-    TempDataTable = nullptr;
-
-    // 플레이어 캐릭터 스폰
-    for (APlayerController* PC : ConnectedPlayers)
-    {
-        SpawnAndSetupCharacter(PC);
+        SpawnBlocksFromObjectData(ObjectData);
     }
 
     PendingJsonData.Empty();
+
 }
 
 void AAutoRoomLevelInstance::SpawnAndSetupCharacter(APlayerController* PlayerController)
@@ -476,6 +437,374 @@ void AAutoRoomLevelInstance::CleanupSpawnedActors()
     SpawnedActors.Empty();
 }
 
-#pragma endregion
+FPSH_WorldData AAutoRoomLevelInstance::ParseJsonToWorldData(const FString& JsonString)
+{
+    FPSH_WorldData WorldData;
 
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+    TSharedPtr<FJsonObject> JsonObject;
+
+    if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+    {
+        PRINTLOG(TEXT("Failed to parse JSON string into WorldData."));
+        return WorldData;
+    }
+
+    if (!JsonObject->HasField(TEXT("BlockArray")))
+    {
+        PRINTLOG(TEXT("JSON does not contain BlockArray field."));
+        return WorldData;
+    }
+
+    TArray<TSharedPtr<FJsonValue>> BlockArray = JsonObject->GetArrayField(TEXT("BlockArray"));
+    PRINTLOG(TEXT("Parsed BlockArray with %d elements."), BlockArray.Num());
+
+    for (const TSharedPtr<FJsonValue>& BlockValue : BlockArray)
+    {
+        TSharedPtr<FJsonObject> BlockObject = BlockValue->AsObject();
+        if (BlockObject.IsValid())
+        {
+            FPSH_BlockData BlockData = ConvertJsonObjectToBlockData(BlockObject);
+            FPSH_ObjectData ObjectData;
+            ObjectData.blockData = BlockData;
+
+            WorldData.BlockArray.Add(ObjectData);
+
+            PRINTLOG(TEXT("Successfully parsed block data: %s"), *BlockData.actor->GetName());
+        }
+        else
+        {
+            PRINTLOG(TEXT("Failed to parse block object in JSON."));
+        }
+    }
+
+    return WorldData;
+}
+
+FString AAutoRoomLevelInstance::ConvertBlockDataToJson(const FPSH_ObjectData& BlockData)
+{
+    TSharedPtr<FJsonObject> RootJsonObject = MakeShared<FJsonObject>();
+
+    // blockData를 JSON으로 변환
+    TSharedPtr<FJsonObject> BlockDataJsonObject = ConvertBlockDataToJsonObject(BlockData.blockData);
+
+    // 최상위 JSON 객체에 추가
+    RootJsonObject->SetObjectField(TEXT("BlockData"), BlockDataJsonObject);
+    RootJsonObject->SetBoolField(TEXT("bisSave"), BlockData.bisSave);
+
+    // JSON 문자열로 직렬화
+    FString OutputString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+    if (FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), Writer))
+    {
+        return OutputString;
+    }
+
+    return TEXT(""); // 실패 시 빈 문자열 반환
+}
+
+FString AAutoRoomLevelInstance::ConvertWorldDataToJson(const FPSH_WorldData& WorldData)
+{
+    TSharedRef<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+
+    TArray<TSharedPtr<FJsonValue>> BlockArray;
+    for (const FPSH_ObjectData& BlockData : WorldData.BlockArray)
+    {
+        TSharedPtr<FJsonObject> BlockObject = ConvertBlockDataToJsonObject(BlockData.blockData);
+
+        if (BlockObject.IsValid())
+        {
+            BlockArray.Add(MakeShareable(new FJsonValueObject(BlockObject)));
+        }
+        else
+        {
+            PRINTLOG(TEXT("Failed to convert block data to JSON object."));
+        }
+    }
+
+    JsonObject->SetArrayField(TEXT("BlockArray"), BlockArray);
+
+    FString OutputString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+    if (FJsonSerializer::Serialize(JsonObject, Writer))
+    {
+        PRINTLOG(TEXT("Serialized WorldData JSON: %s"), *OutputString);
+    }
+    else
+    {
+        PRINTLOG(TEXT("Failed to serialize WorldData JSON."));
+    }
+
+    return OutputString;
+}
+TSharedPtr<FJsonObject> AAutoRoomLevelInstance::ConvertBlockDataToJsonObject(const FPSH_BlockData& BlockData)
+{
+    TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject>();
+
+    // 기본 데이터 필드 추가
+    JsonObject->SetStringField(TEXT("ActorClass"), BlockData.actor->GetPathName());
+    JsonObject->SetStringField(TEXT("Transform"), BlockData.actorTransform.ToString());
+
+    // funcitonData 배열 변환
+    TArray<TSharedPtr<FJsonValue>> FunctionDataArray;
+    for (const FPSH_FunctionBlockData& FunctionData : BlockData.funcitonData)
+    {
+        TSharedPtr<FJsonObject> FunctionDataObject = MakeShared<FJsonObject>();
+        FunctionDataObject->SetArrayField(TEXT("IntArray"), ConvertIntArrayToJson(FunctionData.intArray));
+        FunctionDataObject->SetArrayField(TEXT("FloatArray"), ConvertFloatArrayToJson(FunctionData.floatArray));
+        FunctionDataObject->SetArrayField(TEXT("VectorArray"), ConvertVectorArrayToJson(FunctionData.fvectorArray));
+        FunctionDataObject->SetArrayField(TEXT("RotatorArray"), ConvertRotatorArrayToJson(FunctionData.frotatorArray));
+        FunctionDataObject->SetArrayField(TEXT("BoolArray"), ConvertBoolArrayToJson(FunctionData.boolArray));
+        FunctionDataArray.Add(MakeShared<FJsonValueObject>(FunctionDataObject));
+    }
+    JsonObject->SetArrayField(TEXT("FunctionData"), FunctionDataArray);
+
+    // childData 배열 변환
+    TArray<TSharedPtr<FJsonValue>> ChildArray;
+    for (const FPSH_BlockData& ChildData : BlockData.childData)
+    {
+        TSharedPtr<FJsonObject> ChildJsonObject = ConvertBlockDataToJsonObject(ChildData);
+        if (ChildJsonObject.IsValid())
+        {
+            ChildArray.Add(MakeShareable(new FJsonValueObject(ChildJsonObject)));
+        }
+    }
+    JsonObject->SetArrayField(TEXT("Children"), ChildArray);
+
+    return JsonObject;
+}
+TArray<TSharedPtr<FJsonValue>> AAutoRoomLevelInstance::ConvertIntArrayToJson(const TArray<int32>& IntArray)
+{
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    for (int32 Value : IntArray)
+    {
+        JsonArray.Add(MakeShared<FJsonValueNumber>(Value));
+    }
+    return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> AAutoRoomLevelInstance::ConvertFloatArrayToJson(const TArray<float>& FloatArray)
+{
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    for (float Value : FloatArray)
+    {
+        JsonArray.Add(MakeShared<FJsonValueNumber>(Value));
+    }
+    return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> AAutoRoomLevelInstance::ConvertVectorArrayToJson(const TArray<FVector>& VectorArray)
+{
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    for (const FVector& Vector : VectorArray)
+    {
+        JsonArray.Add(MakeShared<FJsonValueString>(Vector.ToString()));
+    }
+    return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> AAutoRoomLevelInstance::ConvertRotatorArrayToJson(const TArray<FRotator>& RotatorArray)
+{
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    for (const FRotator& Rotator : RotatorArray)
+    {
+        JsonArray.Add(MakeShared<FJsonValueString>(Rotator.ToString()));
+    }
+    return JsonArray;
+}
+TArray<TSharedPtr<FJsonValue>> AAutoRoomLevelInstance::ConvertBoolArrayToJson(const TArray<bool>& BoolArray)
+{
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    for (bool Value : BoolArray)
+    {
+        JsonArray.Add(MakeShared<FJsonValueBoolean>(Value));
+    }
+    return JsonArray;
+}
+
+TArray < int32 > AAutoRoomLevelInstance::ConvertJsonToIntArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+    TArray<int32> IntArray;
+    for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+    {
+        IntArray.Add(Value->AsNumber());
+    }
+    return IntArray;
+}
+TArray<float> AAutoRoomLevelInstance::ConvertJsonToFloatArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+    TArray<float> FloatArray;
+    for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+    {
+        FloatArray.Add(Value->AsNumber());
+    }
+    return FloatArray;
+}
+TArray<FVector> AAutoRoomLevelInstance::ConvertJsonToVectorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+    TArray<FVector> VectorArray;
+    for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+    {
+        FVector Vector;
+        Vector.InitFromString(Value->AsString());
+        VectorArray.Add(Vector);
+    }
+
+    return VectorArray;
+}
+TArray<FRotator> AAutoRoomLevelInstance::ConvertJsonToRotatorArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+    TArray<FRotator> RotatorArray;
+    for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+    {
+        FRotator Rotator;
+        Rotator.InitFromString(Value->AsString());
+        RotatorArray.Add(Rotator);
+    }
+    return RotatorArray;
+}
+TArray<bool> AAutoRoomLevelInstance::ConvertJsonToBoolArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray)
+{
+    TArray<bool> BoolArray;
+    for (const TSharedPtr<FJsonValue>& Value : JsonArray)
+    {
+        BoolArray.Add(Value->AsBool());
+    }
+    return BoolArray;
+}
+
+void AAutoRoomLevelInstance::SpawnBlocksFromObjectData(const FPSH_ObjectData& ObjectData)
+{
+    APSH_BlockActor* RootBlock = SpawnBlock(ObjectData.blockData, nullptr);
+    if (RootBlock)
+    {
+        SpawnedActors.Add(RootBlock);
+    }
+}
+
+FPSH_BlockData AAutoRoomLevelInstance::ConvertJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject)
+{
+    FPSH_BlockData BlockData;
+
+    FString ActorClassPath;
+    if (JsonObject->TryGetStringField(TEXT("ActorClass"), ActorClassPath))
+    {
+        BlockData.actor = LoadClass<AActor>(nullptr, *ActorClassPath);
+    }
+
+    FString TransformString;
+    if (JsonObject->TryGetStringField(TEXT("Transform"), TransformString))
+    {
+        BlockData.actorTransform.InitFromString(TransformString);
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* FunctionDataArray;
+    if (JsonObject->TryGetArrayField(TEXT("FunctionData"), FunctionDataArray))
+    {
+        for (const TSharedPtr<FJsonValue>& Value : *FunctionDataArray)
+        {
+            const TSharedPtr<FJsonObject>* FunctionDataObject;
+            if (Value->TryGetObject(FunctionDataObject))
+            {
+                FPSH_FunctionBlockData FunctionData;
+                // Populate FunctionData from FunctionDataObject
+                BlockData.funcitonData.Add(FunctionData);
+            }
+        }
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* ChildrenArray;
+    if (JsonObject->TryGetArrayField(TEXT("Children"), ChildrenArray))
+    {
+        for (const TSharedPtr<FJsonValue>& Value : *ChildrenArray)
+        {
+            const TSharedPtr<FJsonObject>* ChildObject;
+            if (Value->TryGetObject(ChildObject))
+            {
+                BlockData.childData.Add(ConvertJsonObjectToBlockData(*ChildObject));
+            }
+        }
+    }
+
+    return BlockData;
+}
+
+FPSH_ObjectData AAutoRoomLevelInstance::ParseJsonToBlockData(const FString& JsonString)
+{
+    FPSH_ObjectData ObjectData;
+
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+    {
+        const TSharedPtr<FJsonObject>* BlockDataObject;
+        if (JsonObject->TryGetObjectField(TEXT("BlockData"), BlockDataObject))
+        {
+            ObjectData.blockData = ParseJsonObjectToBlockData(*BlockDataObject);
+        }
+
+        JsonObject->TryGetBoolField(TEXT("bisSave"), ObjectData.bisSave);
+    }
+
+    return ObjectData;
+}
+
+FPSH_BlockData AAutoRoomLevelInstance::ParseJsonObjectToBlockData(const TSharedPtr<FJsonObject>& JsonObject)
+{
+    return ConvertJsonObjectToBlockData(JsonObject);
+}
+
+void AAutoRoomLevelInstance::SpawnBlocksFromJson(const FString& JsonString)
+{
+    FPSH_WorldData WorldData = ParseJsonToWorldData(JsonString);
+
+    for (const FPSH_ObjectData& ObjectData : WorldData.BlockArray)
+    {
+        SpawnBlocksFromObjectData(ObjectData);
+    }
+}
+
+APSH_BlockActor* AAutoRoomLevelInstance::SpawnBlock(const FPSH_BlockData& BlockData, APSH_BlockActor* Parent)
+{
+    if (!BlockData.actor)
+    {
+        return nullptr;
+    }
+
+    FTransform SpawnTransform = BlockData.actorTransform;
+    SpawnTransform.SetLocation(SpawnTransform.GetLocation() + GetActorLocation());
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+    SpawnParams.bNoFail = true;
+
+    APSH_BlockActor* SpawnedBlock = GetWorld()->SpawnActor<APSH_BlockActor>(
+        BlockData.actor, SpawnTransform, SpawnParams);
+
+    if (SpawnedBlock)
+    {
+        SpawnedBlock->SetReplicates(true);
+        SpawnedBlock->SetReplicateMovement(true);
+
+        if (!BlockData.funcitonData.IsEmpty())
+        {
+            SpawnedBlock->ComponentLoadData(BlockData.funcitonData);
+        }
+
+        if (Parent)
+        {
+            SpawnedBlock->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+        }
+
+        for (const FPSH_BlockData& ChildData : BlockData.childData)
+        {
+            SpawnBlock(ChildData, SpawnedBlock);
+        }
+    }
+
+    return SpawnedBlock;
+}
+
+void AAutoRoomLevelInstance::ServerLoadTest_Implementation(const FString& JsonString)
+{
+
+}
 

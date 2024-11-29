@@ -50,10 +50,10 @@ void URoomDetailPanel::OnHttpResponseReceived(FHttpRequestPtr Request, FHttpResp
 void URoomDetailPanel::MakeDetailPanel(const FString& RoomName, const FString& Title, int32 CurrentPlayer)
 {
     UE_LOG(LogTemp, Warning, TEXT("123 %s ,%s , %d"), *RoomName, *Title, CurrentPlayer);
-    if (Title.IsEmpty()) {
-        SetVisibility(ESlateVisibility::Hidden);
-        return ;
-    }
+	/*  if (Title.IsEmpty()) {
+		  SetVisibility(ESlateVisibility::Hidden);
+		  return ;
+	  }*/
     SetVisibility(ESlateVisibility::Visible);
     this->DetailData.RoomName = RoomName;
     this->DetailData.MapName = Title;

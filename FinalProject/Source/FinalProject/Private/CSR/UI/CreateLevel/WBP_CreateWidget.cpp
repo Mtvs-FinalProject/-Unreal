@@ -254,7 +254,7 @@ TArray<TSharedPtr<FJsonValue>> UWBP_CreateWidget::GetDataTableJson() const
         UE_LOG(LogTemp, Warning, TEXT("DT_PSH_SaveData is null"));
         return DataTableArray;
     }
-
+    void CleanupSpawnedActors();
     TArray<FPSH_ObjectData*> DataArray;
     DT_PSH_SaveData->GetAllRows<FPSH_ObjectData>(TEXT(""), DataArray);
 
